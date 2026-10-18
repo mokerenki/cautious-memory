@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"slices"
-	"strconv"
 
 	"github.com/mokerenki/cautious-memory/agent"
 	"github.com/mokerenki/cautious-memory/db"
@@ -66,10 +65,13 @@ func (s *Server) startFindingVerification(w http.ResponseWriter, r *http.Request
 	if created {
 		code = http.StatusAccepted
 	}
-	writeJSON(w, code, map[string]any{"verification": v, "created": created, "conversation_id": conv})
+	var convID any
+	if conv != nil {
+		convID = conv.ID
+	}
+	writeJSON(w, code, map[string]any{"verification": v, "created": created, "conversation_id": convID})
 }
 
-// enqueueFindingVerification creates/runs a verifier session when the agent is enabled.
 func (s *Server) enqueueFindingVerification(ctx context.Context, findingID int64) (*db.FindingVerification, *db.Conversation, bool, error) {
 	a, err := s.m.pg.GetAgentByKey(db.FindingVerifierAgentKey)
 	if err != nil {
@@ -107,7 +109,6 @@ func (s *Server) enqueueFindingVerification(ctx context.Context, findingID int64
 	return v, conv, created, nil
 }
 
-// maybeAutoVerify is called after a finding is recorded; best-effort enqueue.
 func (s *Server) maybeAutoVerify(findingID int64) {
 	if findingID <= 0 || s == nil || s.m == nil || s.m.pg == nil {
 		return
@@ -117,8 +118,7 @@ func (s *Server) maybeAutoVerify(findingID int64) {
 		return
 	}
 	go func() {
-		ctx := context.Background()
-		if _, _, _, err := s.enqueueFindingVerification(ctx, findingID); err != nil {
+		if _, _, _, err := s.enqueueFindingVerification(context.Background(), findingID); err != nil {
 			log.Printf("[verifier] auto-enqueue finding %d: %v", findingID, err)
 		}
 	}()
@@ -126,7 +126,7 @@ func (s *Server) maybeAutoVerify(findingID int64) {
 
 func (s *Server) findingVerifyTools() []actool.CoreTool {
 	return []actool.CoreTool{
-		roTool("get_finding_verify_context", "读取当前验证会话关联的漏洞证据快照、流量绑定数量、复测无关的原始 claim。无参数，只能读取本会话。",
+		roTool("get_finding_verify_context", "读取当前验证会话关联的漏洞证据快照、流量绑定数量。无参数，只能读取本会话。",
 			objSchema(map[string]any{}), func(ctx context.Context, _ json.RawMessage) (actool.Result, error) {
 				r, err := s.m.pg.FindingVerificationForConversation(ctx, intercept.ConvIDFromContext(ctx))
 				if err != nil {
@@ -148,7 +148,7 @@ func (s *Server) findingVerifyTools() []actool.CoreTool {
 				"severity":     strParam("critical/high/medium/low/none；downgraded 时为建议级别"),
 				"summary":      strParam("结论摘要"),
 				"evidence":     strParam("Markdown：最小复现步骤与观察"),
-				"attribution":  strParam("归因证据：哪条响应证明因果关系"),
+				"attribution":  strParam("归因证据"),
 				"blast_radius": map[string]any{"type": "string", "enum": []string{"", "single_record", "any_record", "cross_tenant"}},
 			}, "conclusion", "summary", "evidence"), func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 				var a struct {
@@ -170,7 +170,15 @@ func (s *Server) findingVerifyTools() []actool.CoreTool {
 	}
 }
 
+// seedFindingVerifier seeds tools + agent and ensures schema. Call from server startup
+// next to seedFindingRetester (see NOTES.md / WIRING.md).
 func (s *Server) seedFindingVerifier() error {
+	if err := s.m.pg.EnsureVerificationSchema(); err != nil {
+		return err
+	}
+	if err := s.m.pg.RecoverFindingVerifications(); err != nil {
+		log.Printf("[verifier] recover: %v", err)
+	}
 	for _, t := range s.findingVerifyTools() {
 		schema, _ := json.Marshal(t.InputSchema())
 		bindings, _ := json.Marshal([]string{db.FindingVerifierAgentKey})
@@ -223,12 +231,3 @@ func (s *Server) finishVerification(id int64, status, reason string) {
 		log.Printf("[verify %d] finish: %v", id, err)
 	}
 }
-
-// registerVerificationRoutes adds verifier HTTP endpoints (called from server setup).
-func (s *Server) registerVerificationRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("GET /api/findings/{id}/verifications", s.listFindingVerifications)
-	mux.HandleFunc("POST /api/findings/{id}/verify", s.startFindingVerification)
-}
-
-// unused import guard helpers
-var _ = strconv.Itoa
