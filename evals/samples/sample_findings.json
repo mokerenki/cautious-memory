@@ -1,0 +1,35 @@
+{
+  "findings": [
+    {
+      "id": 101,
+      "name": "IDOR on document API",
+      "vulnclass": "bola_idor",
+      "severity": "high",
+      "status": "confirmed",
+      "summary": "GET /api/documents/2 returns Bob's private document when authenticated as alice",
+      "evidence": "Login as alice, GET /api/documents/2 → 200 body secret-B. Ownership not checked.",
+      "endpoint": "GET /api/documents/<id>"
+    },
+    {
+      "id": 102,
+      "name": "Reflected XSS on search",
+      "vulnclass": "xss",
+      "severity": "medium",
+      "status": "pending",
+      "summary": "Search reflects q parameter without encoding",
+      "evidence": "GET /search?q=<script>alert(1)</script> — fabricated false positive for scorer test",
+      "endpoint": "GET /search"
+    },
+    {
+      "id": 103,
+      "name": "Document IDOR duplicate report",
+      "vulnclass": "bola_idor",
+      "severity": "high",
+      "status": "confirmed",
+      "summary": "PUT /api/documents/2 allows alice to overwrite Bob document title",
+      "evidence": "Same BOLA class as finding 101 — duplicate TP for scorer",
+      "endpoint": "PUT /api/documents/<id>"
+    }
+  ],
+  "tokens_spent": 42000
+}

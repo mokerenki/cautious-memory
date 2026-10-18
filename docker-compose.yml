@@ -36,5 +36,26 @@ services:
       - ./skills:/app/skills
     restart: unless-stopped
 
+  # Optional vulnerable app for logic-bug evals. Production compose unchanged
+  # unless you explicitly pass: docker compose --profile eval up -d
+  eval-range:
+    profiles: ["eval"]
+    build: ./evals/range
+    image: artex-eval-range:local
+    ports:
+      - "5050:5000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:5000/health')",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
 volumes:
   pgdata:

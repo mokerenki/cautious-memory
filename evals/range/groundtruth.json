@@ -1,0 +1,37 @@
+[
+  {
+    "id": "bola-documents",
+    "endpoint": "GET|PUT /api/documents/<id>",
+    "class": "bola_idor",
+    "severity": "high",
+    "description": "Any authenticated user can read or update any document by sequential ID; ownership is never checked."
+  },
+  {
+    "id": "price-tamper-checkout",
+    "endpoint": "POST /api/checkout",
+    "class": "price_tampering",
+    "severity": "critical",
+    "description": "Checkout trusts client-supplied price/total instead of recalculating from a server catalog."
+  },
+  {
+    "id": "race-coupon-redeem",
+    "endpoint": "POST /api/coupon/redeem",
+    "class": "race_condition",
+    "severity": "medium",
+    "description": "Single-use coupon uses non-atomic check-then-act; concurrent redeem can succeed more than once."
+  },
+  {
+    "id": "workflow-skip-refund-approve",
+    "endpoint": "POST /api/refund/approve",
+    "class": "workflow_skip",
+    "severity": "high",
+    "description": "Refund approve can be called without prior /api/refund/request and without staff role or auth."
+  },
+  {
+    "id": "quota-bypass-projects",
+    "endpoint": "POST /api/projects",
+    "class": "quota_bypass",
+    "severity": "medium",
+    "description": "Free-tier limit of 3 projects is documented for the UI only; server accepts unlimited creates."
+  }
+]
