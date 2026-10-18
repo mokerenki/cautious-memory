@@ -45,7 +45,7 @@ func (s *Server) taskClientReport(w http.ResponseWriter, r *http.Request) {
 		title = fmt.Sprintf("Task #%d", id)
 	}
 
-	findings, err := pg.ListFindingsPage(db.FindingFilter{TaskID: fmt.Sprintf("%d", id)}, 1, 500)
+	findings, _, err := pg.ListFindingsPage(db.FindingFilter{TaskID: fmt.Sprintf("%d", id)}, 1, 500)
 	if err != nil {
 		writeErr(w, 500, err.Error())
 		return
