@@ -124,7 +124,7 @@ export function TaskLLMProfileChain({
                     <span className="flex min-w-0 items-center gap-2">
                       <span className="truncate">
                         {profile?.name ?? `${t("llm_profile.config")} #${id}`}
-                        {profile?.is_default ? `（${t("llm_profile.active")}）` : ""}
+                        {profile?.is_default ? `(${t("llm_profile.active")})` : ""}
                       </span>
                     </span>
                     {profile && <span className="truncate text-muted-foreground text-xs">{profile.model}</span>}

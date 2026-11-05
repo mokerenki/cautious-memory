@@ -342,7 +342,7 @@ export function AgentEditor({ agentKey, onSaved }: { agentKey: string; onSaved?:
                         <SelectItem value="__follow__">{t("agent_editor.llm_profile.follow")}</SelectItem>
                         {llmProfiles.map((p) => (
                           <SelectItem key={p.id} value={String(p.id)}>
-                            {p.name} （{p.model}）{p.is_default ? ` · ${t("agent_editor.llm_profile.default")}` : ""}
+                            {p.name} ({p.model}){p.is_default ? ` · ${t("agent_editor.llm_profile.default")}` : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>

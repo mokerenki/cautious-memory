@@ -176,11 +176,11 @@ function ToolEditor({
         agents: bound,
         enabled,
       });
-      toast.success(`已保存工具「${tool.key}」`);
+      toast.success(`Saved tool "${tool.key}"`);
       onSaved();
       onClose();
     } catch (e) {
-      toast.error("保存失败：" + (e as Error).message);
+      toast.error("Save failed: " + (e as Error).message);
     } finally {
       setSaving(false);
     }
@@ -188,11 +188,11 @@ function ToolEditor({
   async function reset() {
     try {
       await api.resetTool(tool.key);
-      toast.success(`已恢复「${tool.key}」为代码默认`);
+      toast.success(`Restored "${tool.key}" to code default`);
       onSaved();
       onClose();
     } catch (e) {
-      toast.error("恢复失败：" + (e as Error).message);
+      toast.error("Restore failed: " + (e as Error).message);
     }
   }
 
@@ -207,7 +207,7 @@ function ToolEditor({
         {/* binding + switch */}
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <div className="grid gap-1.5">
-            <Label className="text-muted-foreground text-xs">绑定 Agent（决定该工具给哪些 Agent）</Label>
+            <Label className="text-muted-foreground text-xs">Bind Agent (decides which Agents can use this tool)</Label>
             <div className="flex flex-wrap gap-3">
               {agents.map((ag) => (
                 <label key={ag.key} className="flex items-center gap-2 text-sm">
@@ -220,20 +220,20 @@ function ToolEditor({
                   <span className="text-muted-foreground font-mono text-xs">{ag.key}</span>
                 </label>
               ))}
-              {agents.length === 0 && <span className="text-muted-foreground text-xs">（无 Agent）</span>}
+              {agents.length === 0 && <span className="text-muted-foreground text-xs">(No Agents)</span>}
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Switch checked={enabled} onCheckedChange={setEnabled} id={`en-${tool.key}`} />
-            <Label htmlFor={`en-${tool.key}`} className="text-sm">
-              启用
-            </Label>
+              <Label htmlFor={`en-${tool.key}`} className="text-sm">
+                Enabled
+              </Label>
           </div>
         </div>
 
         {/* description */}
         <div className="grid gap-1.5">
-          <Label className="text-muted-foreground text-xs">工具描述（发送给模型）</Label>
+          <Label className="text-muted-foreground text-xs">Tool description (sent to model)</Label>
           <Textarea
             className="font-mono text-xs"
             rows={6}
@@ -245,9 +245,9 @@ function ToolEditor({
         {/* params */}
         <div className="grid gap-2">
           <Label className="text-muted-foreground text-xs">
-            参数（名称 / 类型 / 必填只读；描述与默认值可改）
+            Parameters (name/type/required read-only; description and default editable)
           </Label>
-          {rows.length === 0 && <span className="text-muted-foreground text-xs">（无参数）</span>}
+          {rows.length === 0 && <span className="text-muted-foreground text-xs">(No parameters)</span>}
           {rows.map((r, i) => (
             <div
               key={(r.parentKey ?? "") + "." + r.name}
@@ -263,17 +263,17 @@ function ToolEditor({
                   {r.type || "?"}
                 </Badge>
                 {r.required && (
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-                    必填
-                  </Badge>
+                    <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                      Required
+                    </Badge>
                 )}
                 {r.parentKey && (
-                  <span className="text-muted-foreground text-[10px]">items 子字段</span>
+                  <span className="text-muted-foreground text-[10px]">items sub-field</span>
                 )}
               </div>
               <div className="grid gap-2">
                 <div className="grid gap-1">
-                  <Label className="text-muted-foreground text-[11px]">描述</Label>
+                  <Label className="text-muted-foreground text-[11px]">Description</Label>
                   <Input
                     className="text-xs"
                     value={r.description}
@@ -281,10 +281,10 @@ function ToolEditor({
                   />
                 </div>
                 <div className="grid gap-1">
-                  <Label className="text-muted-foreground text-[11px]">默认值</Label>
+                  <Label className="text-muted-foreground text-[11px]">Default value</Label>
                   <Input
                     className="text-xs"
-                    placeholder={r.scalar ? "（空=无默认）" : "仅标量支持"}
+                    placeholder={r.scalar ? "(empty = no default)" : "Scalars only"}
                     disabled={!r.scalar}
                     value={r.defaultStr}
                     onChange={(e) => setRow(i, { defaultStr: e.target.value })}
@@ -299,10 +299,10 @@ function ToolEditor({
       <Separator className="mt-4" />
       <div className="flex flex-wrap gap-2 p-4">
         <Button size="sm" onClick={save} disabled={saving}>
-          <SaveIcon /> 保存
+          <SaveIcon /> Save
         </Button>
         <Button size="sm" variant="outline" onClick={reset}>
-          <RotateCcwIcon /> 恢复默认
+          <RotateCcwIcon /> Restore default
         </Button>
       </div>
     </div>
@@ -321,11 +321,11 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
         <span className="font-mono text-sm font-medium">{tool.key}</span>
         {tool.system ? (
           <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
-            系统
+            System
           </Badge>
         ) : (
           <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
-            自定义·{tool.kind}
+            Custom·{tool.kind}
           </Badge>
         )}
         {tool.deferred && (
@@ -335,24 +335,24 @@ function ToolGridCard({ tool, onClick }: { tool: Tool; onClick: () => void }) {
         )}
         {!tool.enabled && (
           <Badge variant="outline" className="text-destructive px-1.5 py-0 text-[10px]">
-            已停用
+            Disabled
           </Badge>
         )}
         <Badge
           variant="secondary"
           className="ml-auto px-1.5 py-0 text-[10px] tabular-nums"
-          title={`累计调用 ${tool.calls ?? 0} 次`}
+          title={`Total calls ${tool.calls ?? 0} times`}
         >
-          调用 {tool.calls ?? 0}
+          Calls {tool.calls ?? 0}
         </Badge>
       </div>
       <p className="text-muted-foreground line-clamp-1 h-4 text-xs">
-        {tool.description || "（无描述）"}
+        {tool.description || "(No description)"}
       </p>
       <div className="mt-auto flex flex-wrap gap-1 pt-1">
-        {tool.agents.length === 0 && (
-          <span className="text-muted-foreground text-[10px]">（未绑定 Agent）</span>
-        )}
+          {tool.agents.length === 0 && (
+            <span className="text-muted-foreground text-[10px]">(Not bound to Agent)</span>
+          )}
         {tool.agents.map((a) => (
           <Badge key={a} variant="outline" className="px-1.5 py-0 text-[10px]">
             {a}
@@ -402,14 +402,14 @@ export default function ToolsPage() {
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">工具</h1>
-          <p className="text-muted-foreground text-sm">系统工具的描述/绑定，以及自定义工具(command/script/http)</p>
+          <h1 className="text-xl font-semibold tracking-tight">Tools</h1>
+          <p className="text-muted-foreground text-sm">System tool descriptions/bindings, and custom tools (command/script/http)</p>
         </div>
         <div className="relative w-64">
           <SearchIcon className="text-muted-foreground absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2" />
           <Input
             className="h-8 pl-8 text-sm"
-            placeholder="搜索工具名、描述、Agent…"
+            placeholder="Search tool name, description, Agent…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
@@ -418,8 +418,8 @@ export default function ToolsPage() {
 
       <Tabs defaultValue="system">
         <TabsList>
-          <TabsTrigger value="system">系统工具</TabsTrigger>
-          <TabsTrigger value="custom">自定义工具</TabsTrigger>
+          <TabsTrigger value="system">System tools</TabsTrigger>
+          <TabsTrigger value="custom">Custom tools</TabsTrigger>
         </TabsList>
 
         <TabsContent value="system">
@@ -631,10 +631,10 @@ function CustomToolDialog({
     try {
       if (isNew) await api.createCustomTool({ key: key.trim(), ...payload });
       else await api.updateCustomTool(tool!.key, payload);
-      toast.success(isNew ? "已创建自定义工具" : "已保存");
+      toast.success(isNew ? "Custom tool created" : "Saved");
       onSaved();
     } catch (e) {
-      toast.error("保存失败：" + (e as Error).message);
+      toast.error("Save failed: " + (e as Error).message);
     } finally {
       setSaving(false);
     }
