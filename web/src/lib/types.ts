@@ -1,12 +1,12 @@
 // ARTEX domain model — types used across the UI.
-// Derived from the functional spec (section 7: 关键数据形状).
+// Derived from the functional spec (section 7: Key data shapes).
 
 export type TaskStatus = "created" | "queued" | "running" | "paused" | "done" | "failed" | "timeout";
 export type EngineMode = "exploring" | "paused" | "stalled" | "idle";
 
 export interface Task {
   id: string;
-  name?: string; // 可选任务名称;空/缺省=未命名,展示时回退到描述
+  name?: string; // Optional task name; empty/default = unnamed, falls back to description when displaying
   category_id?: number;
   category_name?: string;
   pinned?: boolean;
@@ -23,7 +23,7 @@ export interface Task {
   queued?: boolean;
   active?: boolean;
   in_flight?: number;
-  findings?: { critical: number; high: number; medium: number; low: number }; // 已登记漏洞数(按严重度分档)
+  findings?: { critical: number; high: number; medium: number; low: number }; // Number of registered vulnerabilities (by severity tier)
   last_activity?: string;
   stalled?: boolean;
   goals_total?: number;
@@ -38,7 +38,7 @@ export interface Task {
   source_task_ids?: string[]; // directly related tasks inherited as read-only context
   archive_blocked_by_task_id?: string; // live direct dependent that must be archived first
   company_ids?: number[]; // associated company scopes; current company assets join the task at creation
-  coverage_enabled?: boolean; // 资产覆盖度功能开关(创建时定,默认开)；false=不计算/不展示覆盖度
+  coverage_enabled?: boolean; // Asset coverage feature switch (set at creation, default on); false = do not calculate/display coverage
 }
 
 export interface TaskCategory {
@@ -54,8 +54,8 @@ export interface TaskTemplate {
   name: string;
   description: string;
   goal: string;
-  category_id?: number | null; // 预设分类；null/缺省=无
-  intercept_rules?: AssetInterceptRuleInput[]; // 预设的任务级拦截/允许规则
+  category_id?: number | null; // Preset category; null/default = none
+  intercept_rules?: AssetInterceptRuleInput[]; // Preset task-level interception/allow rules
   created_at: string;
   updated_at: string;
 }
@@ -169,7 +169,7 @@ export interface AssetNode {
   name: string;
   key: string; // nkey
   value?: string;
-  company_id?: string; // 归属公司资产 id；空=未归属
+  company_id?: string; // Belonging company asset id; empty = unowned
   state: NodeState;
   confidence: number; // 0..1
   attrs?: Record<string, unknown>;
@@ -284,8 +284,8 @@ export interface TaskAssetScopeMutation {
 }
 
 // ---- Asset coverage graph (per task) ----
-// 力导向「资产覆盖图」的一个节点。key 唯一：资产="a:<id>"、公司="c:<id>"、
-// 无资产行的根域名="r:<domain>"。in_scope=false 的是仅用于连线的灰色上下文节点。
+// A node of the force-directed "Asset Coverage Graph". Key is unique: asset="a:<id>", company="c:<id>",
+// root domain without asset row="r:<domain>". in_scope=false nodes are gray context nodes used only for linking.
 export interface CoverageGraphNode {
   key: string;
   kind: "company" | "root_domain" | "subdomain" | "ip" | "service" | "app" | "endpoint";
@@ -315,7 +315,7 @@ export interface CoverageGraphData {
   edges: CoverageGraphEdge[];
 }
 
-// 某资产在本任务探索图里关联到的意图/事实/发现（覆盖图节点抽屉用）。
+// An intent/fact/finding associated with an asset in this task's exploration graph (used by coverage graph node drawer).
 export interface CoverageAssetRef {
   id: number;
   kind: string;

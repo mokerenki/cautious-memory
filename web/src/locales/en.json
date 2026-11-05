@@ -1,0 +1,691 @@
+{
+  "nav": {
+    "functions": "Functions",
+    "system": "System",
+    "dashboard": "Dashboard",
+    "chat": "Chat",
+    "tasks": "Tasks",
+    "findings": "Findings",
+    "traffic": "Traffic",
+    "toolExecution": "Tool Execution",
+    "llmRecording": "LLM Recording",
+    "assets": "Assets",
+    "assetSync": "Asset Sync",
+    "workspace": "Workspace",
+    "llm": "LLM",
+    "agent": "Agent",
+    "mcp": "MCP",
+    "skill": "Skill",
+    "tools": "Tools",
+    "notifications": "Notifications",
+    "interceptionRules": "Interception Rules",
+    "assetInterception": "Asset Interception",
+    "approvalRecords": "Approval Records",
+    "logs": "Logs",
+    "systemSettings": "System Settings"
+  },
+  "meta": {
+    "title": "ARTEX — Autonomous Penetration Testing Console",
+    "description": "LLM-driven Autonomous Penetration Testing System Console"
+  },
+  "common": {
+    "home": "Home",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "refresh": "Refresh",
+    "loading": "Loading",
+    "error": "Error",
+    "success": "Success",
+    "warning": "Warning",
+    "info": "Info",
+    "confirm": "Confirm",
+    "close": "Close",
+    "submit": "Submit",
+    "reset": "Reset",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK"
+  },
+  "intercept": {
+    "exact_domain": "Domain (exact)",
+    "exact_ip": "IP (exact)",
+    "exact_url": "URL (exact)",
+    "fuzzy_domain": "Domain (fuzzy)",
+    "fuzzy_ip": "IP (fuzzy)",
+    "fuzzy_url": "URL (fuzzy)",
+    "cidr": "CIDR block",
+    "block": "Block",
+    "allow": "Allow",
+    "note_placeholder": "Note (optional)",
+    "add_rule": "Add rule"
+  },
+  "update": {
+    "new_version": "New version {{version}}",
+    "new_version_short": "New version {{version}}"
+  },
+  "copy": {
+    "failed": "Copy failed, please select text manually"
+  },
+  "http": {
+    "empty": "(empty)",
+    "copy_failed": "Copy failed, please use Ctrl/Cmd+A then copy",
+    "disable_wrap": "Disable auto wrap",
+    "enable_wrap": "Enable auto wrap",
+    "copied": "Copied",
+    "copy_packet": "Copy packet",
+    "http_packet": "HTTP packet"
+  },
+  "pagination": {
+    "per_page": "per page",
+    "of": "of",
+    "items": "items",
+    "zero_items": "0 items",
+    "prev_page": "Previous page",
+    "next_page": "Next page"
+  },
+  "llm_profile": {
+    "current": "Current",
+    "skipped": "Skipped",
+    "skipped_title": "Profiles before the current cursor are not auto-failed-over",
+    "backup": "Backup {{count}}",
+    "config": "Config",
+    "search_placeholder": "Search and add LLM config",
+    "no_profiles": "No LLM config available",
+    "no_match": "No matching LLM config",
+    "active": "Active",
+    "follow_global": "When no config is specified, the task follows Agent or global active config.",
+    "unavailable": "Config unavailable",
+    "move_up": "Move up",
+    "move_down": "Move down",
+    "remove": "Remove config",
+    "current_config": "Current config"
+  },
+  "template": {
+    "title": "Task Template Management",
+    "description": "Templates save description, goal, category and task-level intercept/allow rules; modifying does not affect already created tasks.",
+    "new_template": "New Template",
+    "no_templates": "No templates",
+    "name_label": "Template Name",
+    "name_placeholder": "e.g. External Web Penetration",
+    "desc_label": "Description",
+    "desc_placeholder": "Test target and background",
+    "goal_label": "Goal",
+    "goal_placeholder": "Goal the task needs to achieve",
+    "category_label": "Task Category",
+    "category_desc": "Applied when template is used (can be changed later).",
+    "uncategorized": "Uncategorized",
+    "intercept_rules_label": "Task-level Intercept / Allow Rules",
+    "intercept_rules_desc": "Applied when template is used (intercept/allow, new tasks only, not global).",
+    "save_changes": "Save Changes",
+    "saving": "Saving",
+    "create_template": "Create Template",
+    "delete_template": "Delete Template",
+    "delete_confirm": "Delete template \"{{name}}\"?",
+    "delete_desc": "Tasks created by this template will not be affected.",
+    "deleting": "Deleting",
+    "unnamed_template": "Unnamed Template",
+    "fill_required": "Please fill in template name, description and goal",
+    "created": "Template created",
+    "updated": "Template updated",
+    "deleted": "Template deleted",
+    "loading_templates": "Loading templates",
+    "no_templates_available": "No task templates available",
+    "search_templates": "Search and select task template",
+    "no_match": "No matching template",
+    "copy_desc": "After selecting, the template's description, goal, category and task-level rules will be copied, not linked to the template.",
+    "label": "Task Template",
+    "manage_templates": "Manage Templates",
+    "save_as_template": "Save as Template",
+    "use_confirm": "Use template \"{{name}}\"?",
+    "use_desc": "Current description and goal will be overwritten by template content.",
+    "override_use": "Override and Use"
+  },
+  "todo": {
+    "parse_failed": "Failed to parse Todo",
+    "no_todo": "No Todo in this session",
+    "view_todo": "View recent Todo",
+    "recent_todo": "Recent Todo",
+    "loading": "Loading"
+  },
+  "traffic": {
+    "evidence_title": "Traffic Evidence #{{id}}",
+    "evidence_desc": "View request and response saved at bind time",
+    "request": "Request",
+    "response": "Response",
+    "body_bytes": "Body {{bytes}} bytes",
+    "preview": "current is preview",
+    "download_full": "Download full {{side}} body",
+    "load_more": "Load more body",
+    "preview_title": "Preview Traffic",
+    "preview_desc": "Traffic ID: {{id}}. Full body is saved at bind time."
+  },
+  "traffic_picker": {
+    "title": "Bind Traffic",
+    "desc": "Filter and multi-select request/response. Selected records persist across pages. After binding, you can set purpose, description and order.",
+    "host_label": "Target host",
+    "host_placeholder": "Domain or IP",
+    "method_label": "Request method",
+    "all_methods": "All methods",
+    "query_label": "Keyword",
+    "query_placeholder": "URL / body keyword",
+    "select_all": "Select all unbound traffic on this page",
+    "method_url": "Method / URL",
+    "time": "Time",
+    "status": "Status",
+    "action": "Action",
+    "select_traffic": "Select traffic {{id}}",
+    "preview": "Preview",
+    "loading": "Loading",
+    "no_match": "No matching traffic",
+    "selected": "Selected {{count}}",
+    "total": "of {{total}}",
+    "page": "Page {{page}}",
+    "saving": "Saving",
+    "bind": "Bind {{count}} traffic",
+    "bound": "Bound {{count}} traffic"
+  },
+  "retest": {
+    "started": "Retest started, click \"Retesting\" to view session",
+    "in_progress": "This finding is already retesting, view existing session",
+    "start_failed": "Failed to start retest",
+    "dialog_title": "Retest Finding #{{id}}",
+    "dialog_desc": "Retest Agent will read original evidence and test constraints, run targeted verification in an independent session. After successful retest and confirmed fix, finding status automatically changes to \"Fixed\", other conclusions remain unchanged.",
+    "notes_label": "Additional notes (optional)",
+    "notes_placeholder": "e.g. verify with original test account on original interface; fix version is v2.",
+    "notes_desc": "You can add fix version, test conditions or limitations for this retest.",
+    "creating": "Creating...",
+    "start_retest": "Start Retest",
+    "panel_title": "Finding Retest",
+    "panel_desc": "Verify current status in an independent session, keep conclusion and evidence for each retest.",
+    "view_session": "View Session",
+    "load_failed": "Failed to load retest records: {{error}}",
+    "no_records": "No retest records",
+    "no_records_desc": "After fix deployment, you can start retest and compare new and old evidence.",
+    "session_deleted": "Session deleted",
+    "notes": "Additional notes",
+    "evidence": "Retest Evidence"
+  },
+  "link_traffic": {
+    "title": "Bind to Finding",
+    "desc": "Save {{count}} traffic as evidence for an existing finding.",
+    "find_finding": "Find Finding",
+    "query_placeholder": "Name / Summary / Finding Category",
+    "no_match": "No matching finding, please register finding first",
+    "page": "Page {{page}}",
+    "selected": "Selected Finding: #{{id}} {{name}}",
+    "select_finding": "Please select a finding",
+    "confirm_bind": "Confirm Bind"
+  },
+  "mention": {
+    "aria_label": "Message, enter @ to reference records",
+    "select_record": "Select Reference Record",
+    "select_type": "Select Reference Type",
+    "searching": "Search",
+    "all_records": "All Records",
+    "key_hint": "↑↓ Select · Enter Confirm · Esc Close",
+    "reference_candidates": "Reference Candidates",
+    "search_failed": "Search failed: {{error}}",
+    "retry": "Please re-enter and retry.",
+    "no_match": "No matching records, please change name, address or ID",
+    "loading_more": "Loading more…",
+    "load_failed": "Load failed",
+    "showing_more": "Showing {{count}} items, scroll down to load more",
+    "showing_all": "Showing all {{count}} items",
+    "search_hint": "Enter name, address or ID to search records",
+    "remove_mention": "Remove reference {{label}}",
+    "send_hint": "Read latest details when sending · Max 10 items"
+  },
+  "scope": {
+    "recognized": "Recognized {{count}} items",
+    "line_error": "Line {{line}}: {{error}}",
+    "more_errors": "{{count}} more lines with errors"
+  },
+  "traffic_panel": {
+    "updated": "Traffic evidence updated",
+    "title": "Associated Traffic ({{count}})",
+    "bind_traffic": "Bind Traffic",
+    "inherited_readonly": "Inherited Evidence · Read-only",
+    "desc": "Organize requests and responses in reproduction order. After cleaning original traffic, bound evidence is still retained.",
+    "no_traffic": "No Associated Traffic",
+    "no_traffic_desc": "You can bind baseline, vulnerability proof and supplementary verification requests.",
+    "evidence": "Evidence #{{id}}",
+    "view_packet": "View Packet",
+    "edit_note": "Edit Description",
+    "move_up": "Move up evidence {{id}}",
+    "move_down": "Move down evidence {{id}}",
+    "unbind": "Unbind",
+    "edit_title": "Edit Traffic Evidence",
+    "edit_desc": "Describe how this request/response supports the vulnerability conclusion.",
+    "purpose": "Purpose",
+    "note_label": "Evidence Description",
+    "save_note": "Save Description"
+  },
+  "agent_editor": {
+    "tabs": {
+      "prompt": "Configuration & Prompt",
+      "wrapup": "Wrap-up Prompt",
+      "mcp": "MCP",
+      "skill": "Skill",
+      "tools": "Tools",
+      "triggers": "Triggers"
+    },
+    "llm_profile": {
+      "label": "Default Model (LLM Config)",
+      "follow": "Follow task / global active config",
+      "default": "Default",
+      "desc": "Bind fixed LLM config for this Agent (click \"Save Config\" to take effect). Priority: Agent binding > Task/session specified > Global active."
+    },
+    "max_turns": {
+      "label": "Max turns (0=unlimited)"
+    },
+    "run_seconds": {
+      "label": "Run duration (seconds, 0=unlimited)"
+    },
+    "save_config": "Save Config",
+    "web_search": {
+      "label": "Web Search",
+      "enabled_desc": "After enabling for this Agent (click save above to take effect), web_search can be used for online retrieval",
+      "disabled_desc": "First enable web search in \"System Settings\" and configure the backend, then enable here"
+    },
+    "interactive_shell": {
+      "label": "Interactive Shell",
+      "desc": "After enabling for this Agent (click save above to take effect), persistent PTY session tools can drive msfconsole/ssh/REPL etc."
+    },
+    "variables": {
+      "label": "Variables (click to insert placeholder, replaced with runtime data when rendering)",
+      "none": "(no variables)"
+    },
+    "prompt": {
+      "placeholder": "Leave blank to use built-in default prompt"
+    },
+    "preview": "Preview Render",
+    "preview_title": "Render Preview",
+    "preview_desc": "All {{var}} are replaced by backend with example values.",
+    "preview_error": "Render error: {{error}}",
+    "preview_failed": "Preview failed: {{error}}",
+    "save_version": "Save as New Version",
+    "reset_prompt": "Restore Default",
+    "version_history": {
+      "label": "Version History",
+      "current": "Current",
+      "no_versions": "(No saved versions, using built-in default)"
+    },
+    "version": {
+      "no_note": "(No note)",
+      "empty": "(Empty)",
+      "compare_current": "Compare with current version",
+      "load_editor": "Load into Editor",
+      "load_toast": "Loaded v{{version}} into editor, click \"Save as New Version\" to confirm"
+    },
+    "version_compare": {
+      "title": "Version Comparison: v{{from}} → v{{to}} (Current)",
+      "deleted": "Deleted",
+      "added": "Added"
+    },
+    "wrapup": {
+      "label": "Wrap-up Prompt Body",
+      "custom": "Custom",
+      "default": "Use Built-in Default",
+      "placeholder": "Leave blank to use built-in default wrap-up prompt",
+      "default_builtin": "Built-in Default (read-only, for reference)"
+    },
+    "wrapup_turns": {
+      "label": "Wrap-up turns (max rounds in wrap-up phase; 0=use built-in default {{default}} rounds)"
+    },
+    "task_timeout_wrapup": {
+      "label": "Task Timeout Wrap-up Prompt Body",
+      "placeholder": "Leave blank to use built-in default task timeout wrap-up prompt"
+    },
+    "task_timeout_wrapup_turns": {
+      "label": "Wrap-up turns (0=use built-in default {{default}} rounds)"
+    },
+    "mcp": {
+      "desc": "Check MCP servers visible to this Agent.",
+      "none": "(No MCP)"
+    },
+    "skill": {
+      "desc": "Check Skills visible to this Agent.",
+      "none": "(No Skill)"
+    },
+    "tools": {
+      "desc": "Check built-in tools bound to this Agent.",
+      "none": "(No tools)",
+      "traffic_badge": "Traffic",
+      "disabled_badge": "Disabled",
+      "gated": "Enable traffic capture required"
+    },
+    "triggers": {
+      "desc": "Triggers let this custom Agent run automatically: each trigger <b>creates a new session run</b> (visible on \"Chat\" page). You can select multiple trigger conditions; the system automatically appends \"why this trigger was fired + related task/finding/goal\" to your base message.",
+      "strategy": {
+        "label": "Post-trigger handling strategy (determines how triggers are queued/merged for execution)"
+      },
+      "run_mode": {
+        "label": "Run Mode",
+        "serial": "Serial (queue, one at a time)",
+        "parallel": "Parallel (separate concurrent sessions)"
+      },
+      "merge_mode": {
+        "label": "Merge Mode",
+        "by_task": "Merge by task",
+        "all": "Merge all into one",
+        "none": "No merge"
+      },
+      "max_parallel": {
+        "label": "Max concurrency (0=unlimited)"
+      },
+      "desc_parallel": "Parallel: each trigger immediately opens a separate session for concurrent execution, no merge; triggers exceeding max concurrency queue for a slot.",
+      "desc_by_task": "Serial · Merge by task: same agent runs one at a time; events for the same task in queue merge into one session.",
+      "desc_all": "Serial · Merge all: same agent runs one at a time; when dequeuing, all queued triggers merge into one session.",
+      "desc_none": "Serial · No merge: same agent runs one at a time; each trigger gets its own session.",
+      "add_edit": {
+        "edit": "Edit trigger #{{id}} (click \"Save Changes\" after editing)",
+        "add": "Add trigger (each condition can have its own user message)",
+        "save_edit": "Save Changes",
+        "save_add": "Add Trigger",
+        "cancel_edit": "Cancel Edit"
+      },
+      "interval": "Scheduled trigger",
+      "interval_label": "Every",
+      "interval_seconds": "seconds",
+      "interval_placeholder": "Message sent to agent on scheduled trigger, e.g.: Inspect all tasks",
+      "finding": "Trigger when finding discovered",
+      "finding_placeholder": "Message sent to agent when finding discovered (system attaches task and finding details)",
+      "goal": "Trigger when goal met",
+      "goal_placeholder": "Message sent to agent when goal met (system attaches task and achieved goal)",
+      "timeout": "Trigger on task timeout",
+      "timeout_placeholder": "Message sent to agent on task timeout (system attaches task number and goal)",
+      "tool_call": "Trigger on tool call",
+      "tool_call_desc": "Select tools to monitor (at least one); these tools trigger every time <b>call completes</b> during task execution. {{count}} selected.",
+      "tool_call_empty": "(Tool list is empty)",
+      "tool_call_placeholder": "Message sent to agent when tool called (system attaches task info, tool input params and return content)",
+      "task_create": "Trigger on task creation",
+      "task_create_placeholder": "Message sent to agent when task created (system attaches task number and goal)",
+      "existing": {
+        "label": "Existing Triggers",
+        "none": "(None)",
+        "disabled": "Disabled",
+        "schedule": "Scheduled: {{msg}}",
+        "finding": "Finding: {{msg}}",
+        "goal": "Goal: {{msg}}",
+        "timeout": "Timeout: {{msg}}",
+        "task_create": "Task Created: {{msg}}",
+        "tools": "Tools: {{names}}",
+        "tools_none": "(none selected)",
+        "message": "Message: {{msg}}",
+        "edit": "Edit",
+        "delete": "Delete"
+      }
+    },
+    "cond_every": "Every {{n}}s",
+    "cond_finding": "Finding discovered",
+    "cond_goal": "Goal met",
+    "cond_timeout": "Task timeout",
+    "cond_tool_call": "Tool call({{n}})",
+    "cond_task_create": "Task created",
+    "cond_none": "(No conditions)",
+    "toast": {
+      "prompt_saved": "Saved as version v{{version}}",
+      "prompt_save_failed": "Save failed: {{error}}",
+      "prompt_reset_success": "Restored to built-in default (v{{version}})",
+      "prompt_reset_failed": "Restore failed: {{error}}",
+      "wrapup_saved": "Wrap-up config saved (takes effect on next run)",
+      "wrapup_cleared": "Cleared, will use built-in default",
+      "wrapup_save_failed": "Save failed: {{error}}",
+      "wrapup_reset_success": "Restored to built-in default",
+      "wrapup_reset_failed": "Restore failed: {{error}}",
+      "tt_wrapup_saved": "Task timeout wrap-up config saved (takes effect on next run)",
+      "tt_wrapup_save_failed": "Save failed: {{error}}",
+      "tt_wrapup_reset_success": "Restored to built-in default",
+      "tt_wrapup_reset_failed": "Restore failed: {{error}}",
+      "config_saved": "Run config saved (takes effect immediately)",
+      "config_save_failed": "Save failed: {{error}}",
+      "mcp_toggled": "{{enabled}} MCP \"{{name}}\" visible",
+      "skill_toggled": "{{enabled}} Skill \"{{name}}\" visible",
+      "tool_bound": "{{bound}} tool \"{{key}}\"",
+      "tool_save_failed": "Failed to save tool binding: {{error}}",
+      "save_failed": "Save failed: {{error}}",
+      "not_found": "Agent not found: {{agentKey}}",
+      "behavior_save_failed": "Failed to save policy: {{error}}"
+    },
+    "trigger_at_least_one": "Select at least one trigger condition",
+    "trigger_tool_required": "Tool call trigger requires at least one tool",
+    "trigger_saved": "Changes saved",
+    "trigger_added": "Trigger added",
+    "trigger_save_failed": "Save failed: {{error}}",
+    "trigger_add_failed": "Add failed: {{error}}",
+    "trigger_delete_failed": "Delete failed: {{error}}"
+  },
+  "transcript": {
+    "streaming": "Streaming…",
+    "detail_load_failed": "Approval detail load failed",
+    "approval_request": "Approval Request",
+    "history_readonly": "History · Read-only",
+    "allowed": "Allowed",
+    "denied": "Denied",
+    "timeout": "Timeout",
+    "allow": "Allow",
+    "deny": "Deny",
+    "collapse_detail": "Collapse Detail",
+    "expand_detail": "Expand Detail",
+    "retry_detail": "Retry Detail",
+    "loading_detail": "Loading approval detail…",
+    "command": "Command",
+    "output": "Output",
+    "empty": "(empty)",
+    "load_failed": "(load failed)",
+    "executing": "Executing…",
+    "failed": "Failed",
+    "contains_thinking": "Contains Reasoning",
+    "loading": "Loading"
+  },
+  "side_question": {
+    "panel_label": "Side Question Panel",
+    "title": "Side Question",
+    "clear_history": "Clear Side History",
+    "close_panel": "Close Side Panel",
+    "context_updated": "Context updated {{date}}",
+    "waiting_for_agent": "Main Agent first run required before asking",
+    "load_earlier": "Load earlier side Q&A",
+    "ask_anything": "Ask a question anytime",
+    "ask_desc": "Answer based on current Agent context, main task continues running.",
+    "recent_exchanges": "Recent {{count}} Q&A original text",
+    "contains_summary": "Contains early Q&A summary",
+    "uses_main_summary": "Uses main context summary",
+    "context_at": "Context {{time}}",
+    "side_question": "Side Question",
+    "placeholder": "Ask about current context…",
+    "independent_qa": "Independent Q&A · No tool execution",
+    "independent_qa_for": "Independent Q&A for {{label}} · No tool execution",
+    "stop_answer": "Stop side answer",
+    "send_question": "Send side question",
+    "clear_history_title": "Clear Side History?",
+    "clear_history_desc": "Delete current Agent's side Q&A and stop generating side answers. Main session and context snapshot are retained.",
+    "clear_history_action": "Clear History"
+  },
+  "approval": {
+    "status": {
+      "pending": "Pending",
+      "allowed": "Allowed",
+      "denied": "Denied",
+      "timeout": "Timeout"
+    },
+    "source": {
+      "model": "Model decision",
+      "rule_not_recorded": "Rule not recorded or deleted"
+    },
+    "reason_not_recorded": "No reason recorded",
+    "code": {
+      "copy_failed": "Copy failed, please select content manually",
+      "empty": "(No record)"
+    },
+    "context": {
+      "model_review_title": "Model Review Context",
+      "model_review_desc": "The following is the actual input snapshot sent to the review model for this review. Background is only for understanding the current action; the decision is based on the review policy.",
+      "model_review_old_input": "This record uses old-version input, retaining the content actually sent at the time.",
+      "current_call": "Current call under review",
+      "bg_user_message": "Background · User message",
+      "bg_worker_intent": "Background · Worker intent summary (old version)",
+      "bg_from_user": "Taken from current user message.",
+      "bg_old_worker": "This is the Worker intent summary sent in the old version; new-version Worker review no longer sends this content.",
+      "no_bg_message": "No background message attached to this review.",
+      "turn_input_old": "Current turn input (old version)",
+      "task_description_old": "Task description (old version)",
+      "task_goal_old": "Task goal (old version)",
+      "task_constraints_old": "Task operation constraints (old version)",
+      "worker_intent_old": "Worker intent (old version)",
+      "working_dir": "Working directory",
+      "no_history_sent": "No historical calls or execution results were sent for this review.",
+      "history_title": "Historical calls provided to the model at the time (old version)",
+      "view_full_json": "View full model review input JSON",
+      "model_review_input": "Model review input",
+      "visible_context": "Visible session context",
+      "captured_at": "Session record fragment saved at {{time}}. The model actually used content is based on “Model review input”.",
+      "truncated_desc": "Only recent context is retained, partial content has been truncated.",
+      "no_context": "No associated context recorded",
+      "error": "Error"
+    },
+    "history": {
+      "succeeded": "Succeeded",
+      "failed": "Failed (may have partial side effects)",
+      "args": "Historical call arguments",
+      "result": "Historical execution result",
+      "no_records": "No matching historical tool execution records provided for this review."
+    },
+    "initial": {
+      "model": "Model initial judgment",
+      "rule": "Rule initial judgment",
+      "model_fallback": "Model exception fallback"
+    },
+    "tool_request": "Tool request",
+    "command_content": "Command content",
+    "view_command": "View command content",
+    "execution_result": "Execution result",
+    "review_status": "Review status",
+    "approval_decision": "Approval decision",
+    "final_action": "Final action",
+    "field": {
+      "source": "Source",
+      "apply_time": "Apply time",
+      "decide_time": "Decide time",
+      "rule_snapshot": "Rule snapshot",
+      "approval_model_config": "Approval model config",
+      "tool_call_id": "Tool call ID",
+      "param_sha256": "Parameter summary SHA-256",
+      "config_fingerprint_sha256": "Review config fingerprint SHA-256",
+      "model_review_input_sha256": "Model review input SHA-256",
+      "result_recorded_at": "Result recorded at"
+    },
+    "detail_load_failed": "Approval detail load failed",
+    "no_snapshot": "This record did not save an approval detail snapshot, so the context, model initial judgment, and execution output at that time cannot be restored.",
+    "retry_detail": "Retry detail",
+    "collapse_context": "Collapse context",
+    "expand_context": "View context and execution results",
+    "alert": {
+      "digest_only": "This historical record only saves the review input fingerprint, not the input original text, so the context sent to the model at that time cannot be restored. This does not mean there was no context during review; newly generated model decisions will retain input snapshots.",
+      "no_input": "This record did not save the model review input, possibly due to direct rule decision, exception before model call, or from an old version."
+    },
+    "collapsible": {
+      "session_audit_no_model": "View session audit fragment (not sent to model)",
+      "session_audit": "View session audit fragment"
+    },
+    "execution_output": "Execution output",
+    "not_recorded": "Not recorded",
+    "correlation": {
+      "ambiguous": "There are concurrent calls with the same parameters, unable to uniquely associate the tool call; this record does not display estimated execution results.",
+      "no_unique_id": "No tool call ID that can be uniquely associated has been recorded."
+    },
+    "execution": {
+      "not_recorded": "Not recorded",
+      "not_started": "Not started",
+      "not_executed": "Not executed",
+      "not_executed_desc": "Tool not executed.",
+      "awaiting_result": "Allowed, waiting for execution result",
+      "succeeded": "Execution succeeded",
+      "failed": "Execution failed",
+      "unknown": "Execution result unknown",
+      "no_output_yet": "No execution output yet"
+    },
+    "load_failed": "Load failed",
+    "title": {
+      "intercept": "Intercept Approval",
+      "records": "Approval Records"
+    },
+    "pending_badge": "{{count}} pending approval",
+    "expand_desc": "Expand records to view tool requests and approval decisions, as well as the context and execution results at that time.",
+    "filter_label": "Approval records filter",
+    "filter": {
+      "status_label": "Approval status",
+      "source_label": "Decision source",
+      "all_status": "All status",
+      "denied": "Denied",
+      "pending": "Pending",
+      "allowed": "Allowed",
+      "timeout": "Timeout",
+      "all_source": "All sources",
+      "model": "Model decision",
+      "rule": "Rule decision",
+      "unknown": "Source unknown",
+      "clear": "Clear filter"
+    },
+    "records_load_failed": "Record load failed: {{error}}",
+    "pending_load_failed": "Pending approval load failed: {{error}}",
+    "click_refresh_retry": "Please click refresh to retry.",
+    "pending_header": "Pending processing ({{count}})",
+    "expand_allow_deny": "Expand to allow or deny",
+    "table": {
+      "expand_detail": "Expand detail",
+      "tool": "Tool",
+      "source": "Source",
+      "matching_rule": "Matching rule",
+      "parameters": "Parameters",
+      "status": "Status",
+      "apply_time": "Apply time",
+      "decide_time": "Decide time",
+      "collapse": "Collapse",
+      "expand": "Expand",
+      "pending_label": "Pending approval",
+      "records_label": "Approval records list"
+    },
+    "filtered": "Filtered result",
+    "all_records": "All records",
+    "filtered_result": "{type} ({total})",
+    "empty": {
+      "no_match": "No approval records matching filter criteria",
+      "no_records": "No approval records yet",
+      "adjust_filter": "Please adjust approval status or decision source, or clear filter to view all records.",
+      "wait_for_decision": "Records will appear here after rules or models make approval decisions."
+    },
+    "rule_prefix": "Rule #{{id}}",
+    "action": {
+      "allow": "Allow",
+      "ask": "Transfer to manual approval",
+      "deny": "Deny"
+    },
+    "toast": {
+      "allowed": "Allowed execution",
+      "denied": "Denied execution"
+    }
+  },
+  "approval_execution": {
+    "cannot_locate_prefix": "Cannot locate: {{error}}",
+    "expanded": "Expanded approval #{{id}} corresponding tool call",
+    "loading": "Loading approval #{{id}} conversation location…",
+    "retry": "Retry locate",
+    "cancel": "Cancel locate"
+  },
+  "asset_dsl": {
+    "placeholder": "DSL search: domain=example AND status_code>=400",
+    "loading": "Searching…",
+    "found": "Found {{count}} results"
+  },
+  "update": {
+    "new_version": "New version {{version}}",
+    "new_version_short": "New version {{version}}"
+  }
+}

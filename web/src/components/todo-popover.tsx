@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ListTodo } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export function TodoPopover({
   seq: number | null;
   fetchDetail: (seq: number) => Promise<string>;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
   const [todos, setTodos] = React.useState<{ content: string; status: string }[] | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -29,11 +31,11 @@ export function TodoPopover({
     setErr("");
     try {
       const detail = await fetchDetail(seq);
-      const start = detail.indexOf("{"); // detail 可能带 "TodoWrite " 前缀
+      const start = detail.indexOf("{");
       const parsed = JSON.parse(start >= 0 ? detail.slice(start) : detail);
       setTodos(Array.isArray(parsed?.todos) ? parsed.todos : []);
     } catch {
-      setErr("解析 Todo 失败");
+      setErr(t("todo.parse_failed"));
       setTodos(null);
     } finally {
       setLoading(false);
@@ -53,7 +55,7 @@ export function TodoPopover({
         <button
           type="button"
           disabled={disabled}
-          title={disabled ? "本会话暂无 Todo" : "查看最近 Todo"}
+          title={disabled ? t("todo.no_todo") : t("todo.view_todo")}
           className="text-muted-foreground/70 hover:text-primary flex items-center gap-0.5 text-xs disabled:pointer-events-none disabled:opacity-40"
         >
           <ListTodo className="size-3" />
@@ -62,11 +64,11 @@ export function TodoPopover({
       </PopoverTrigger>
       <PopoverContent align="end" className="max-h-80 w-80 overflow-auto p-2">
         <p className="text-muted-foreground px-1 pb-1 text-[11px] font-medium">
-          最近 Todo{loading ? " · 加载中…" : ""}
+          {t("todo.recent_todo")}{loading ? ` · ${t("todo.loading")}` : ""}
         </p>
         {err && <p className="text-destructive px-1 text-xs">{err}</p>}
         {todos && todos.length === 0 && !loading && (
-          <p className="text-muted-foreground px-1 text-xs">（空）</p>
+          <p className="text-muted-foreground px-1 text-xs">(Empty)</p>
         )}
         <ul className="space-y-0.5">
           {(todos ?? []).map((t, i) => (

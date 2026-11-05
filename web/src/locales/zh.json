@@ -1,0 +1,691 @@
+{
+  "nav": {
+    "functions": "功能",
+    "system": "系统",
+    "dashboard": "仪表盘",
+    "chat": "对话",
+    "tasks": "任务",
+    "findings": "发现",
+    "traffic": "流量",
+    "toolExecution": "工具执行",
+    "llmRecording": "LLM 录制",
+    "assets": "资产",
+    "assetSync": "资产同步",
+    "workspace": "工作空间",
+    "llm": "LLM",
+    "agent": "Agent",
+    "mcp": "MCP",
+    "skill": "Skill",
+    "tools": "工具",
+    "notifications": "通知推送",
+    "interceptionRules": "拦截规则",
+    "assetInterception": "资产拦截",
+    "approvalRecords": "审批记录",
+    "logs": "日志",
+    "systemSettings": "系统配置"
+  },
+  "meta": {
+    "title": "ARTEX — 自主渗透测试控制台",
+    "description": "LLM 驱动的自主渗透测试系统控制台"
+  },
+  "common": {
+    "home": "首页",
+    "back": "返回",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "edit": "编辑",
+    "create": "创建",
+    "search": "搜索",
+    "filter": "筛选",
+    "refresh": "刷新",
+    "loading": "加载中",
+    "error": "错误",
+    "success": "成功",
+    "warning": "警告",
+    "info": "信息",
+    "confirm": "确认",
+    "close": "关闭",
+    "submit": "提交",
+    "reset": "重置",
+    "yes": "是",
+    "no": "否",
+    "ok": "确定"
+  },
+  "intercept": {
+    "exact_domain": "域名(全等)",
+    "exact_ip": "IP(全等)",
+    "exact_url": "URL(全等)",
+    "fuzzy_domain": "域名(模糊)",
+    "fuzzy_ip": "IP(模糊)",
+    "fuzzy_url": "URL(模糊)",
+    "cidr": "CIDR 网段",
+    "block": "拦截",
+    "allow": "允许",
+    "note_placeholder": "备注(可选)",
+    "add_rule": "添加一条"
+  },
+  "update": {
+    "new_version": "发现新版本 {{version}}",
+    "new_version_short": "新版本 {{version}}"
+  },
+  "copy": {
+    "failed": "复制失败，请手动选择文本复制"
+  },
+  "http": {
+    "empty": "（空）",
+    "copy_failed": "复制失败，请使用 Ctrl/Cmd+A 后复制",
+    "disable_wrap": "关闭自动换行",
+    "enable_wrap": "开启自动换行",
+    "copied": "已复制",
+    "copy_packet": "复制报文",
+    "http_packet": "HTTP 报文代码"
+  },
+  "pagination": {
+    "per_page": "条/页",
+    "of": "共",
+    "items": "条",
+    "zero_items": "共 0 条",
+    "prev_page": "上一页",
+    "next_page": "下一页"
+  },
+  "llm_profile": {
+    "current": "当前",
+    "skipped": "已跳过",
+    "skipped_title": "当前游标之前的配置不会被自动故障转移选中",
+    "backup": "备用 {{count}}",
+    "config": "配置",
+    "search_placeholder": "搜索并添加 LLM 配置",
+    "no_profiles": "暂无可用 LLM 配置",
+    "no_match": "没有匹配的 LLM 配置",
+    "active": "激活",
+    "follow_global": "未指定配置时，任务跟随 Agent 或全局激活配置。",
+    "unavailable": "配置已不可用",
+    "move_up": "上移配置",
+    "move_down": "下移配置",
+    "remove": "移除配置",
+    "current_config": "当前配置"
+  },
+  "template": {
+    "title": "任务模板管理",
+    "description": "模板保存描述、目标、分类与任务级拦截/允许规则；修改不会影响已经创建的任务。",
+    "new_template": "新建模板",
+    "no_templates": "暂无模板",
+    "name_label": "模板名称",
+    "name_placeholder": "例如：外部 Web 渗透",
+    "desc_label": "描述",
+    "desc_placeholder": "测试对象与背景",
+    "goal_label": "目标",
+    "goal_placeholder": "任务需要达成的目标",
+    "category_label": "任务分类",
+    "category_desc": "应用模板时预填此分类（可再改）。",
+    "uncategorized": "未分类",
+    "intercept_rules_label": "任务级拦截 / 允许规则",
+    "intercept_rules_desc": "应用模板时预填这些任务级规则（拦截/允许，仅对新任务生效，不进全局）。",
+    "save_changes": "保存修改",
+    "saving": "保存中",
+    "create_template": "创建模板",
+    "delete_template": "删除模板",
+    "delete_confirm": "删除模板「{{name}}」？",
+    "delete_desc": "已由该模板创建的任务不会受到影响。",
+    "deleting": "删除中",
+    "unnamed_template": "未命名模板",
+    "fill_required": "请填写模板名称、描述和目标",
+    "created": "模板已创建",
+    "updated": "模板已更新",
+    "deleted": "模板已删除",
+    "loading_templates": "正在加载模板",
+    "no_templates_available": "暂无任务模板",
+    "search_templates": "搜索并选择任务模板",
+    "no_match": "没有匹配的模板",
+    "copy_desc": "选择后会复制模板的描述、目标、分类与任务级规则，不与模板保持关联。",
+    "label": "任务模板",
+    "manage_templates": "管理模板",
+    "save_as_template": "另存为模板",
+    "use_confirm": "使用模板「{{name}}」？",
+    "use_desc": "当前已填写的描述和目标将被模板内容覆盖。",
+    "override_use": "覆盖并使用"
+  },
+  "todo": {
+    "parse_failed": "解析 Todo 失败",
+    "no_todo": "本会话暂无 Todo",
+    "view_todo": "查看最近 Todo",
+    "recent_todo": "最近 Todo",
+    "loading": "加载中…"
+  },
+  "traffic": {
+    "evidence_title": "流量证据 #{{id}}",
+    "evidence_desc": "查看绑定时保存的请求与响应",
+    "request": "请求",
+    "response": "响应",
+    "body_bytes": "正文 {{bytes}} 字节",
+    "preview": "当前为预览",
+    "download_full": "下载完整{{side}}正文",
+    "load_more": "加载更多正文",
+    "preview_title": "预览流量",
+    "preview_desc": "流量 ID：{{id}}。绑定时会保存完整正文。"
+  },
+  "traffic_picker": {
+    "title": "绑定流量",
+    "desc": "筛选并多选请求/响应，已选记录会跨页保留。绑定后可设置用途、说明和顺序。",
+    "host_label": "目标 host",
+    "host_placeholder": "域名或 IP",
+    "method_label": "请求方法",
+    "all_methods": "全部方法",
+    "query_label": "关键词",
+    "query_placeholder": "URL / 正文关键词",
+    "select_all": "选择本页未绑定流量",
+    "method_url": "方法 / URL",
+    "time": "时间",
+    "status": "状态码",
+    "action": "操作",
+    "select_traffic": "选择流量 {{id}}",
+    "preview": "预览",
+    "loading": "加载中…",
+    "no_match": "没有匹配的流量",
+    "selected": "已选 {{count}} 条",
+    "total": "共 {{total}} 条",
+    "page": "第 {{page}} 页",
+    "saving": "保存中…",
+    "bind": "绑定 {{count}} 条流量",
+    "bound": "已绑定 {{count}} 条流量"
+  },
+  "retest": {
+    "started": "复测已启动，可点击「复测中」查看会话",
+    "in_progress": "该漏洞正在复测，可查看已有会话",
+    "start_failed": "发起复测失败",
+    "dialog_title": "复测漏洞 #{{id}}",
+    "dialog_desc": "复测 Agent 将读取原证据和测试约束，在独立会话中执行针对性验证。复测成功完成且确认修复后，漏洞状态自动改为「已修复」，其他结论保留原状态。",
+    "notes_label": "补充说明（可选）",
+    "notes_placeholder": "例如：使用原测试账号验证原接口；修复版本为 v2。",
+    "notes_desc": "可补充修复版本、测试条件或本次限制。",
+    "creating": "正在创建…",
+    "start_retest": "开始复测",
+    "panel_title": "漏洞复测",
+    "panel_desc": "在独立会话中验证当前状态，保留每次复测的结论与证据。",
+    "view_session": "查看会话",
+    "load_failed": "加载复测记录失败：{{error}}",
+    "no_records": "暂无复测记录",
+    "no_records_desc": "修复部署完成后，可发起复测并比较新旧证据。",
+    "session_deleted": "会话已删除",
+    "notes": "补充说明",
+    "evidence": "复测证据"
+  },
+  "link_traffic": {
+    "title": "关联到漏洞",
+    "desc": "将所选 {{count}} 条流量保存为已有漏洞的证据。",
+    "find_finding": "查找漏洞",
+    "query_placeholder": "名称 / 摘要 / 漏洞类别",
+    "no_match": "没有匹配的漏洞，请先登记漏洞",
+    "page": "第 {{page}} 页",
+    "selected": "已选漏洞：#{{id}} {{name}}",
+    "select_finding": "请选择一个漏洞",
+    "confirm_bind": "确认关联"
+  },
+  "mention": {
+    "aria_label": "消息，输入 @ 引用记录",
+    "select_record": "选择引用记录",
+    "select_type": "选择引用类型",
+    "searching": "搜索",
+    "all_records": "全部记录",
+    "key_hint": "↑↓ 选择 · Enter 确认 · Esc 关闭",
+    "reference_candidates": "引用候选",
+    "search_failed": "搜索失败：{{error}}",
+    "retry": "请重新输入重试。",
+    "no_match": "没有匹配记录，请更换名称、地址或 ID",
+    "loading_more": "正在加载更多…",
+    "load_failed": "加载失败",
+    "showing_more": "已显示 {{count}} 条，向下滚动加载更多",
+    "showing_all": "已显示全部 {{count}} 条",
+    "search_hint": "输入名称、地址或 ID 搜索记录",
+    "remove_mention": "移除引用 {{label}}",
+    "send_hint": "发送时读取最新详情 · 最多 10 条"
+  },
+  "scope": {
+    "recognized": "已识别 {{count}} 条",
+    "line_error": "第 {{line}} 行：{{error}}",
+    "more_errors": "另有 {{count}} 行错误"
+  },
+  "traffic_panel": {
+    "updated": "流量证据已更新",
+    "title": "关联流量 ({{count}})",
+    "bind_traffic": "绑定流量",
+    "inherited_readonly": "继承证据 · 只读",
+    "desc": "按复现顺序组织请求与响应。清理原始流量后，已绑定证据仍然保留。",
+    "no_traffic": "暂无关联流量",
+    "no_traffic_desc": "可绑定正常对照、漏洞证明和补充验证请求。",
+    "evidence": "证据 #{{id}}",
+    "view_packet": "查看报文",
+    "edit_note": "编辑说明",
+    "move_up": "上移证据 {{id}}",
+    "move_down": "下移证据 {{id}}",
+    "unbind": "解除绑定",
+    "edit_title": "编辑流量证据",
+    "edit_desc": "说明这组请求/响应如何支持漏洞结论。",
+    "purpose": "用途",
+    "note_label": "证据说明",
+    "save_note": "保存说明"
+  },
+  "agent_editor": {
+    "tabs": {
+      "prompt": "配置与提示词",
+      "wrapup": "收尾提示词",
+      "mcp": "MCP",
+      "skill": "Skill",
+      "tools": "工具",
+      "triggers": "触发器"
+    },
+    "llm_profile": {
+      "label": "默认模型（LLM 配置）",
+      "follow": "跟随任务 / 全局激活配置",
+      "default": "默认",
+      "desc": "为该 Agent 绑定固定 LLM 配置（点「保存配置」生效）。优先级：Agent 绑定 > 任务/会话指定 > 全局激活。"
+    },
+    "max_turns": {
+      "label": "最大循环次数（0=不限）"
+    },
+    "run_seconds": {
+      "label": "运行时长（秒，0=不限）"
+    },
+    "save_config": "保存配置",
+    "web_search": {
+      "label": "网络搜索",
+      "enabled_desc": "为该 Agent 开启后（点上方保存生效），可用 web_search 联网检索",
+      "disabled_desc": "需先在「系统配置」开启网络搜索并配置后端，才能在此启用"
+    },
+    "interactive_shell": {
+      "label": "交互式 Shell",
+      "desc": "为该 Agent 开启后（点上方保存生效），可用持久 PTY 会话工具（shell_open/send/read/close/list）驱动 msfconsole/ssh/REPL 等交互程序"
+    },
+    "variables": {
+      "label": "变量（点击插入占位符，渲染时由运行时数据替换）",
+      "none": "（无变量）"
+    },
+    "prompt": {
+      "placeholder": "留空则使用内置默认提示词"
+    },
+    "preview": "预览渲染",
+    "preview_title": "渲染预览",
+    "preview_desc": "所有 {{var}} 已由后端用示例值替换。",
+    "preview_error": "渲染错误：{{error}}",
+    "preview_failed": "预览失败：{{error}}",
+    "save_version": "保存为新版本",
+    "reset_prompt": "恢复默认",
+    "version_history": {
+      "label": "版本历史",
+      "current": "当前",
+      "no_versions": "（暂无保存的版本，使用内置默认）"
+    },
+    "version": {
+      "no_note": "（无备注）",
+      "empty": "（空）",
+      "compare_current": "与当前版本对比",
+      "load_editor": "加载到编辑器",
+      "load_toast": "已加载 v{{version}} 到编辑器，确认后点「保存为新版本」"
+    },
+    "version_compare": {
+      "title": "版本对比：v{{from}} → v{{to}}（当前）",
+      "deleted": "删除",
+      "added": "新增"
+    },
+    "wrapup": {
+      "label": "收尾提示词正文",
+      "custom": "自定义",
+      "default": "使用内置默认",
+      "placeholder": "留空则使用内置默认收尾提示词",
+      "default_builtin": "内置默认（只读，供参考）"
+    },
+    "wrapup_turns": {
+      "label": "收尾轮数（收尾阶段自身最多跑几轮；0=用内置默认 {{default}} 轮）"
+    },
+    "task_timeout_wrapup": {
+      "label": "任务超时收尾提示词正文",
+      "placeholder": "留空则使用内置默认任务超时收尾提示词"
+    },
+    "task_timeout_wrapup_turns": {
+      "label": "收尾轮数（0=用内置默认 {{default}} 轮）"
+    },
+    "mcp": {
+      "desc": "勾选此 Agent 可见的 MCP 服务器。",
+      "none": "（暂无 MCP）"
+    },
+    "skill": {
+      "desc": "勾选此 Agent 可见的 Skill。",
+      "none": "（暂无 Skill）"
+    },
+    "tools": {
+      "desc": "勾选绑定给此 Agent 的内置工具。",
+      "none": "（暂无工具）",
+      "traffic_badge": "流量",
+      "disabled_badge": "已停用",
+      "gated": "需开启流量捕获"
+    },
+    "triggers": {
+      "desc": "触发器让这个自定义 Agent 自动运行：每次触发都<b>新建一个会话运行</b>（在「对话」页可见）。可多选触发条件；系统会把「本次为何触发 + 相关任务/finding/目标」自动附加到你写的基础消息后面。",
+      "strategy": {
+        "label": "触发后处理策略（决定触发如何排队/合并运行）"
+      },
+      "run_mode": {
+        "label": "运行模式",
+        "serial": "串行（排队，一次一个）",
+        "parallel": "并行（各自并发会话）"
+      },
+      "merge_mode": {
+        "label": "合并模式",
+        "by_task": "按任务合并",
+        "all": "全部合并成一条",
+        "none": "不合并"
+      },
+      "max_parallel": {
+        "label": "最大并发（0=不限）"
+      },
+      "desc_parallel": "并行：每次触发立即各开一个会话并发运行，不合并；超过最大并发的触发排队等空位。",
+      "desc_by_task": "串行·按任务合并：同 agent 一次跑一个；排队中同一任务的事件触发合并成一条会话。",
+      "desc_all": "串行·全部合并：同 agent 一次跑一个；取队列时把当前排队的所有触发合并成一条会话。",
+      "desc_none": "串行·不合并：同 agent 一次跑一个；每条触发各自一个会话。",
+      "add_edit": {
+        "edit": "编辑触发器 #{{id}}（改完点「保存修改」）",
+        "add": "新增触发器（每种条件可填各自的用户消息）",
+        "save_edit": "保存修改",
+        "save_add": "添加触发器",
+        "cancel_edit": "取消编辑"
+      },
+      "interval": "定时触发",
+      "interval_label": "每",
+      "interval_seconds": "秒",
+      "interval_placeholder": "定时触发时发给 agent 的话，如：巡检所有任务",
+      "finding": "发现 finding 时触发",
+      "finding_placeholder": "发现 finding 时发给 agent 的话（系统会附带任务与 finding 详情）",
+      "goal": "目标达成时触发",
+      "goal_placeholder": "目标达成时发给 agent 的话（系统会附带任务与达成的目标）",
+      "timeout": "任务超时时触发",
+      "timeout_placeholder": "任务超时时发给 agent 的话（系统会附带任务编号与目标）",
+      "tool_call": "工具调用时触发",
+      "tool_call_desc": "选择要监听的工具（至少一个）；任务执行中这些工具每次<b>调用完成</b>都会触发。已选 {{count}} 个。",
+      "tool_call_empty": "（工具列表为空）",
+      "tool_call_placeholder": "工具被调用时发给 agent 的话（系统会附带任务信息、工具入参与返回内容）",
+      "task_create": "任务创建时触发",
+      "task_create_placeholder": "任务被创建时发给 agent 的话（系统会附带任务编号与目标）",
+      "existing": {
+        "label": "已有触发器",
+        "none": "（暂无）",
+        "disabled": "已停用",
+        "schedule": "定时：{{msg}}",
+        "finding": "finding：{{msg}}",
+        "goal": "目标：{{msg}}",
+        "timeout": "超时：{{msg}}",
+        "task_create": "任务创建：{{msg}}",
+        "tools": "工具：{{names}}",
+        "tools_none": "（未选）",
+        "message": "消息：{{msg}}",
+        "edit": "编辑",
+        "delete": "删除"
+      }
+    },
+    "cond_every": "每 {{n}}s",
+    "cond_finding": "发现 finding",
+    "cond_goal": "目标达成",
+    "cond_timeout": "任务超时",
+    "cond_tool_call": "工具调用({{n}})",
+    "cond_task_create": "任务创建",
+    "cond_none": "（无条件）",
+    "toast": {
+      "prompt_saved": "已保存为版本 v{{version}}",
+      "prompt_save_failed": "保存失败：{{error}}",
+      "prompt_reset_success": "已恢复为内置默认（v{{version}}）",
+      "prompt_reset_failed": "恢复失败：{{error}}",
+      "wrapup_saved": "收尾配置已保存（下次运行生效）",
+      "wrapup_cleared": "已清空，将使用内置默认",
+      "wrapup_save_failed": "保存失败：{{error}}",
+      "wrapup_reset_success": "已恢复为内置默认",
+      "wrapup_reset_failed": "恢复失败：{{error}}",
+      "tt_wrapup_saved": "任务超时收尾配置已保存（下次运行生效）",
+      "tt_wrapup_save_failed": "保存失败：{{error}}",
+      "tt_wrapup_reset_success": "已恢复为内置默认",
+      "tt_wrapup_reset_failed": "恢复失败：{{error}}",
+      "config_saved": "已保存运行配置（立即生效）",
+      "config_save_failed": "保存失败：{{error}}",
+      "mcp_toggled": "{{enabled}} MCP「{{name}}」可见",
+      "skill_toggled": "{{enabled}} Skill「{{name}}」可见",
+      "tool_bound": "{{bound}} 工具「{{key}}」",
+      "tool_save_failed": "保存工具绑定失败：{{error}}",
+      "save_failed": "保存失败：{{error}}",
+      "not_found": "未找到 Agent：{{agentKey}}",
+      "behavior_save_failed": "保存策略失败：{{error}}"
+    },
+    "trigger_at_least_one": "至少选择一种触发条件",
+    "trigger_tool_required": "工具调用触发至少选择一个工具",
+    "trigger_saved": "已保存修改",
+    "trigger_added": "已添加触发器",
+    "trigger_save_failed": "保存失败：{{error}}",
+    "trigger_add_failed": "添加失败：{{error}}",
+    "trigger_delete_failed": "删除失败：{{error}}"
+  },
+  "transcript": {
+    "streaming": "实时流式中…",
+    "detail_load_failed": "审批详情加载失败",
+    "approval_request": "审批请求",
+    "history_readonly": "历史记录 · 只读",
+    "allowed": "已允许",
+    "denied": "已拒绝",
+    "timeout": "已超时",
+    "allow": "允许",
+    "deny": "拒绝",
+    "collapse_detail": "收起审批详情",
+    "expand_detail": "展开审批详情",
+    "retry_detail": "重试详情",
+    "loading_detail": "正在加载审批详情…",
+    "command": "命令",
+    "output": "输出",
+    "empty": "（空）",
+    "load_failed": "（加载失败）",
+    "executing": "执行中…",
+    "failed": "失败",
+    "contains_thinking": "含推理",
+    "loading": "加载中…"
+  },
+  "side_question": {
+    "panel_label": "旁路提问面板",
+    "title": "旁路提问",
+    "clear_history": "清空旁路历史",
+    "close_panel": "关闭旁路面板",
+    "context_updated": "上下文更新于 {{date}}",
+    "waiting_for_agent": "主 Agent 首次运行后即可提问",
+    "load_earlier": "加载更早的旁路问答",
+    "ask_anything": "随时问一个问题",
+    "ask_desc": "根据当前 Agent 的上下文回答，主任务继续运行。",
+    "recent_exchanges": "最近 {{count}} 组问答原文",
+    "contains_summary": "含早期问答摘要",
+    "uses_main_summary": "使用主上下文摘要",
+    "context_at": "上下文 {{time}}",
+    "side_question": "旁路问题",
+    "placeholder": "询问当前上下文…",
+    "independent_qa": "独立问答 · 无工具执行",
+    "independent_qa_for": "{{label}}的独立问答 · 无工具执行",
+    "stop_answer": "停止旁路回答",
+    "send_question": "发送旁路问题",
+    "clear_history_title": "清空旁路历史？",
+    "clear_history_desc": "删除当前 Agent 的旁路问答，并停止正在生成的旁路回答。主会话和上下文快照会保留。",
+    "clear_history_action": "清空历史"
+  },
+  "approval": {
+    "status": {
+      "pending": "待审批",
+      "allowed": "已允许",
+      "denied": "已拒绝",
+      "timeout": "已超时"
+    },
+    "source": {
+      "model": "模型判定",
+      "rule_not_recorded": "规则未记录或已删除"
+    },
+    "reason_not_recorded": "未记录理由",
+    "code": {
+      "copy_failed": "复制失败，请手动选择内容复制",
+      "empty": "（无记录）"
+    },
+    "context": {
+      "model_review_title": "模型审查上下文",
+      "model_review_desc": "以下为本次实际发送给审查模型的输入快照。背景仅用于理解当前动作，裁决依据为审查策略。",
+      "model_review_old_input": "此记录使用旧版输入，保留当时实际发送的内容。",
+      "current_call": "当前待审查调用",
+      "bg_user_message": "背景 · 用户消息",
+      "bg_worker_intent": "背景 · Worker 意图摘要（旧版）",
+      "bg_from_user": "取自当前用户消息。",
+      "bg_old_worker": "这是旧版发送的 Worker 意图摘要；新版 Worker 审查不再发送此内容。",
+      "no_bg_message": "本次审查未附带背景消息。",
+      "turn_input_old": "当前轮输入（旧版）",
+      "task_description_old": "任务描述（旧版）",
+      "task_goal_old": "任务目标（旧版）",
+      "task_constraints_old": "任务操作约束（旧版）",
+      "worker_intent_old": "Worker 意图（旧版）",
+      "working_dir": "工作目录",
+      "no_history_sent": "本次审查未发送历史调用或执行结果。",
+      "history_title": "当时提供给模型的历史调用（旧版）",
+      "view_full_json": "查看完整模型审查输入 JSON",
+      "model_review_input": "模型审查输入",
+      "visible_context": "可见会话上下文",
+      "captured_at": "保存于 {{time}} 的会话记录片段。模型实际使用的内容以“模型审查输入”为准。",
+      "truncated_desc": "仅保存最近的上下文，部分内容已截断。",
+      "no_context": "未记录可关联的上下文",
+      "error": "异常"
+    },
+    "history": {
+      "succeeded": "成功",
+      "failed": "失败（可能有部分副作用）",
+      "args": "历史调用参数",
+      "result": "历史执行结果",
+      "no_records": "本次未提供可配对的历史工具执行记录。"
+    },
+    "initial": {
+      "model": "模型初判",
+      "rule": "规则初判",
+      "model_fallback": "模型异常回退"
+    },
+    "tool_request": "工具请求",
+    "command_content": "命令内容",
+    "view_command": "查看命令内容",
+    "execution_result": "执行结果",
+    "review_status": "审查状态",
+    "approval_decision": "审批裁决",
+    "final_action": "最终动作",
+    "field": {
+      "source": "来源",
+      "apply_time": "申请时间",
+      "decide_time": "决定时间",
+      "rule_snapshot": "规则快照",
+      "approval_model_config": "审批模型配置",
+      "tool_call_id": "工具调用 ID",
+      "param_sha256": "参数摘要 SHA-256",
+      "config_fingerprint_sha256": "审查配置指纹 SHA-256",
+      "model_review_input_sha256": "模型审查输入 SHA-256",
+      "result_recorded_at": "结果记录时间"
+    },
+    "detail_load_failed": "审批详情加载失败",
+    "no_snapshot": "此记录未保存审批详情快照，无法还原当时的上下文、模型初判和执行输出。",
+    "retry_detail": "重试详情",
+    "collapse_context": "收起上下文",
+    "expand_context": "查看上下文与执行结果",
+    "alert": {
+      "digest_only": "此历史记录仅保存审查输入指纹，未保存输入原文，无法还原当时发给模型的上下文。这不代表审查时没有上下文；新产生的模型裁决会保留输入快照。",
+      "no_input": "此记录没有保存模型审查输入，可能由规则直接裁决、模型调用前发生异常或产生于旧版本。"
+    },
+    "collapsible": {
+      "session_audit_no_model": "查看会话审计片段（未发送模型）",
+      "session_audit": "查看会话审计片段"
+    },
+    "execution_output": "执行输出",
+    "not_recorded": "未记录",
+    "correlation": {
+      "ambiguous": "存在相同参数的并发调用，无法唯一关联工具调用；本记录不展示推测的执行结果。",
+      "no_unique_id": "未记录可唯一关联的工具调用 ID。"
+    },
+    "execution": {
+      "not_recorded": "未记录",
+      "not_started": "尚未执行",
+      "not_executed": "未执行",
+      "not_executed_desc": "工具未执行。",
+      "awaiting_result": "已允许，等待执行结果",
+      "succeeded": "执行成功",
+      "failed": "执行失败",
+      "unknown": "执行结果未知",
+      "no_output_yet": "尚无执行输出"
+    },
+    "load_failed": "加载失败",
+    "title": {
+      "intercept": "拦截审批",
+      "records": "审批记录"
+    },
+    "pending_badge": "{{count}} 待审批",
+    "expand_desc": "展开记录查看工具请求和审批裁决，以及当时的上下文与执行结果。",
+    "filter_label": "审批记录筛选",
+    "filter": {
+      "status_label": "审批状态",
+      "source_label": "判定来源",
+      "all_status": "全部状态",
+      "denied": "已拒绝",
+      "pending": "待审批",
+      "allowed": "已允许",
+      "timeout": "已超时",
+      "all_source": "全部来源",
+      "model": "模型判定",
+      "rule": "规则判定",
+      "unknown": "来源未知",
+      "clear": "清除筛选"
+    },
+    "records_load_failed": "记录加载失败：{{error}}",
+    "pending_load_failed": "待审批加载失败：{{error}}",
+    "click_refresh_retry": "请点击刷新重试。",
+    "pending_header": "待处理（{{count}}）",
+    "expand_allow_deny": "展开后允许或拒绝",
+    "table": {
+      "expand_detail": "展开详情",
+      "tool": "工具",
+      "source": "来源",
+      "matching_rule": "匹配规则",
+      "parameters": "参数",
+      "status": "状态",
+      "apply_time": "申请时间",
+      "decide_time": "决定时间",
+      "collapse": "收起",
+      "expand": "展开",
+      "pending_label": "待处理审批",
+      "records_label": "审批记录列表"
+    },
+    "filtered": "筛选结果",
+    "all_records": "全部记录",
+    "filtered_result": "{type}（{total}）",
+    "empty": {
+      "no_match": "没有符合筛选条件的审批记录",
+      "no_records": "暂无审批记录",
+      "adjust_filter": "请调整审批状态或判定来源，或清除筛选查看全部记录。",
+      "wait_for_decision": "规则或模型作出审批决定后，记录将显示在这里。"
+    },
+    "rule_prefix": "规则 #{{id}}",
+    "action": {
+      "allow": "允许",
+      "ask": "转人工审批",
+      "deny": "拒绝"
+    },
+    "toast": {
+      "allowed": "已允许执行",
+      "denied": "已拒绝执行"
+    }
+  },
+  "approval_execution": {
+    "cannot_locate_prefix": "无法定位：{{error}}",
+    "expanded": "已展开审批 #{{id}} 对应的工具调用",
+    "loading": "正在加载审批 #{{id}} 所在的对话位置…",
+    "retry": "重试定位",
+    "cancel": "取消定位"
+  },
+  "asset_dsl": {
+    "placeholder": "DSL 搜索：domain=example AND status_code>=400",
+    "loading": "搜索中…",
+    "found": "找到 {{count}} 条结果"
+  },
+  "update": {
+    "new_version": "新版本 {{version}}",
+    "new_version_short": "新版本 {{version}}"
+  }
+}

@@ -18,7 +18,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import type { NavMainItem } from "@/navigation/sidebar/sidebar-items";
-import { sidebarItems } from "@/navigation/sidebar/sidebar-items";
+import { useSidebarItems } from "@/navigation/sidebar/sidebar-items";
 
 type SearchItem = {
   id: string;
@@ -30,54 +30,48 @@ type SearchItem = {
   newTab?: boolean;
 };
 
-const sidebarGroupLabels = new Set(sidebarItems.flatMap((group) => (group.label ? [group.label] : [])));
-
-function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
-  return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Other") : itemTitle;
-}
-
-const searchItems: SearchItem[] = sidebarItems.flatMap((group) =>
-  group.items.flatMap((item) => {
-    if (item.subItems) {
-      return item.subItems.map((sub) => ({
-        id: sub.id,
-        group: getSubItemGroup(group.label, item.title),
-        label: sub.title,
-        url: sub.url,
-        icon: item.icon,
-        disabled: sub.disabled,
-        newTab: sub.newTab,
-      }));
-    }
-    return [
-      {
-        id: item.id,
-        group: group.label ?? "Other",
-        label: item.title,
-        url: item.url,
-        icon: item.icon,
-        disabled: item.disabled,
-        newTab: item.newTab,
-      },
-    ];
-  }),
-);
-
-function getAvailableItems(items: SearchItem[]) {
-  return items.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
-}
-
-const recommendations = getAvailableItems(searchItems);
-
-function groupBy(items: SearchItem[]) {
-  const groups = [...new Set(items.map((item) => item.group))];
-  return groups.map((group) => ({
-    group,
-    items: items.filter((item) => item.group === group),
-  }));
-}
-
 export function SearchDialog() {
+  const items = useSidebarItems();
+
+  const sidebarGroupLabels = new Set(items.flatMap((group) => (group.label ? [group.label] : [])));
+
+  function getSubItemGroup(groupLabel: string | undefined, itemTitle: string) {
+    return sidebarGroupLabels.has(itemTitle) ? (groupLabel ?? "Other") : itemTitle;
+  }
+
+  const searchItems: SearchItem[] = items.flatMap((group) =>
+    group.items.flatMap((item) => {
+      if (item.subItems) {
+        return item.subItems.map((sub) => ({
+          id: sub.id,
+          group: getSubItemGroup(group.label, item.title),
+          label: sub.title,
+          url: sub.url,
+          icon: item.icon,
+          disabled: sub.disabled,
+          newTab: sub.newTab,
+        }));
+      }
+      return [
+        {
+          id: item.id,
+          group: group.label ?? "Other",
+          label: item.title,
+          url: item.url,
+          icon: item.icon,
+          disabled: item.disabled,
+          newTab: item.newTab,
+        },
+      ];
+    }),
+  );
+
+  function getAvailableItems(items: SearchItem[]) {
+    return items.filter((item) => !item.disabled && !item.url.includes("coming-soon"));
+  }
+
+  const recommendations = getAvailableItems(searchItems);
+
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const router = useRouter();
@@ -107,6 +101,14 @@ export function SearchDialog() {
       router.push(item.url);
     }
   };
+
+  function groupBy(items: SearchItem[]) {
+    const groups = [...new Set(items.map((item) => item.group))];
+    return groups.map((group) => ({
+      group,
+      items: items.filter((item) => item.group === group),
+    }));
+  }
 
   const renderGroups = (items: SearchItem[]) =>
     groupBy(items).map(({ group, items: groupItems }, index) => (
