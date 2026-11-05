@@ -75,7 +75,7 @@ export function emptyTab(groupId = DEFAULT_GROUP_ID, title = "Tab 1"): RepeaterT
 
 export function defaultWorkspace(): RepeaterWorkspace {
   const tab = emptyTab();
-  return { version: 1, groups: [{ id: DEFAULT_GROUP_ID, name: "默认" }], tabs: [tab], activeTabId: tab.id };
+  return { version: 1, groups: [{ id: DEFAULT_GROUP_ID, name: "Default" }], tabs: [tab], activeTabId: tab.id };
 }
 
 export function addTab(workspace: RepeaterWorkspace, seed: TabSeed = {}, opts: TabOptions = {}): RepeaterWorkspace {
@@ -203,7 +203,7 @@ export function deserializeWorkspace(raw: string | null): RepeaterWorkspace {
         ...(typeof group.collapsed === "boolean" ? { collapsed: group.collapsed } : {}),
       });
     }
-    if (!groups.some((group) => group.id === DEFAULT_GROUP_ID)) groups.unshift({ id: DEFAULT_GROUP_ID, name: "默认" });
+    if (!groups.some((group) => group.id === DEFAULT_GROUP_ID)) groups.unshift({ id: DEFAULT_GROUP_ID, name: "Default" });
     const tabs: RepeaterTab[] = [];
     for (const tab of value.tabs) {
       if (

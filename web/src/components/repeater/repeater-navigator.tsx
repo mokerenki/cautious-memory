@@ -78,7 +78,7 @@ export function RepeaterNavigator({
 
   return (
     <nav
-      aria-label="请求重发分组和标签"
+      aria-label="Repeater request groups and tabs"
       className={cn(
         "flex h-[28rem] min-h-0 w-full shrink-0 flex-col gap-3 overflow-y-auto rounded-md border p-3 lg:h-[calc(100dvh-14rem)] lg:min-h-[480px] lg:w-80 xl:h-auto xl:min-h-0",
         className,
@@ -86,19 +86,19 @@ export function RepeaterNavigator({
     >
       <div className="flex shrink-0 flex-col gap-2">
         <Input
-          aria-label="全局搜索重发请求"
-          placeholder="搜索全部标题、请求或响应…"
+          aria-label="Search all Repeater requests"
+          placeholder="Search all titles, requests, or responses…"
           value={filters.query}
           onChange={(event) => setFilters({ ...filters, query: event.target.value })}
         />
         <div className="flex gap-2">
           <Select value={filters.method} onValueChange={(method) => setFilters({ ...filters, method })}>
-            <SelectTrigger aria-label="筛选请求方法" className="min-w-0 flex-1">
+            <SelectTrigger aria-label="Filter request method" className="min-w-0 flex-1">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectGroup>
-                <SelectItem value="all">全部方法</SelectItem>
+                <SelectItem value="all">All methods</SelectItem>
                 {methods.map((method) => (
                   <SelectItem key={method} value={method}>
                     {method}
@@ -115,42 +115,42 @@ export function RepeaterNavigator({
             onClick={() => setExpanded(!expanded)}
           >
             <ListFilter />
-            筛选
+            Filters
           </Button>
         </div>
         {expanded ? (
           <div id="repeater-extra-filters" className="flex flex-col gap-2">
             <Field className="gap-1">
               <FieldLabel htmlFor="repeater-filter-path" className="text-xs">
-                请求路径
+                Request path
               </FieldLabel>
               <Input
                 id="repeater-filter-path"
-                placeholder="例如 /api/upload"
+                placeholder="e.g. /api/upload"
                 value={filters.path}
                 onChange={(event) => setFilters({ ...filters, path: event.target.value })}
               />
             </Field>
             <Field className="gap-1">
               <FieldLabel htmlFor="repeater-filter-response" className="text-xs">
-                响应内容
+                Response content
               </FieldLabel>
               <Input
                 id="repeater-filter-response"
-                placeholder="响应头或正文关键字"
+                placeholder="Response header or body keyword"
                 value={filters.response}
                 onChange={(event) => setFilters({ ...filters, response: event.target.value })}
               />
             </Field>
             <Select value={filters.status} onValueChange={(status) => setFilters({ ...filters, status })}>
-              <SelectTrigger aria-label="筛选响应状态" className="w-full">
+              <SelectTrigger aria-label="Filter response status" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="all">全部响应状态</SelectItem>
-                  <SelectItem value="pending">尚未响应</SelectItem>
-                  <SelectItem value="error">发送失败</SelectItem>
+                  <SelectItem value="all">All response statuses</SelectItem>
+                  <SelectItem value="pending">Not sent yet</SelectItem>
+                  <SelectItem value="error">Send failed</SelectItem>
                   {["1xx", "2xx", "3xx", "4xx", "5xx"].map((status) => (
                     <SelectItem key={status} value={status}>
                       {status}
@@ -163,11 +163,11 @@ export function RepeaterNavigator({
         ) : null}
         <div className="flex items-center justify-between gap-2 text-muted-foreground text-xs">
           <span>
-            {visible.length} / {workspace.tabs.length} 个请求
+            {visible.length} / {workspace.tabs.length} requests
           </span>
           {filtering ? (
             <Button variant="ghost" size="sm" className="h-6 px-1 text-xs" onClick={() => setFilters(DEFAULT_FILTERS)}>
-              清除筛选
+              Clear filters
             </Button>
           ) : null}
         </div>
@@ -176,7 +176,7 @@ export function RepeaterNavigator({
         <div className="flex items-center gap-2">
           <Checkbox
             id="repeater-select-visible"
-            aria-label="全选筛选结果"
+            aria-label="Select all filtered results"
             checked={allSelected || (visible.some((tab) => selected.has(tab.id)) ? "indeterminate" : false)}
             disabled={!visible.length}
             onCheckedChange={(checked) =>
@@ -191,13 +191,13 @@ export function RepeaterNavigator({
             }
           />
           <label htmlFor="repeater-select-visible" className="text-xs">
-            全选结果
+            Select all results
           </label>
           <span className="ml-auto text-muted-foreground text-xs">
-            已选 {selectedIds.length} 条{hiddenSelected ? `（隐藏 ${hiddenSelected}）` : ""}
+            Selected {selectedIds.length}{hiddenSelected ? ` (${hiddenSelected} hidden)` : ""}
           </span>
           {selectedIds.length ? (
-            <Button variant="ghost" size="icon-sm" aria-label="清空勾选" onClick={() => setSelected(new Set())}>
+            <Button variant="ghost" size="icon-sm" aria-label="Clear selection" onClick={() => setSelected(new Set())}>
               <X />
             </Button>
           ) : null}
@@ -208,12 +208,12 @@ export function RepeaterNavigator({
               value=""
               onValueChange={(groupId) => {
                 store.setTabsGroup(selectedIds, groupId);
-                toast.success(`已移动 ${selectedIds.length} 个请求`);
+                toast.success(`Moved ${selectedIds.length} requests`);
                 setSelected(new Set());
               }}
             >
-              <SelectTrigger aria-label="批量移动到分组" className="min-w-0 flex-1">
-                <SelectValue placeholder="移动到分组…" />
+              <SelectTrigger aria-label="Move selected requests to group" className="min-w-0 flex-1">
+                <SelectValue placeholder="Move to group…" />
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
@@ -226,12 +226,12 @@ export function RepeaterNavigator({
               </SelectContent>
             </Select>
             <Button variant="destructive" size="sm" onClick={() => setDeleting(true)}>
-              删除所选
+              Delete selected
             </Button>
           </div>
         ) : null}
       </div>
-      <section className="min-h-24 flex-1 overflow-y-auto" aria-label="重发请求列表">
+      <section className="min-h-24 flex-1 overflow-y-auto" aria-label="Repeater request list">
         {workspace.groups.map((group) => {
           const tabs = visible.filter((tab) => tab.groupId === group.id);
           if (filtering && !tabs.length) return null;
@@ -242,7 +242,7 @@ export function RepeaterNavigator({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`${collapsed ? "展开" : "折叠"}分组 ${group.name}`}
+                  aria-label={`${collapsed ? "Expand" : "Collapse"} group ${group.name}`}
                   disabled={filtering}
                   onClick={() => store.toggleGroupCollapsed(group.id)}
                 >
@@ -255,7 +255,7 @@ export function RepeaterNavigator({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`重命名分组 ${group.name}`}
+                  aria-label={`Rename group ${group.name}`}
                   onClick={() => onRename({ kind: "group", id: group.id, name: group.name })}
                 >
                   <Pencil />
@@ -263,8 +263,8 @@ export function RepeaterNavigator({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  aria-label={`新建标签 · ${group.name}`}
-                  title="新建标签"
+                  aria-label={`New tab · ${group.name}`}
+                  title="New tab"
                   onClick={() => store.createTab({}, { groupId: group.id })}
                 >
                   <Plus />
@@ -280,7 +280,7 @@ export function RepeaterNavigator({
                       )}
                     >
                       <Checkbox
-                        aria-label={`勾选请求 ${tab.title}`}
+                        aria-label={`Select request ${tab.title}`}
                         checked={selected.has(tab.id)}
                         onCheckedChange={(checked) => toggle(tab.id, checked === true)}
                       />
@@ -298,7 +298,7 @@ export function RepeaterNavigator({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        aria-label={`重命名标签 ${tab.title}`}
+                        aria-label={`Rename tab ${tab.title}`}
                         onClick={() => onRename({ kind: "tab", id: tab.id, name: tab.title })}
                       >
                         <Pencil />
@@ -306,7 +306,7 @@ export function RepeaterNavigator({
                       <Button
                         variant="ghost"
                         size="icon-sm"
-                        aria-label={`关闭标签 ${tab.title}`}
+                        aria-label={`Close tab ${tab.title}`}
                         onClick={() => store.closeTab(tab.id)}
                       >
                         <X />
@@ -318,7 +318,7 @@ export function RepeaterNavigator({
           );
         })}
         {!visible.length ? (
-          <p className="p-2 text-muted-foreground text-xs">没有匹配的请求，清除筛选后可查看全部。</p>
+          <p className="p-2 text-muted-foreground text-xs">No matching requests. Clear filters to see all requests.</p>
         ) : null}
       </section>
       <div className="flex max-h-[35%] min-h-20 flex-1 flex-col">
@@ -327,25 +327,25 @@ export function RepeaterNavigator({
       <AlertDialog open={deleting} onOpenChange={setDeleting}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>删除所选的 {selectedIds.length} 个请求？</AlertDialogTitle>
+            <AlertDialogTitle>Delete {selectedIds.length} selected requests?</AlertDialogTitle>
             <AlertDialogDescription>
-              这些请求的草稿和历史响应将从当前浏览器删除
-              {hiddenSelected ? `，其中包含 ${hiddenSelected} 个被筛选隐藏的请求` : ""}
-              。正在发送的请求将不再保存返回结果。
+              The drafts and response history for these requests will be deleted from this browser.
+              {hiddenSelected ? ` This includes ${hiddenSelected} requests hidden by filters.` : ""}
+              {" "}Responses from in-flight requests will not be saved.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
               disabled={!selectedIds.length}
               onClick={() => {
                 store.closeTabs(selectedIds);
-                toast.success(`已删除 ${selectedIds.length} 个请求`);
+                toast.success(`Deleted ${selectedIds.length} requests`);
                 setSelected(new Set());
               }}
             >
-              确认删除
+              Confirm delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

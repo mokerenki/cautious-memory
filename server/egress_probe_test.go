@@ -427,10 +427,10 @@ func TestValidateProbeURL(t *testing.T) {
 		"file:///etc/passwd":             "只支持 http / https",
 		"/relative/path":                 "只支持 http / https",
 		"http:///nohost":                 "缺少主机名",
-		"http://127.0.0.1:8080/":         "拒绝访问本机",
-		"http://localhost:8080/":         "拒绝访问本机",
-		"http://169.254.169.254/latest/": "拒绝访问本机",
-		"http://[::1]:8080/":             "拒绝访问本机",
+		"http://127.0.0.1:8080/":         "Rejected access to local/link-local address",
+		"http://localhost:8080/":         "Rejected access to local/link-local address",
+		"http://169.254.169.254/latest/": "Rejected access to local/link-local address",
+		"http://[::1]:8080/":             "Rejected access to local/link-local address",
 	}
 	for raw, want := range bad {
 		_, err := validateProbeURL(raw)
@@ -469,7 +469,7 @@ func TestProbeCheckRedirect(t *testing.T) {
 	redirector := httptest.NewServer(http.RedirectHandler(target.URL, http.StatusFound))
 	defer redirector.Close()
 	_, err := (&http.Client{CheckRedirect: probeCheckRedirect}).Get(redirector.URL)
-	if err == nil || !strings.Contains(err.Error(), "拒绝跨主机重定向") {
+	if err == nil || !strings.Contains(err.Error(), "Rejected cross-host redirect") {
 		t.Fatalf("httptest 跨主机 302 应失败，得到 %v", err)
 	}
 }
@@ -485,7 +485,7 @@ func TestProbeEgressBlocksLoopback(t *testing.T) {
 	if res.OK {
 		t.Fatalf("连 127.0.0.1 应该失败，实际 %+v", res)
 	}
-	if len(res.Probes) != 1 || !strings.Contains(res.Probes[0].Error, "拒绝访问本机") {
+	if len(res.Probes) != 1 || !strings.Contains(res.Probes[0].Error, "Rejected access to local/link-local address") {
 		t.Fatalf("错误应说明是本机地址被拒，实际 %+v", res.Probes)
 	}
 	if strings.Contains(res.Probes[0].Error, repeaterAllowLocalEnv) {

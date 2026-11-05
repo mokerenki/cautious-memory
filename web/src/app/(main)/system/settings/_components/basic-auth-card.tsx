@@ -30,7 +30,7 @@ export function BasicAuthCard() {
       setPasswordSet(settings.password_set);
       setLoaded(true);
     } catch (e) {
-      setError(`读取失败：${(e as Error).message}`);
+      setError(`Failed to load settings: ${(e as Error).message}`);
     }
   }, []);
 
@@ -48,9 +48,9 @@ export function BasicAuthCard() {
       setUsername(settings.username);
       setPasswordSet(settings.password_set);
       setPassword("");
-      toast.success(settings.enabled ? "HTTP Basic Auth 已开启，当前浏览器保持访问" : "HTTP Basic Auth 已关闭");
+      toast.success(settings.enabled ? "HTTP Basic Auth enabled. This browser remains authenticated." : "HTTP Basic Auth disabled.");
     } catch (e) {
-      setError(`保存失败：${(e as Error).message}`);
+      setError(`Save failed: ${(e as Error).message}`);
     } finally {
       setSaving(false);
     }
@@ -64,14 +64,14 @@ export function BasicAuthCard() {
           HTTP Basic Auth
         </CardTitle>
         <CardDescription>
-          开启后，访客需先通过浏览器原生账号密码验证，再进入 ARTEX 登录页。默认关闭，保存后立即生效。
+          When enabled, visitors must pass the browser's built-in username and password prompt before reaching the ARTEX login page. Disabled by default; changes take effect immediately after saving.
         </CardDescription>
       </CardHeader>
       <form onSubmit={save}>
         <CardContent>
           <FieldGroup>
             <Field orientation="horizontal">
-              <FieldLabel htmlFor="basic-auth-enabled">启用访问验证</FieldLabel>
+              <FieldLabel htmlFor="basic-auth-enabled">Enable access authentication</FieldLabel>
               <Switch
                 id="basic-auth-enabled"
                 checked={enabled}
@@ -80,7 +80,7 @@ export function BasicAuthCard() {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="basic-auth-username">验证用户名</FieldLabel>
+              <FieldLabel htmlFor="basic-auth-username">Authentication username</FieldLabel>
               <Input
                 id="basic-auth-username"
                 autoComplete="off"
@@ -88,12 +88,12 @@ export function BasicAuthCard() {
                 required={enabled}
                 disabled={!loaded || saving}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="独立于 ARTEX 登录账号"
+                placeholder="Separate from your ARTEX login"
               />
-              <FieldDescription>不能包含冒号，最长 128 字节。</FieldDescription>
+              <FieldDescription>Cannot contain a colon; maximum 128 bytes.</FieldDescription>
             </Field>
             <Field>
-              <FieldLabel htmlFor="basic-auth-password">验证密码</FieldLabel>
+              <FieldLabel htmlFor="basic-auth-password">Authentication password</FieldLabel>
               <Input
                 id="basic-auth-password"
                 type="password"
@@ -102,12 +102,12 @@ export function BasicAuthCard() {
                 required={enabled && !passwordSet}
                 disabled={!loaded || saving}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder={passwordSet ? "已设置，留空保持原密码" : "至少 8 位，最多 72 字节"}
+                placeholder={passwordSet ? "Set; leave blank to keep the current password" : "At least 8 characters and no more than 72 bytes"}
               />
-              <FieldDescription>与 ARTEX 登录密码独立。公网访问请使用 HTTPS。</FieldDescription>
+              <FieldDescription>Separate from your ARTEX login password. Use HTTPS for public access.</FieldDescription>
             </Field>
             <FieldDescription>
-              保存不会中断当前浏览器访问。可用无痕窗口检查验证弹窗；浏览器可能缓存凭据。关闭后保留账号密码，便于再次开启。
+              Saving will not interrupt access in this browser. Use a private window to test the authentication prompt; browsers may cache credentials. Disabling authentication preserves the username and password so you can enable it again later.
             </FieldDescription>
             {error ? (
               <p role="alert" className="text-destructive text-sm">
@@ -118,11 +118,11 @@ export function BasicAuthCard() {
         </CardContent>
         <CardFooter className="mt-4 gap-2">
           <Button type="submit" disabled={!loaded || saving}>
-            {saving ? "保存中…" : "保存访问验证"}
+            {saving ? "Saving…" : "Save access authentication"}
           </Button>
           {!loaded && error ? (
             <Button type="button" variant="outline" onClick={load}>
-              重新加载
+              Reload
             </Button>
           ) : null}
         </CardFooter>

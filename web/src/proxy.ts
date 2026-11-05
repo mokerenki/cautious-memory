@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import i18n from "@/lib/i18n";
 
 const AUTH_PAGES = ["/login", "/setup"];
 
@@ -14,7 +15,7 @@ export async function proxy(request: NextRequest) {
   try {
     const backend = new URL(process.env.AUTOPENTEST_API ?? "http://localhost:8787");
     if (!["http:", "https:"].includes(backend.protocol) || backend.username || backend.password) {
-      return new NextResponse("认证后端地址配置无效", { status: 503 });
+      return new NextResponse(i18n.t("proxy.invalid_backend_config"), { status: 503 });
     }
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(backend.hostname);
     gate = await fetch(new URL("/api/basic-auth/check", backend), {
@@ -31,16 +32,16 @@ export async function proxy(request: NextRequest) {
       signal: AbortSignal.timeout(5000),
     });
     if (!local && gate.status === 401) {
-      return new NextResponse("远程后端已启用 HTTP Basic Auth，请通过内嵌前端访问该服务", { status: 503 });
+      return new NextResponse(i18n.t("proxy.remote_basic_auth"), { status: 503 });
     }
   } catch {
-    return new NextResponse("认证服务暂时不可用，请稍后重试", { status: 503 });
+    return new NextResponse(i18n.t("proxy.auth_service_unavailable"), { status: 503 });
   }
   if (!gate.ok) {
     const headers = new Headers({ "Cache-Control": "no-store", "Content-Type": "text/plain; charset=utf-8" });
     const challenge = gate.headers.get("www-authenticate");
     if (challenge) headers.set("WWW-Authenticate", challenge);
-    return new NextResponse(gate.status === 401 ? "请完成 HTTP Basic Auth 验证后刷新页面" : "认证服务暂时不可用", {
+    return new NextResponse(gate.status === 401 ? i18n.t("proxy.complete_basic_auth") : i18n.t("proxy.auth_service_unavailable"), {
       status: gate.status,
       headers,
     });

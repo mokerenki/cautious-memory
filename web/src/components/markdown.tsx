@@ -44,7 +44,7 @@ function AuthenticatedImage({
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     })
       .then((response) => {
-        if (!response.ok) throw new Error(`图片读取失败: ${response.status}`);
+        if (!response.ok) throw new Error(`Image read failed: ${response.status}`);
         setCaptureTimestamp(response.headers.get("X-Report-Screenshot-Timestamp"));
         return response.blob();
       })
@@ -76,9 +76,9 @@ function AuthenticatedImage({
         type="button"
         className="relative my-2 inline-block max-w-full cursor-zoom-in rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => renderedSrc && setZoomed(true)}
-        aria-label="放大查看报告截图"
+        aria-label="Zoom in to view report screenshot"
       >
-        <img {...props} src={renderedSrc} alt={alt || "报告截图，点击放大"} draggable={false} onDragStart={(event) => event.preventDefault()} />
+        <img {...props} src={renderedSrc}         alt={alt || "Report screenshot, click to zoom"} draggable={false} onDragStart={(event) => event.preventDefault()} />
         {timestamp}
       </button>
       <Dialog
@@ -117,7 +117,7 @@ function AuthenticatedImage({
             <div className="relative inline-block origin-center" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoomScale})` }}>
               <img
                 src={renderedSrc}
-                alt={alt || "报告截图"}
+                alt={alt || "Report screenshot"}
                 draggable={false}
                 onDragStart={(event) => event.preventDefault()}
                 className="max-h-[90dvh] max-w-[90vw] rounded-md object-contain"
@@ -133,8 +133,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))))}
               disabled={zoomScale <= 0.5}
-              title="缩小"
-              aria-label="缩小图片"
+              title="Zoom out"
+              aria-label="Zoom out image"
             >
               <ZoomOutIcon />
             </Button>
@@ -144,8 +144,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale(1)}
               disabled={zoomScale === 1}
-              title="重置大小"
-              aria-label="重置图片大小"
+              title="Reset size"
+              aria-label="Reset image size"
             >
               <RotateCcwIcon />
             </Button>
@@ -155,8 +155,8 @@ function AuthenticatedImage({
               className="text-white hover:bg-white/20 hover:text-white"
               onClick={() => setZoomScale((value) => Math.min(3, Number((value + 0.25).toFixed(2))))}
               disabled={zoomScale >= 3}
-              title="放大"
-              aria-label="放大图片"
+              title="Zoom in"
+              aria-label="Zoom in image"
             >
               <ZoomInIcon />
             </Button>
@@ -193,7 +193,7 @@ const components: Components = {
         {...p}
         className="my-2 max-h-[520px] max-w-full rounded-md border object-contain"
         src={resolvedSrc}
-        alt={alt || "报告截图"}
+        alt={alt || "Report screenshot"}
         // Report screenshots are evidence and must be fetched while the report is
         // rendered; Edge may replace lazy images with placeholders indefinitely
         // when the markdown section is outside the initial viewport.

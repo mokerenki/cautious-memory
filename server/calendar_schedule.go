@@ -290,7 +290,7 @@ func (sc *Scheduler) fireTaskSchedulesAt(now time.Time) {
 			// cannot resume work outside the configured window.
 			if !open[id] && state.Paused && state.PauseReason == "paused_by_proxy" {
 				if err := sc.s.m.ConvertProxyPauseToSchedule(strconv.FormatInt(id, 10)); err != nil {
-					errors = append(errors, fmt.Sprintf("任务 #%d: %s", id, err))
+					errors = append(errors, fmt.Sprintf("Task #%d: %s", id, err))
 				}
 				continue
 			}
@@ -312,10 +312,10 @@ func (sc *Scheduler) fireTaskSchedulesAt(now time.Time) {
 				}
 			}
 			_, err := sc.s.applyTaskControlWithCause(t, action, agent.AbortPausedBySchedule)
-			message := "计划窗口"
+			message := "Schedule window"
 			if err != nil {
 				message = err.Error()
-				errors = append(errors, fmt.Sprintf("任务 #%d: %s", id, message))
+				errors = append(errors, fmt.Sprintf("Task #%d: %s", id, message))
 			}
 			_ = sc.pg.RecordScheduleHistory(item.ID, id, action, err == nil, message)
 		}

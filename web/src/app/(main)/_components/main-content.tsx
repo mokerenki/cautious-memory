@@ -80,7 +80,9 @@ function MainContentInner({ children }: { children: ReactNode }) {
           <div className="flex shrink-0 items-center gap-2">
             <LiveClock />
             {version && (
-              <span className="font-medium text-muted-foreground text-xs tabular-nums">版本 · {version}</span>
+              <span className="font-medium text-muted-foreground text-xs tabular-nums">
+                Version · {version}
+              </span>
             )}
             <UpdateBadge />
             <LayoutControls />

@@ -165,21 +165,21 @@ func (s *Server) admitTaskWhenScheduledWithGenerationChecked(t *Task, mode strin
 			return false, err
 		}
 		if !managed {
-			return false, fmt.Errorf("人工暂停优先，计划不能恢复")
+			return false, fmt.Errorf("Manual pause takes precedence, plan cannot be resumed")
 		}
 	}
 	if requirePaused {
 		if isTerminalStatus(lifecycle.Status) {
-			return false, fmt.Errorf("终态任务不能执行继续")
+			return false, fmt.Errorf("Terminal task cannot be resumed")
 		}
 		if !lifecycle.Paused {
-			return false, fmt.Errorf("仅已暂停的任务可以继续")
+			return false, fmt.Errorf("Only paused tasks can be resumed")
 		}
 		if requiredReason != "" && lifecycle.PauseReason != requiredReason {
-			return false, fmt.Errorf("任务暂停原因已改变")
+			return false, fmt.Errorf("Task pause reason has changed")
 		}
 		if requiredReason == "paused_by_proxy" && checkGeneration && lifecycle.ReconnectGeneration != requiredGeneration {
-			return false, fmt.Errorf("任务代理重连轮次已改变")
+			return false, fmt.Errorf("Task proxy reconnection generation has changed")
 		}
 		mode = s.resumeAdmissionMode(t)
 	}

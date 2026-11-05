@@ -122,14 +122,14 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
   }
 
   return (
-    <section aria-label="请求编辑器" className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+    <section aria-label="Request editor" className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2 border-b px-1 pb-2">
-        <span className="text-muted-foreground text-xs">目标</span>
+        <span className="text-muted-foreground text-xs">Target</span>
         <code
           className="min-w-0 max-w-[min(60vw,44rem)] truncate rounded bg-muted px-2 py-1 font-mono text-xs"
           title={targetOrigin || tab.url}
         >
-          {targetOrigin || connectionOrigin(tab.url) || "按 Host 请求头（默认 HTTPS）"}
+          {targetOrigin || connectionOrigin(tab.url) || "Use the Host header (HTTPS by default)"}
         </code>
         <Button
           variant="outline"
@@ -141,15 +141,15 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
           }}
         >
           <Settings2 data-icon="inline-start" />
-          目标设置
+          Target settings
         </Button>
         <Button className="ml-auto" disabled={busy} onClick={() => void send()}>
           <SendIcon data-icon="inline-start" />
-          {busy ? "发送中…" : "发送"}
+          {busy ? "Sending…" : "Send"}
         </Button>
       </div>
       <FieldSet className="flex-row flex-wrap items-center gap-3 border-b px-1 pb-2 text-xs">
-        <FieldLegend className="sr-only">发送选项</FieldLegend>
+        <FieldLegend className="sr-only">Send options</FieldLegend>
         <FieldLabel className="flex items-center gap-2" htmlFor="repeater-use-proxy">
           <Checkbox
             id="repeater-use-proxy"
@@ -157,7 +157,7 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
             checked={useProxy}
             onCheckedChange={(value) => setUseProxy(value === true)}
           />
-          经流量代理
+          Use traffic proxy
         </FieldLabel>
         <FieldLabel className="flex items-center gap-2" htmlFor="repeater-insecure">
           <Checkbox
@@ -166,7 +166,7 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
             checked={insecure}
             onCheckedChange={(value) => setInsecure(value === true)}
           />
-          跳过 TLS 校验
+          Skip TLS verification
         </FieldLabel>
         {response ? (
           <div className="ml-auto flex items-center gap-2 text-muted-foreground text-xs">
@@ -176,15 +176,15 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
               </Badge>
             ) : null}
             <span>{response.elapsed_ms} ms</span>
-            <span>{response.body_bytes.toLocaleString()} 字节</span>
-            {response.body_truncated ? <Badge variant="outline">正文已截断</Badge> : null}
+            <span>{response.body_bytes.toLocaleString()} bytes</span>
+            {response.body_truncated ? <Badge variant="outline">Body truncated</Badge> : null}
           </div>
         ) : null}
       </FieldSet>
       <div className="grid min-h-0 flex-1 auto-rows-[minmax(300px,1fr)] gap-2 overflow-hidden lg:auto-rows-auto lg:grid-cols-2">
         <RepeaterTextPane
           id="repeater-request"
-          label="请求"
+          label="Request"
           value={requestText}
           onChange={changeRequest}
           disabled={busy}
@@ -204,9 +204,9 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
           ) : null}
           <RepeaterTextPane
             id="repeater-response"
-            label="响应"
+            label="Response"
             value={responseText}
-            placeholder="发送后显示原始响应"
+            placeholder="The raw response will appear after sending"
             syntaxHighlight
             panelClassName="bg-background"
             toolbar={
@@ -237,9 +237,9 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
       <Dialog open={targetOpen} onOpenChange={setTargetOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>修改发送目标</DialogTitle>
+            <DialogTitle>Edit request target</DialogTitle>
             <DialogDescription>
-              设置连接地址和 HTTP/HTTPS。方法、路径和 Host 均在左侧报文中编辑；Host 可以与连接目标不同。
+              Set the connection address and HTTP/HTTPS scheme. Edit the method, path, and Host in the request on the left. The Host can differ from the connection target.
             </DialogDescription>
           </DialogHeader>
           <form
@@ -248,7 +248,7 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
               event.preventDefault();
               const origin = targetDraft.trim() ? connectionOrigin(targetDraft.trim()) : "";
               if (targetDraft.trim() && !origin) {
-                toast.error("请填写 http:// 或 https:// 开头的地址");
+                toast.error("Enter a URL starting with http:// or https://");
                 return;
               }
               try {
@@ -261,19 +261,19 @@ export function RepeaterEditor({ tab }: { tab: RepeaterTab }) {
             }}
           >
             <Field>
-              <FieldLabel htmlFor="repeater-target">发送目标</FieldLabel>
+              <FieldLabel htmlFor="repeater-target">Request target</FieldLabel>
               <Input
                 id="repeater-target"
-                placeholder="https://example.com:443，留空按 Host 连接"
+                placeholder="https://example.com:443 (leave blank to connect using Host)"
                 value={targetDraft}
                 onChange={(event) => setTargetDraft(event.target.value)}
               />
             </Field>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setTargetOpen(false)}>
-                取消
+                Cancel
               </Button>
-              <Button type="submit">保存目标</Button>
+              <Button type="submit">Save target</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -27,8 +27,8 @@ export function LiveClock({ className }: { className?: string }) {
         className,
       )}
       dateTime={now?.toISOString()}
-      aria-label="当前时间"
-      title="当前本地时间"
+      aria-label="Current time"
+      title="Current local time"
     >
       {now ? formatClock(now) : "---- -- -- --:--:--"}
     </time>

@@ -79,7 +79,7 @@ func probeCheckRedirect(next *http.Request, via []*http.Request) error {
 		return errors.New("重定向次数过多")
 	}
 	if len(via) > 0 && next.URL.Host != via[0].URL.Host {
-		return fmt.Errorf("拒绝跨主机重定向（%s → %s）", via[0].URL.Host, next.URL.Host)
+		return fmt.Errorf("Rejected cross-host redirect (%s → %s)", via[0].URL.Host, next.URL.Host)
 	}
 	return probeCheckURL(next.URL)
 }
@@ -96,11 +96,11 @@ func probeCheckURL(u *url.URL) error {
 		var ok bool
 		ip, ok = repeaterParseLegacyIPv4(host)
 		if !ok {
-			return fmt.Errorf("拒绝无法解析的数字主机地址 %q", host)
+			return fmt.Errorf("Rejected unresolvable numeric host address %q", host)
 		}
 	}
 	if strings.EqualFold(host, "localhost") || (ip != nil && probeIsBlockedDialIP(ip)) {
-		return errors.New("拒绝访问本机/链路本地地址")
+		return errors.New("Rejected access to local/link-local address")
 	}
 	return nil
 }
@@ -125,10 +125,10 @@ func probeBlockSensitiveDial(_, address string, _ syscall.RawConn) error {
 	}
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return fmt.Errorf("无法解析目标地址 %q", host)
+		return fmt.Errorf("Unable to resolve target address %q", host)
 	}
 	if probeIsBlockedDialIP(ip) {
-		return fmt.Errorf("拒绝访问本机/链路本地地址 %s", ip)
+		return fmt.Errorf("Rejected access to local/link-local address %s", ip)
 	}
 	return nil
 }
@@ -286,11 +286,11 @@ func buildProbeTransport(proxyURL *url.URL, caPEMPath string) (*http.Transport, 
 	if path := strings.TrimSpace(caPEMPath); path != "" {
 		pemBytes, err := os.ReadFile(path)
 		if err != nil {
-			return tr, fmt.Errorf("读不到 %s", path)
+			return tr, fmt.Errorf("Unable to read %s", path)
 		}
 		pool := x509.NewCertPool()
 		if !pool.AppendCertsFromPEM(pemBytes) {
-			return tr, fmt.Errorf("%s 不是有效的 PEM", path)
+			return tr, fmt.Errorf("%s is not a valid PEM", path)
 		}
 		tr.TLSClientConfig = &tls.Config{RootCAs: pool}
 	}
@@ -334,7 +334,7 @@ func probeOne(ctx context.Context, client *http.Client, target string) (string, 
 	if s := strings.TrimSpace(string(body)); net.ParseIP(s) != nil {
 		return s, nil
 	}
-	return "", fmt.Errorf("无法从响应中解析出 IP（收到 %d 字节，可能是反爬页或代理错误页）", len(body))
+	return "", fmt.Errorf("Unable to parse IP from response (received %d bytes, possibly an anti-scrape page or proxy error page)", len(body))
 }
 
 // egressTarget 决定 ② 把请求发到哪：

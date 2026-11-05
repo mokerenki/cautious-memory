@@ -36,7 +36,7 @@ func decodeTaskTemplateRequest(w http.ResponseWriter, r *http.Request, req *task
 	if err != nil {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
-			writeErr(w, http.StatusRequestEntityTooLarge, "请求正文过大")
+			writeErr(w, http.StatusRequestEntityTooLarge, "Request body is too large")
 		} else {
 			writeErr(w, http.StatusBadRequest, err.Error())
 		}
@@ -79,17 +79,17 @@ func validateTaskTemplateRequest(req taskTemplateRequest) error {
 		}
 		if utf8.RuneCountInString(value) > check.limit {
 			if check.name == "remark" {
-				return fmt.Errorf("备注最多 %d 个字符", check.limit)
+				return fmt.Errorf("remark must not exceed %d characters", check.limit)
 			}
-			return fmt.Errorf("%s 最多 %d 个字符", check.name, check.limit)
+			return fmt.Errorf("%s must not exceed %d characters", check.name, check.limit)
 		}
 	}
 	if req.WorkerCount != nil {
 		if *req.WorkerCount < 0 {
-			return fmt.Errorf("Worker 运行数量不能为负数")
+			return fmt.Errorf("Worker count cannot be negative")
 		}
 		if *req.WorkerCount > db.MaxTaskWorkerCount {
-			return fmt.Errorf("Worker 运行数量最多 %d", db.MaxTaskWorkerCount)
+			return fmt.Errorf("Worker count cannot exceed %d", db.MaxTaskWorkerCount)
 		}
 	}
 	return nil
@@ -100,7 +100,7 @@ func writeTaskTemplateErr(w http.ResponseWriter, err error) {
 	case errors.Is(err, db.ErrTaskTemplateInvalid):
 		writeErr(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, db.ErrTaskTemplateNameConflict):
-		writeErr(w, http.StatusConflict, "模板名称已存在")
+		writeErr(w, http.StatusConflict, "Template name already exists")
 	case errors.Is(err, db.ErrTaskTemplateNotFound):
 		writeErr(w, http.StatusNotFound, "task template not found")
 	default:
@@ -136,7 +136,7 @@ func (s *Server) pgCreateTaskTemplate(w http.ResponseWriter, r *http.Request) {
 	}
 	rules, err := buildTaskInterceptRules(req.InterceptRules)
 	if err != nil {
-		writeErr(w, http.StatusBadRequest, "拦截/允许规则无效："+err.Error())
+		writeErr(w, http.StatusBadRequest, "Invalid block/allow rules: "+err.Error())
 		return
 	}
 	workerCount := 0
@@ -183,7 +183,7 @@ func (s *Server) pgUpdateTaskTemplate(w http.ResponseWriter, r *http.Request) {
 	_, remarkPresent := present["remark"]
 	_, workerPresent := present["worker_count"]
 	if req.Name == nil && req.Description == nil && req.Goal == nil && !catPresent && !rulesPresent && !remarkPresent && !workerPresent {
-		writeErr(w, http.StatusBadRequest, "至少需要提供 name、description、goal、remark、category_id、intercept_rules 或 worker_count")
+		writeErr(w, http.StatusBadRequest, "At least one of name, description, goal, remark, category_id, intercept_rules, or worker_count must be provided")
 		return
 	}
 	patch := db.TaskTemplatePatch{Name: req.Name, Description: req.Description, Goal: req.Goal}
@@ -202,7 +202,7 @@ func (s *Server) pgUpdateTaskTemplate(w http.ResponseWriter, r *http.Request) {
 	if rulesPresent {
 		rules, err := buildTaskInterceptRules(req.InterceptRules)
 		if err != nil {
-			writeErr(w, http.StatusBadRequest, "拦截/允许规则无效："+err.Error())
+			writeErr(w, http.StatusBadRequest, "Invalid block/allow rules: "+err.Error())
 			return
 		}
 		patch.SetInterceptRules = true

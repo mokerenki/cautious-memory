@@ -2,13 +2,10 @@
 
 import * as React from "react";
 
-import { useRouter } from "next/navigation";
-
 import { ArrowDownIcon, ArrowUpIcon, PlusIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
-import { headersFromReqHead, requestFromEvidence } from "@/components/repeater/repeater-http";
-import { seedFromEvidence } from "@/components/repeater/repeater-store";
 import { TrafficEvidenceViewer } from "@/components/traffic-evidence-viewer";
 import { TrafficPickerDialog } from "@/components/traffic-picker-dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -32,10 +29,17 @@ import { api } from "@/lib/api";
 import type { FindingTraffic, FindingTrafficBinding, TrafficEvidenceRole } from "@/lib/types";
 
 const ROLES: Record<TrafficEvidenceRole, string> = {
-  baseline: "正常对照",
-  proof: "漏洞证明",
-  verification: "补充验证",
-  supporting: "辅助证据",
+  baseline: "baseline",
+  proof: "proof",
+  verification: "verification",
+  supporting: "supporting",
+};
+
+const ROLE_LABELS: Record<TrafficEvidenceRole, string> = {
+  baseline: "Baseline",
+  proof: "Vulnerability Proof",
+  verification: "Supplementary Verification",
+  supporting: "Supporting Evidence",
 };
 
 export function FindingTrafficPanel({
@@ -49,18 +53,16 @@ export function FindingTrafficPanel({
   readOnly?: boolean;
   onChanged: () => void;
 }) {
+  const { t } = useTranslation();
   const [data, setData] = React.useState<FindingTraffic | null>(null);
   const [error, setError] = React.useState("");
   const [adding, setAdding] = React.useState(false);
   const [preview, setPreview] = React.useState<string | null>(null);
-  const router = useRouter();
-  const [repeaterBusy, setRepeaterBusy] = React.useState(false);
   const [editing, setEditing] = React.useState<FindingTrafficBinding | null>(null);
   const [role, setRole] = React.useState<TrafficEvidenceRole>("supporting");
   const [note, setNote] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [reload, setReload] = React.useState(0);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: retry token intentionally refreshes this request.
   React.useEffect(() => {
     let active = true;
     setData(null);
@@ -84,7 +86,7 @@ export function FindingTrafficPanel({
       setData(await action());
       setEditing(null);
       onChanged();
-      toast.success("流量证据已更新");
+      toast.success(t("traffic_panel.updated"));
     } catch (e) {
       toast.error((e as Error).message);
       setReload((n) => n + 1);
@@ -100,60 +102,22 @@ export function FindingTrafficPanel({
     void mutate(() => api.orderFindingTraffic(findingId, ids, data.version, contextTask));
   }
 
-  async function seedRepeater(bindingId: string) {
-    setRepeaterBusy(true);
-    try {
-      const detail = await api.findingTrafficDetail(findingId, bindingId, contextTask);
-      if (detail.request.binary) toast.info("请求体为二进制，已留空；完整正文请先下载");
-      else if (detail.request.truncated) toast.info("请求体为预览片段，完整正文请先下载");
-      seedFromEvidence(
-        requestFromEvidence(
-          {
-            method: detail.binding.snapshot.method || "GET",
-            url: detail.binding.snapshot.url || "",
-            headersText: headersFromReqHead(detail.binding.snapshot.req_head),
-            body: detail.request.binary ? "" : detail.request.content || "",
-          },
-          detail.binding.snapshot.req_head,
-        ),
-        { findingId, bindingId },
-      );
-      router.push("/function/repeater");
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setRepeaterBusy(false);
-    }
-  }
-
   return (
     <>
       <Card>
         <CardHeader>
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <CardTitle>关联流量 {data ? `(${data.bindings.length})` : ""}</CardTitle>
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  seedFromEvidence({ method: "GET", url: "", headersText: "", body: "" });
-                  router.push("/function/repeater");
-                }}
-              >
-                打开请求重发
+            <CardTitle>{t("traffic_panel.title", { count: data ? data.bindings.length : 0 })}</CardTitle>
+            {!readOnly ? (
+              <Button variant="outline" size="sm" disabled={!data || busy} onClick={() => setAdding(true)}>
+                <PlusIcon data-icon="inline-start" />
+                {t("traffic_panel.bind_traffic")}
               </Button>
-              {!readOnly ? (
-                <Button variant="outline" size="sm" disabled={!data || busy} onClick={() => setAdding(true)}>
-                  <PlusIcon data-icon="inline-start" />
-                  绑定流量
-                </Button>
-              ) : (
-                <Badge variant="outline">继承证据 · 只读</Badge>
-              )}
-            </div>
+            ) : (
+              <Badge variant="outline">{t("traffic_panel.inherited_readonly")}</Badge>
+            )}
           </div>
-          <CardDescription>按复现顺序组织请求与响应。清理原始流量后，已绑定证据仍然保留。</CardDescription>
+          <CardDescription>{t("traffic_panel.desc")}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {error ? (
@@ -161,7 +125,7 @@ export function FindingTrafficPanel({
               <AlertDescription>
                 {error}
                 <Button variant="link" onClick={() => setReload((n) => n + 1)}>
-                  重试
+                  {t("common.retry")}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -171,8 +135,8 @@ export function FindingTrafficPanel({
           ) : data.bindings.length === 0 ? (
             <Empty>
               <EmptyHeader>
-                <EmptyTitle>暂无关联流量</EmptyTitle>
-                <EmptyDescription>可绑定正常对照、漏洞证明和补充验证请求。</EmptyDescription>
+                <EmptyTitle>{t("traffic_panel.no_traffic")}</EmptyTitle>
+                <EmptyDescription>{t("traffic_panel.no_traffic_desc")}</EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : (
@@ -180,31 +144,28 @@ export function FindingTrafficPanel({
               <div key={b.id} className="flex min-w-0 flex-col gap-2 rounded-md border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline">
-                    {index + 1}. {ROLES[b.role]}
+                    {index + 1}. {ROLE_LABELS[b.role]}
                   </Badge>
                   <Badge variant="secondary">
                     {b.snapshot.method} · {b.snapshot.status}
                   </Badge>
-                  <span className="text-muted-foreground text-xs">证据 #{b.id}</span>
+                  <span className="text-xs text-muted-foreground">{t("traffic_panel.evidence", { id: b.id })}</span>
                 </div>
                 <Button
                   variant="link"
-                  className="h-auto justify-start whitespace-normal p-0 text-left"
+                  className="h-auto justify-start p-0 text-left whitespace-normal"
                   onClick={() => setPreview(b.id)}
                 >
                   <span className="break-all font-mono text-xs">{b.snapshot.url}</span>
                 </Button>
-                {b.note ? <p className="whitespace-pre-wrap text-sm">{b.note}</p> : null}
+                {b.note ? <p className="text-sm whitespace-pre-wrap">{b.note}</p> : null}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-muted-foreground text-xs">
-                    {new Date(b.snapshot.captured_at * 1000).toLocaleString("zh-CN")}
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(b.snapshot.captured_at * 1000).toLocaleString("en-US")}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     <Button variant="outline" size="sm" onClick={() => setPreview(b.id)}>
-                      查看报文
-                    </Button>
-                    <Button variant="outline" size="sm" disabled={repeaterBusy} onClick={() => void seedRepeater(b.id)}>
-                      送入请求重发
+                      {t("traffic_panel.view_packet")}
                     </Button>
                     {!readOnly ? (
                       <>
@@ -218,12 +179,12 @@ export function FindingTrafficPanel({
                             setNote(b.note);
                           }}
                         >
-                          编辑说明
+                          {t("traffic_panel.edit_note")}
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          aria-label={`上移证据 ${b.id}`}
+                          aria-label={t("traffic_panel.move_up", { id: b.id })}
                           disabled={busy || index === 0}
                           onClick={() => move(index, -1)}
                         >
@@ -232,7 +193,7 @@ export function FindingTrafficPanel({
                         <Button
                           variant="ghost"
                           size="icon-sm"
-                          aria-label={`下移证据 ${b.id}`}
+                          aria-label={t("traffic_panel.move_down", { id: b.id })}
                           disabled={busy || index === data.bindings.length - 1}
                           onClick={() => move(index, 1)}
                         >
@@ -246,7 +207,7 @@ export function FindingTrafficPanel({
                             void mutate(() => api.removeFindingTraffic(findingId, b.id, data.version, contextTask))
                           }
                         >
-                          解除绑定
+                          {t("traffic_panel.unbind")}
                         </Button>
                       </>
                     ) : null}
@@ -283,12 +244,12 @@ export function FindingTrafficPanel({
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>编辑流量证据</DialogTitle>
-            <DialogDescription>说明这组请求/响应如何支持漏洞结论。</DialogDescription>
+            <DialogTitle>{t("traffic_panel.edit_title")}</DialogTitle>
+            <DialogDescription>{t("traffic_panel.edit_desc")}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="evidence-role">用途</FieldLabel>
+              <FieldLabel htmlFor="evidence-role">{t("traffic_panel.purpose")}</FieldLabel>
               <Select value={role} onValueChange={(v) => setRole(v as TrafficEvidenceRole)}>
                 <SelectTrigger id="evidence-role">
                   <SelectValue />
@@ -297,7 +258,7 @@ export function FindingTrafficPanel({
                   <SelectGroup>
                     {Object.entries(ROLES).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
-                        {label}
+                        {ROLE_LABELS[value as TrafficEvidenceRole]}
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -305,13 +266,13 @@ export function FindingTrafficPanel({
               </Select>
             </Field>
             <Field>
-              <FieldLabel htmlFor="evidence-note">证据说明</FieldLabel>
+              <FieldLabel htmlFor="evidence-note">{t("traffic_panel.note_label")}</FieldLabel>
               <Textarea id="evidence-note" value={note} onChange={(e) => setNote(e.target.value)} />
             </Field>
           </FieldGroup>
           <DialogFooter>
             <Button variant="outline" disabled={busy} onClick={() => setEditing(null)}>
-              取消
+              {t("common.cancel")}
             </Button>
             <Button
               disabled={busy || !editing || !data}
@@ -322,7 +283,7 @@ export function FindingTrafficPanel({
                   );
               }}
             >
-              保存说明
+              {t("traffic_panel.save_note")}
             </Button>
           </DialogFooter>
         </DialogContent>

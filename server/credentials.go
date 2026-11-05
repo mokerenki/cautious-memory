@@ -30,7 +30,7 @@ func (s *Server) seedCredentialProcessor() {
 		return
 	}
 	if a == nil {
-		a, err = s.m.pg.CreateAgent(db.CredentialAgentKey, "凭据整理", "Agent 开关控制的凭据整理：拆分账号、密码、Token、Cookie，仅分析已上报内容，不主动登录。可独立绑定模型；每条最多一次模型调用。")
+		a, err = s.m.pg.CreateAgent(db.CredentialAgentKey, "Credential Review", "Credential review controlled by the Agent toggle: extract accounts, passwords, tokens, and cookies from submitted content only. Do not attempt to log in. A separate model can be assigned; each report triggers at most one model call.")
 		if err != nil {
 			return
 		}
@@ -99,10 +99,10 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 	result := *item.Credentials
 	conversationID := result.ConversationID
 	if conversationID == 0 {
-		if c, err := s.m.pg.CreateConversation(db.CredentialAgentKey, "凭据整理 · "+firstLine(item.Title, 42), nil); err == nil {
+		if c, err := s.m.pg.CreateConversation(db.CredentialAgentKey, "Credential review · "+firstLine(item.Title, 42), nil); err == nil {
 			conversationID = c.ID
 			result.ConversationID = c.ID
-			_, _ = s.m.pg.AppendConvActivity(c.ID, db.Activity{Worker: db.CredentialAgentKey, Kind: "user", Summary: "收到凭据上报，开始整理", Detail: item.Content})
+			_, _ = s.m.pg.AppendConvActivity(c.ID, db.Activity{Worker: db.CredentialAgentKey, Kind: "user", Summary: "Credential report received; review started", Detail: item.Content})
 		}
 	}
 	needsExtract := result.ForceExtract || result.SourceHash != db.CredentialSourceHash(item.Content) || result.Method == "" || (result.Error != "" && len(result.Accounts) == 0)
@@ -132,7 +132,7 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 			}
 			if !ok {
 				result.State = "error"
-				result.Error = "未配置可用模型，请在 Agent 配置中为凭据整理选择模型，或激活全局模型后重试"
+				result.Error = "No model is available. Select a model for Credential Review in Agent settings, or activate a global model and try again."
 			} else {
 				prompt := agent.CredentialProcessorPrompt
 				if a, err := s.m.pg.GetAgentByKey(db.CredentialAgentKey); err == nil && a != nil {
@@ -158,10 +158,10 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 		result.SourceHash = sourceHash
 	}
 	if result.State == "ready" && len(result.Accounts) == 100 {
-		result.Note = "单条最多整理 100 组凭据，完整信息仍可在原始上报中查看"
+		result.Note = "Up to 100 credential groups are shown per report. View the original submission for complete information."
 	}
 	if result.State == "ready" && len(result.Accounts) == 0 {
-		result.Note = "未识别到可独立展示的凭据，原文已保留"
+		result.Note = "No credentials could be displayed separately. The original text has been preserved."
 	}
 	if result.State == "ready" && s.m.pg.GetBool(db.SettingCredentialTraffic, false) && ctx.Err() == nil {
 		matched, state, note := s.matchCredentialTraffic(ctx, item, result.Accounts)
@@ -181,7 +181,7 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 		if len(merged) > 0 {
 			result.TrafficState = "ready"
 			if len(matched) == 0 {
-				result.TrafficNote = "既有流量引用与匹配片段已保留；原始流量可能已删除或暂不可用"
+				result.TrafficNote = "Existing traffic references and matching excerpts have been preserved. The original traffic may have been deleted or is temporarily unavailable."
 			}
 		}
 	} else if !s.m.pg.GetBool(db.SettingCredentialTraffic, false) {
@@ -189,7 +189,7 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 	}
 	if ctx.Err() != nil && result.State == "ready" {
 		result.State = "error"
-		result.Error = "整理已中断，原始内容保留，可手动重试"
+		result.Error = "Review was interrupted. The original content is preserved; you can retry manually."
 	}
 	// Use a fresh bounded persistence context so cancellation can release the lease.
 	finish, stop := context.WithTimeout(context.Background(), 5*time.Second)
@@ -199,10 +199,10 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 	}
 	if conversationID > 0 {
 		detail, _ := json.Marshal(result)
-		kind, summary := "result", "凭据整理完成"
+		kind, summary := "result", "Credential review complete"
 		isError := result.State == "error"
 		if isError {
-			kind, summary = "text", "凭据整理失败："+result.Error
+			kind, summary = "text", "Credential review failed: "+result.Error
 		}
 		_, _ = s.m.pg.AppendConvActivity(conversationID, db.Activity{Worker: db.CredentialAgentKey, Kind: kind, IsError: isError, Summary: summary, Detail: string(detail), InputTokens: intPtr(result.InputTokens), OutputTokens: intPtr(result.OutputTokens)})
 		_ = s.m.pg.TouchConversation(conversationID)
@@ -312,11 +312,11 @@ func credentialExcerpt(raw string, accounts []db.CredentialAccount) string {
 func (s *Server) matchCredentialTraffic(ctx context.Context, item *db.Intelligence, accounts []db.CredentialAccount) ([]db.CredentialTraffic, string, string) {
 	bound := []db.CredentialTraffic{}
 	if s.m.traffic == nil {
-		return bound, "unavailable", "未启用流量采集或没有可用的流量存储"
+		return bound, "unavailable", "Traffic capture is disabled or no traffic storage is available"
 	}
 	hosts := s.credentialHosts(item)
 	if len(hosts) == 0 {
-		return bound, "unavailable", "没有可核对的关联资产或 URL，未猜测流量归属"
+		return bound, "unavailable", "No associated asset or URL is available for verification; traffic ownership was not inferred"
 	}
 	seen := map[string]bool{}
 	inspected, queries := 0, 0
@@ -392,17 +392,17 @@ func (s *Server) matchCredentialTraffic(ctx context.Context, item *db.Intelligen
 		}
 	}
 	if ctx.Err() != nil {
-		return bound, "error", "流量核对已中断，可手动重试"
+		return bound, "error", "Traffic verification was interrupted; you can retry manually"
 	}
 	if len(bound) == 0 {
-		return bound, "none", "未找到包含匹配凭据的已抓取流量；不会据此改变凭据验证状态"
+		return bound, "none", "No captured traffic containing matching credentials was found. Credential verification status will not be changed based on this result."
 	}
-	return bound, "ready", "已核对资产域名及凭据原文；保存流量引用与片段，原始流量删除后仍可查看片段"
+	return bound, "ready", "Verified the asset domains against the original credentials. Traffic references and excerpts were saved; excerpts remain available if the original traffic is deleted."
 }
 
 func (s *Server) retryCredentials(w http.ResponseWriter, r *http.Request) {
 	if !s.m.pg.GetBool(db.SettingTaskIntelligence, false) || !s.m.pg.GetBool(db.SettingCredentialAgent, false) {
-		writeErr(w, 409, "请先开启 Agent 开关")
+		writeErr(w, 409, "Enable the Agent first")
 		return
 	}
 	taskID, ok := pathInt(r, "id")
@@ -419,7 +419,7 @@ func (s *Server) retryCredentials(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if item.Credentials != nil && item.Credentials.State == "processing" {
-		writeErr(w, 409, "该凭据正在整理，请稍后再试")
+		writeErr(w, 409, "These credentials are already being reviewed. Please try again later.")
 		return
 	}
 	if err = s.m.pg.RetryCredentialJob(r.Context(), taskID, id); err != nil {

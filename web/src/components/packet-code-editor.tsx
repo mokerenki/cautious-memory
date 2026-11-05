@@ -62,7 +62,7 @@ export function PacketCodeEditor({
   onChange,
   readOnly = false,
   wrapLines = true,
-  ariaLabel = "HTTP 报文代码",
+  ariaLabel = "HTTP packet code",
 }: {
   value: string;
   onChange?: (value: string) => void;

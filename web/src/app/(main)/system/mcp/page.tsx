@@ -3,6 +3,7 @@
 import * as React from "react";
 import { toast } from "sonner";
 import { PlusIcon, RefreshCwIcon, ServerIcon, Trash2Icon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ const emptyForm: FormState = {
 };
 
 export default function MCPPage() {
+  const { t } = useTranslation();
   const [servers, setServers] = React.useState<MCPServer[]>([]);
   const [agents, setAgents] = React.useState<Agent[]>([]);
   const [visibility, setVisibility] = React.useState<Record<number, string[]>>({});
@@ -136,15 +138,15 @@ export default function MCPPage() {
 
   async function saveForm() {
     if (!form.name.trim()) {
-      toast.error("请填写名称");
+      toast.error(t("mcp.toast.enter_name"));
       return;
     }
     if (form.transport === "stdio" && !form.command.trim()) {
-      toast.error("请填写命令");
+      toast.error(t("mcp.toast.enter_command"));
       return;
     }
     if (form.transport !== "stdio" && !form.url.trim()) {
-      toast.error("请填写远程 URL");
+      toast.error(t("mcp.toast.enter_url"));
       return;
     }
     setSaving(true);
@@ -156,7 +158,7 @@ export default function MCPPage() {
               url: form.url.trim(),
               command: "",
               args: [] as string[],
-              env: parseEnv(form.env), // 远程模式下 env 即请求头
+              env: parseEnv(form.env), // In remote mode env is the request headers
               insecure: form.insecure,
             }
           : {
@@ -172,11 +174,11 @@ export default function MCPPage() {
         enabled: editing ? editing.enabled : true,
         ...base,
       });
-      toast.success(editing ? "已保存" : "已添加 MCP 服务器");
+      toast.success(editing ? t("mcp.toast.saved") : t("mcp.toast.added"));
       if (!editing) setOpen(false);
       load();
     } catch (e) {
-      toast.error("保存失败：" + (e as Error).message);
+      toast.error(t("mcp.toast.save_failed", { error: (e as Error).message }));
     } finally {
       setSaving(false);
     }
@@ -186,12 +188,12 @@ export default function MCPPage() {
     if (!editing) return;
     setRefreshing(true);
     try {
-      const t = await api.refreshMcpServer(editing.id);
-      setTools(t);
-      toast.success(`发现 ${t.length} 个工具`);
+      const discoveredTools = await api.refreshMcpServer(editing.id);
+      setTools(discoveredTools);
+      toast.success(t("mcp.toast.discovered", { count: discoveredTools.length }));
       load();
     } catch (e) {
-      toast.error("刷新失败：" + (e as Error).message);
+      toast.error(t("mcp.toast.refresh_failed", { error: (e as Error).message }));
     } finally {
       setRefreshing(false);
     }
@@ -200,11 +202,11 @@ export default function MCPPage() {
   async function removeServer(s: MCPServer) {
     try {
       await api.deleteMcpServer(s.id);
-      toast.success(`已删除：${s.name}`);
+      toast.success(t("mcp.toast.deleted", { name: s.name }));
       setOpen(false);
       load();
     } catch (e) {
-      toast.error("删除失败：" + (e as Error).message);
+      toast.error(t("mcp.toast.delete_failed", { error: (e as Error).message }));
     }
   }
 
@@ -213,7 +215,7 @@ export default function MCPPage() {
       await api.saveMcpServer({ ...s, enabled: !s.enabled });
       load();
     } catch (e) {
-      toast.error("操作失败：" + (e as Error).message);
+      toast.error(t("mcp.toast.operation_failed", { error: (e as Error).message }));
     }
   }
 
@@ -221,10 +223,10 @@ export default function MCPPage() {
     const on = (visibility[serverId] ?? []).includes(agentId);
     try {
       await api.toggleVisibility(agentId, "mcp", serverId, !on);
-      toast.success(`${on ? "取消" : "授予"}「${agentName}」可见`);
+      toast.success(t("mcp.toast.visibility_toggled", { enabled: on ? t("mcp.visibility.revoked") : t("mcp.visibility.granted"), name: agentName }));
       load();
     } catch (e) {
-      toast.error("操作失败：" + (e as Error).message);
+      toast.error(t("mcp.toast.operation_failed", { error: (e as Error).message }));
     }
   }
 
@@ -232,33 +234,33 @@ export default function MCPPage() {
     return (
       <div className="grid gap-4 py-4">
         <div className="grid gap-2">
-          <Label>传输方式</Label>
+          <Label>{t("mcp.transport")}</Label>
           <div className="flex gap-2">
             <Button
               type="button"
               variant={form.transport === "stdio" ? "default" : "outline"}
               onClick={() => setF({ transport: "stdio" })}
             >
-              stdio（本地）
+              stdio（{t("mcp.local")}）
             </Button>
             <Button
               type="button"
               variant={form.transport === "http" ? "default" : "outline"}
               onClick={() => setF({ transport: "http" })}
             >
-              http（远程）
+              http（{t("mcp.remote")}）
             </Button>
             <Button
               type="button"
               variant={form.transport === "sse" ? "default" : "outline"}
               onClick={() => setF({ transport: "sse" })}
             >
-              sse（旧版）
+              sse（{t("mcp.legacy")}）
             </Button>
           </div>
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="m-name">名称</Label>
+          <Label htmlFor="m-name">{t("mcp.name")}</Label>
           <Input
             id="m-name"
             placeholder="filesystem"
@@ -269,7 +271,7 @@ export default function MCPPage() {
         {form.transport === "stdio" ? (
           <>
             <div className="grid gap-2">
-              <Label htmlFor="m-cmd">命令</Label>
+              <Label htmlFor="m-cmd">{t("mcp.command")}</Label>
               <Input
                 id="m-cmd"
                 className="font-mono"
@@ -279,7 +281,7 @@ export default function MCPPage() {
               />
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="m-args">参数（空格分隔）</Label>
+              <Label htmlFor="m-args">{t("mcp.args")}</Label>
               <Input
                 id="m-args"
                 className="font-mono"
@@ -291,7 +293,7 @@ export default function MCPPage() {
           </>
         ) : (
           <div className="grid gap-2">
-            <Label htmlFor="m-url">远程 URL</Label>
+            <Label htmlFor="m-url">{t("mcp.remote_url")}</Label>
             <Input
               id="m-url"
               className="font-mono"
@@ -304,15 +306,15 @@ export default function MCPPage() {
                 checked={form.insecure}
                 onCheckedChange={(v) => setF({ insecure: v === true })}
               />
-              跳过 TLS 证书校验（自签证书）
+              {t("mcp.skip_tls")}
             </label>
           </div>
         )}
         <div className="grid gap-2">
           <Label htmlFor="m-env">
             {form.transport !== "stdio"
-              ? "请求头（每行 KEY=VALUE，如 Authorization=Bearer xxx）"
-              : "环境变量（每行 KEY=VALUE）"}
+              ? t("mcp.env_headers")
+              : t("mcp.env_vars")}
           </Label>
           <Textarea
             id="m-env"
@@ -332,15 +334,15 @@ export default function MCPPage() {
     return (
       <div className="flex flex-col gap-3 py-4">
         <div className="flex items-center justify-between">
-          <span className="text-muted-foreground text-sm">{tools.length} 个工具</span>
+          <span className="text-muted-foreground text-sm">{t("mcp.tool_count", { count: tools.length })}</span>
           <Button size="sm" variant="outline" disabled={refreshing} onClick={refreshTools}>
-            <RefreshCwIcon className={refreshing ? "animate-spin" : ""} /> 刷新
+            <RefreshCwIcon className={refreshing ? "animate-spin" : ""} /> {t("mcp.refresh")}
           </Button>
         </div>
         {toolsLoading ? (
-          <p className="text-muted-foreground text-sm">加载中…</p>
+          <p className="text-muted-foreground text-sm">{t("mcp.loading")}</p>
         ) : tools.length === 0 ? (
-          <p className="text-muted-foreground text-sm">尚未发现工具，点击刷新重新获取。</p>
+          <p className="text-muted-foreground text-sm">{t("mcp.no_tools")}</p>
         ) : (
           <div className="flex flex-col divide-y">
             {tools.map((t) => (
@@ -363,7 +365,7 @@ export default function MCPPage() {
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
       <div>
         <h1 className="text-xl font-semibold tracking-tight">MCP</h1>
-        <p className="text-muted-foreground text-sm">外部 MCP 工具服务器 · 按 Agent 授权可见</p>
+        <p className="text-muted-foreground text-sm">{t("mcp.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -373,7 +375,7 @@ export default function MCPPage() {
           className="text-foreground/70 border-foreground/70 hover:bg-muted/60 hover:shadow-sm flex min-h-[116px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed transition"
         >
           <PlusIcon className="size-6" />
-          <span className="text-sm">添加 MCP</span>
+          <span className="text-sm">{t("mcp.add_mcp")}</span>
         </button>
 
         {servers.map((s) => (
@@ -393,12 +395,12 @@ export default function MCPPage() {
                   <Switch
                     checked={s.enabled}
                     onCheckedChange={() => toggleEnabled(s)}
-                    aria-label="启用"
+                    aria-label={t("mcp.enable")}
                   />
                   <Button
                     size="icon"
                     variant="outline"
-                    aria-label="删除"
+                    aria-label={t("mcp.delete")}
                     onClick={() => removeServer(s)}
                   >
                     <Trash2Icon className="text-destructive" />
@@ -408,10 +410,10 @@ export default function MCPPage() {
             </CardHeader>
             <CardContent className="grid gap-3">
               <p className="text-muted-foreground text-sm">
-                {s.tools && s.tools.length > 0 ? `${s.tools.length} 个工具` : "尚未发现工具"}
+                {s.tools && s.tools.length > 0 ? t("mcp.tool_count", { count: s.tools.length }) : t("mcp.no_tools")}
               </p>
               <div className="grid gap-2" onClick={(e) => e.stopPropagation()}>
-                <span className="text-muted-foreground text-xs">可见性（按 Agent 授权）</span>
+                <span className="text-muted-foreground text-xs">{t("mcp.visibility_label")}</span>
                 <div className="flex flex-wrap gap-x-4 gap-y-2">
                   {agents.map((a) => (
                     <label key={a.key} className="flex items-center gap-2 text-sm">
@@ -435,9 +437,9 @@ export default function MCPPage() {
           className="w-full data-[side=right]:sm:max-w-lg"
         >
           <SheetHeader>
-            <SheetTitle>{editing ? editing.name : "添加 MCP 服务器"}</SheetTitle>
+            <SheetTitle>{editing ? editing.name : t("mcp.add_server")}</SheetTitle>
             <SheetDescription>
-              stdio（本地起进程）或 http（远程 Streamable HTTP）
+              {t("mcp.transport_desc")}
             </SheetDescription>
           </SheetHeader>
 
@@ -448,16 +450,16 @@ export default function MCPPage() {
               className="flex min-h-0 flex-1 flex-col px-4"
             >
               <TabsList>
-                <TabsTrigger value="config">配置</TabsTrigger>
+                <TabsTrigger value="config">{t("mcp.config")}</TabsTrigger>
                 <TabsTrigger value="tools">
-                  工具列表{tools.length ? `（${tools.length}）` : ""}
+                  {t("mcp.tool_list")}{tools.length ? ` (${tools.length})` : ""}
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="config" className="min-h-0 flex-1 overflow-y-auto">
                 {renderForm()}
                 <div className="flex gap-2 pt-2 pb-6">
                   <Button onClick={saveForm} disabled={saving}>
-                    保存
+                    {t("mcp.save")}
                   </Button>
                 </div>
               </TabsContent>
@@ -470,7 +472,7 @@ export default function MCPPage() {
               {renderForm()}
               <div className="pt-2 pb-6">
                 <Button onClick={saveForm} disabled={saving}>
-                  <PlusIcon /> 添加
+                  <PlusIcon /> {t("mcp.add")}
                 </Button>
               </div>
             </div>

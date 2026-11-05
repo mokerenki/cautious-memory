@@ -195,7 +195,7 @@ export default function FindingsPage() {
         setActiveRetests(Object.fromEntries(rows.map((item) => [item.finding_id, item])));
         failed = false;
       } catch (error) {
-        if (!disposed && !failed) toast.error(`加载复测状态失败：${(error as Error).message}`);
+        if (!disposed && !failed) toast.error(`Failed to load retest status: ${(error as Error).message}`);
         failed = true;
       } finally {
         if (!disposed) timer = setTimeout(() => void refreshRetests(), 3000);
@@ -328,9 +328,9 @@ export default function FindingsPage() {
         includeOriginals,
       });
       setExportOpen(false);
-      toast.success("已开始下载导出文件");
+      toast.success("Started downloading export file");
     } catch (e) {
-      toast.error(`导出失败：${(e as Error).message}`);
+      toast.error(`Export failed: ${(e as Error).message}`);
     } finally {
       setExporting(false);
     }
@@ -422,7 +422,7 @@ export default function FindingsPage() {
     } catch (e) {
       if (request !== assetTreeRequest.current || activeFilterFingerprint.current !== requestFilter) return;
       setAssetTree((current) => ({ ...current, loading: false }));
-      toast.error(`资产树加载失败：${(e as Error).message}`);
+      toast.error(`Asset tree load failed: ${(e as Error).message}`);
     }
   }, [dateRange, filterFingerprint, severity, status, vulnclass, task, query, sort]);
 
@@ -675,7 +675,7 @@ export default function FindingsPage() {
       setFindings((cur) => cur.map((x) => (isSameFinding(x, f) ? { ...x, status: next } : x)));
       try {
         await api.setFindingStatus(f.finding_id, next);
-        toast.success(`已标记为「${statusMeta("finding", next).label}」`);
+        toast.success(`Marked as "${statusMeta("finding", next).label}"`);
         // refresh stat cards (pending count) and drop the row if it no longer matches the status filter
         api
           .findingStats()
@@ -691,7 +691,7 @@ export default function FindingsPage() {
         refreshAfterMutation(f);
       } catch (e) {
         setFindings((cur) => cur.map((x) => (isSameFinding(x, f) ? { ...x, status: prev } : x)));
-        toast.error(`更新失败：${(e as Error).message}`);
+        toast.error(`Update failed: ${(e as Error).message}`);
       }
     },
     [refreshAfterMutation, setFindings, status],
@@ -746,7 +746,7 @@ export default function FindingsPage() {
               : x,
           ),
         );
-        toast.success("已保存");
+        toast.success("Saved");
         api
           .findingStats()
           .then(setStats)
@@ -755,7 +755,7 @@ export default function FindingsPage() {
           });
         refreshAfterMutation(f);
       } catch (e) {
-        toast.error(`保存失败：${(e as Error).message}`);
+        toast.error(`Save failed: ${(e as Error).message}`);
       } finally {
         setSaving(false);
       }
@@ -779,7 +779,7 @@ export default function FindingsPage() {
         setFlat((cur) => ({ ...cur, total: Math.max(0, cur.total - 1) }));
         const rowKey = findingRowKey(f);
         setExpanded((cur) => (cur === rowKey ? null : cur));
-        toast.success("已删除漏洞");
+        toast.success("Finding deleted");
         api
           .findingStats()
           .then(setStats)
@@ -788,7 +788,7 @@ export default function FindingsPage() {
           });
         refreshAfterMutation(f, true);
       } catch (e) {
-        toast.error(`删除失败：${(e as Error).message}`);
+        toast.error(`Delete failed: ${(e as Error).message}`);
       }
     },
     [refreshAfterMutation, setFindings],
@@ -806,26 +806,26 @@ export default function FindingsPage() {
       const result = await api.deepenFinding(deepenFinding.finding_id, deepenDescription.trim());
       toast.success(
         result.queued
-          ? `深入意图 #${result.intent_id} 已进入任务队列`
-          : `已创建高优先级 Worker 意图 #${result.intent_id}`,
+          ? `Deepen intent #${result.intent_id} entered the task queue`
+          : `Created high-priority Worker intent #${result.intent_id}`,
       );
       refreshAfterMutation(deepenFinding);
       setDeepenFinding(null);
       setDeepenDescription("");
     } catch (error) {
-      toast.error(`提交失败：${(error as Error).message}`);
+      toast.error(`Submit failed: ${(error as Error).message}`);
     } finally {
       setDeepening(false);
     }
   }
 
   const statCards = [
-    { label: "独立漏洞", value: stats.distinct?.total ?? stats.total, icon: BugIcon },
-    { label: "上报记录", value: stats.total, tone: "text-amber-500", icon: ClockIcon },
-    { label: "严重", value: stats.distinct?.critical ?? stats.critical, tone: "text-rose-600", icon: ShieldAlertIcon },
-    { label: "高危", value: stats.distinct?.high ?? stats.high, tone: "text-red-500", icon: TriangleAlertIcon },
-    { label: "中危", value: stats.distinct?.medium ?? stats.medium, tone: "text-amber-500", icon: TriangleAlertIcon },
-    { label: "低危", value: stats.distinct?.low ?? stats.low, tone: "text-slate-500", icon: InfoIcon },
+    { label: "Findings", value: stats.distinct?.total ?? stats.total, icon: BugIcon },
+    { label: "Reports", value: stats.total, tone: "text-amber-500", icon: ClockIcon },
+    { label: "Critical", value: stats.distinct?.critical ?? stats.critical, tone: "text-rose-600", icon: ShieldAlertIcon },
+    { label: "High", value: stats.distinct?.high ?? stats.high, tone: "text-red-500", icon: TriangleAlertIcon },
+    { label: "Medium", value: stats.distinct?.medium ?? stats.medium, tone: "text-amber-500", icon: TriangleAlertIcon },
+    { label: "Low", value: stats.distinct?.low ?? stats.low, tone: "text-slate-500", icon: InfoIcon },
   ];
 
   // 导出弹窗里「当前筛选」的条数:两个视图的筛选一致,只是统计口径来源不同。
@@ -869,7 +869,7 @@ export default function FindingsPage() {
               items={flat.items}
               caseRows={flat.caseRows}
               presentation={view === "asset" ? "asset" : "records"}
-              selectAllLabel="选择当前页全部"
+              selectAllLabel="Select all on current page"
               {...rowProps}
             />
             <TablePagination
@@ -893,15 +893,15 @@ export default function FindingsPage() {
     <div className="flex flex-1 flex-col gap-4 md:gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">发现</h1>
-          <p className="text-muted-foreground text-sm">跨任务漏洞汇总</p>
+          <h1 className="text-xl font-semibold tracking-tight">Findings</h1>
+          <p className="text-muted-foreground text-sm">Cross-task vulnerability summary</p>
         </div>
         <Tabs value={view} onValueChange={(v) => setView(v as FindingView)}>
           <TabsList>
-            <TabsTrigger value="cases">按漏洞</TabsTrigger>
-            <TabsTrigger value="flat">原始上报</TabsTrigger>
-            <TabsTrigger value="grouped">按任务分组</TabsTrigger>
-            <TabsTrigger value="asset">按资产</TabsTrigger>
+            <TabsTrigger value="cases">By vulnerability</TabsTrigger>
+            <TabsTrigger value="flat">Raw reports</TabsTrigger>
+            <TabsTrigger value="grouped">By task</TabsTrigger>
+            <TabsTrigger value="asset">By asset</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
@@ -929,8 +929,8 @@ export default function FindingsPage() {
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="检索漏洞内容"
-              aria-label="检索漏洞内容"
+              placeholder="Search vulnerability content"
+              aria-label="Search vulnerability content"
             />
             <InputGroupAddon>
               <SearchIcon aria-hidden="true" />
@@ -946,7 +946,7 @@ export default function FindingsPage() {
             spacing={0}
           >
             {SEVERITY_FILTER_OPTIONS.map(([val, label]) => (
-              <ToggleGroupItem key={val} value={val} aria-label={`按${label}等级筛选`}>
+              <ToggleGroupItem key={val} value={val} aria-label={`Filter by ${label} severity`}>
                 {label}
               </ToggleGroupItem>
             ))}
@@ -954,10 +954,10 @@ export default function FindingsPage() {
 
           <Select value={status} onValueChange={(v) => setStatus(v as "all" | FindingStatus)}>
             <SelectTrigger size="sm" className="w-32 shrink-0">
-              <SelectValue placeholder="状态" />
+              <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部状态</SelectItem>
+              <SelectItem value="all">All statuses</SelectItem>
               {FINDING_STATUSES.map((st) => (
                 <SelectItem key={st} value={st}>
                   {statusMeta("finding", st).label}
@@ -968,10 +968,10 @@ export default function FindingsPage() {
 
           <Select value={vulnclass} onValueChange={setVulnclass}>
             <SelectTrigger size="sm" className="w-40 shrink-0">
-              <SelectValue placeholder="漏洞类型" />
+              <SelectValue placeholder="Vulnerability type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部类型</SelectItem>
+              <SelectItem value="all">All types</SelectItem>
               {stats.vulnclasses.map((vc) => (
                 <SelectItem key={vc} value={vc}>
                   {vc}
@@ -982,14 +982,14 @@ export default function FindingsPage() {
 
           <Select value={task} onValueChange={setTask}>
             <SelectTrigger size="sm" className="w-48 shrink-0">
-              <SelectValue placeholder="任务" />
+              <SelectValue placeholder="Task" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">全部任务</SelectItem>
-              <SelectItem value={UNASSIGNED_TASK}>未关联 / 任务已删除</SelectItem>
+              <SelectItem value="all">All tasks</SelectItem>
+              <SelectItem value={UNASSIGNED_TASK}>Unassociated / Task deleted</SelectItem>
               {(stats.tasks ?? []).map((t) => {
                 const id = String(t.id);
-                const label = t.name || t.description || `任务 #${id}（已删除）`;
+                const label = t.name || t.description || `Task #${id} (deleted)`;
                 return (
                   <SelectItem key={id} value={id}>
                     <span className="flex w-full items-center gap-2">
@@ -1014,14 +1014,14 @@ export default function FindingsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="severity">按严重度</SelectItem>
-              <SelectItem value="time">按时间</SelectItem>
+              <SelectItem value="severity">By severity</SelectItem>
+              <SelectItem value="time">By time</SelectItem>
             </SelectContent>
           </Select>
 
           <div className="ml-auto flex shrink-0 items-center gap-3">
             {selectedIds.size > 0 && (
-              <span className="text-xs text-muted-foreground tabular-nums">已选 {selectedIds.size} 条</span>
+              <span className="text-xs text-muted-foreground tabular-nums">Selected {selectedIds.size}</span>
             )}
             <Button
               size="sm"
@@ -1031,7 +1031,7 @@ export default function FindingsPage() {
                 setReviewing(true);
                 try {
                   await api.reviewFindingCases([...selectedIds]);
-                  toast.success("已提交整理，按任务分别执行");
+                  toast.success("Submitted for review, executed by task separately");
                 } catch (e) {
                   toast.error((e as Error).message);
                 } finally {
@@ -1039,10 +1039,10 @@ export default function FindingsPage() {
                 }
               }}
             >
-              {reviewing ? <Spinner /> : null}整理所选（{selectedIds.size}）
+              {reviewing ? <Spinner /> : null}Review selected ({selectedIds.size})
             </Button>
             <Button size="sm" variant="outline" onClick={openExport}>
-              <DownloadIcon /> 导出
+              <DownloadIcon /> Export
             </Button>
           </div>
         </div>
@@ -1078,7 +1078,7 @@ export default function FindingsPage() {
                   className={cn("hover:text-foreground", assetScope === null && "font-medium text-foreground")}
                   onClick={() => setAssetScope(null)}
                 >
-                  全部资产
+                  All assets
                 </button>
                 {assetPath.map((node) => (
                   <React.Fragment key={node.key}>
@@ -1096,7 +1096,7 @@ export default function FindingsPage() {
                     </button>
                   </React.Fragment>
                 ))}
-                <span className="ml-auto shrink-0 text-xs tabular-nums">共 {flat.total} 条</span>
+                <span className="ml-auto shrink-0 text-xs tabular-nums">Total {flat.total} items</span>
               </div>
               {flatListCard}
             </div>
@@ -1144,13 +1144,13 @@ export default function FindingsPage() {
                         <div className="flex min-w-0 flex-col gap-1">
                           <CardTitle className="truncate text-sm">
                             {group.task_id === null
-                              ? "未关联 / 任务已删除"
+                              ? "Unassociated / Task deleted"
                               : group.task_name
-                                ? `${group.task_name}（任务 #${group.task_id}）`
-                                : `任务 #${group.task_id}`}
+                                  ? `${group.task_name} (Task #${group.task_id})`
+                                  : `Task #${group.task_id}`}
                           </CardTitle>
                           <CardDescription className="truncate" title={group.task_description}>
-                            {group.task_description || "来源任务不可用"}
+                            {group.task_description || "Source task unavailable"}
                           </CardDescription>
                         </div>
                       </button>
@@ -1173,7 +1173,7 @@ export default function FindingsPage() {
                           <Button size="icon-sm" variant="ghost" asChild>
                             <Link
                               href={`/function/tasks/detail?id=${group.task_id}`}
-                              aria-label={`查看任务 #${group.task_id}`}
+                              aria-label={`View task #${group.task_id}`}
                             >
                               <ArrowUpRightIcon />
                             </Link>
@@ -1194,7 +1194,7 @@ export default function FindingsPage() {
                             items={state.items}
                             caseRows={state.caseRows}
                             presentation="task"
-                            selectAllLabel="选择本组当前页全部"
+                            selectAllLabel="Select all on current page of this group"
                             {...rowProps}
                           />
                           <TablePagination
@@ -1213,7 +1213,7 @@ export default function FindingsPage() {
             })}
             {groups.length === 0 && (
               <Card>
-                <CardContent className="py-12 text-center text-sm text-muted-foreground">没有匹配的发现。</CardContent>
+                <CardContent className="py-12 text-center text-sm text-muted-foreground">No matching findings.</CardContent>
               </Card>
             )}
             <TablePagination
@@ -1262,25 +1262,25 @@ export default function FindingsPage() {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>深入利用漏洞</DialogTitle>
+            <DialogTitle>Deep dive into vulnerability</DialogTitle>
             <DialogDescription className="break-words">
-              将在原任务 #{deepenFinding?.task_id} 中创建优先级 10 的 Worker 意图，基于当前漏洞开展二次验证：
+              Create a priority-10 Worker intent in original task #{deepenFinding?.task_id} to conduct secondary verification based on the current vulnerability:
               {deepenFinding?.name || deepenFinding?.vulnclass || deepenFinding?.summary}
             </DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="finding-deepen-description">利用描述</FieldLabel>
+              <FieldLabel htmlFor="finding-deepen-description">Exploit description</FieldLabel>
               <Textarea
                 id="finding-deepen-description"
                 value={deepenDescription}
                 onChange={(event) => setDeepenDescription(event.target.value)}
                 maxLength={4000}
-                placeholder="描述需要验证的利用路径、边界条件、目标或期望证据"
+                placeholder="Describe the exploit path, boundary conditions, targets, or expected evidence to verify"
                 disabled={deepening}
               />
               <FieldDescription className="flex justify-between gap-3">
-                <span>新意图会继承该漏洞的资产锚点。</span>
+                <span>The new intent will inherit the vulnerability's asset anchor.</span>
                 <span className="shrink-0 tabular-nums">{deepenDescription.length} / 4000</span>
               </FieldDescription>
             </Field>
@@ -1294,11 +1294,11 @@ export default function FindingsPage() {
               }}
               disabled={deepening}
             >
-              取消
+              Cancel
             </Button>
             <Button onClick={submitDeepen} disabled={deepening || !deepenDescription.trim()}>
               {deepening && <Spinner data-icon="inline-start" />}
-              创建深入意图
+              Create deep-dive intent
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1307,55 +1307,55 @@ export default function FindingsPage() {
       <Dialog open={exportOpen} onOpenChange={setExportOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>导出发现</DialogTitle>
-            <DialogDescription>选择导出范围与格式,生成后浏览器会自动下载。</DialogDescription>
+            <DialogTitle>Export findings</DialogTitle>
+            <DialogDescription>Choose export scope and format; the browser will automatically download after generation.</DialogDescription>
           </DialogHeader>
 
           <div className="flex flex-col gap-5 py-1">
             <div className="flex flex-col gap-2">
-              <span className="text-xs text-muted-foreground">导出范围</span>
+              <span className="text-xs text-muted-foreground">Export scope</span>
               <RadioGroup value={exportScope} onValueChange={(v) => setExportScope(v as typeof exportScope)}>
-                <label htmlFor="export-scope-filtered" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-scope-filtered" value="filtered" /> 导出当前筛选结果（共 {filteredTotal}{" "}
-                  条）
-                </label>
-                <label htmlFor="export-scope-all" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-scope-all" value="all" /> 导出全部
-                </label>
+                  <label htmlFor="export-scope-filtered" className="flex items-center gap-2 text-sm">
+                    <RadioGroupItem id="export-scope-filtered" value="filtered" /> Export current filter results (total {filteredTotal}{" "}
+                    items)
+                  </label>
+                  <label htmlFor="export-scope-all" className="flex items-center gap-2 text-sm">
+                    <RadioGroupItem id="export-scope-all" value="all" /> Export all
+                  </label>
                 <label
                   htmlFor="export-scope-selected"
                   className={cn("flex items-center gap-2 text-sm", selectedIds.size === 0 && "text-muted-foreground")}
                 >
-                  <RadioGroupItem id="export-scope-selected" value="selected" disabled={selectedIds.size === 0} />
-                  导出勾选的 {selectedIds.size} 条
+                    <RadioGroupItem id="export-scope-selected" value="selected" disabled={selectedIds.size === 0} />
+                    Export checked {selectedIds.size} items
                 </label>
               </RadioGroup>
             </div>
 
             <div className="flex flex-col gap-2">
-              <span className="text-xs text-muted-foreground">导出格式</span>
+              <span className="text-xs text-muted-foreground">Export format</span>
               <div className="flex items-center gap-2">
                 <Checkbox
                   id="include-original-reports"
                   checked={includeOriginals}
                   onCheckedChange={(v) => setIncludeOriginals(v === true)}
                 />
-                <label htmlFor="include-original-reports" className="text-sm">
-                  包含原始子报告（默认每个文件夹一份统一报告）
-                </label>
+                  <label htmlFor="include-original-reports" className="text-sm">
+                    Include original sub-reports (default: one unified report per folder)
+                  </label>
               </div>
               <RadioGroup value={exportFormat} onValueChange={(v) => setExportFormat(v as typeof exportFormat)}>
                 <label htmlFor="export-format-md-single" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-format-md-single" value="md-single" /> Markdown 汇总报告（单个 .md 文件）
+                  <RadioGroupItem id="export-format-md-single" value="md-single" /> Markdown summary report (single .md file)
                 </label>
                 <label htmlFor="export-format-md-zip" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-format-md-zip" value="md-zip" /> Markdown 分文件（一漏洞一 .md,打包 .zip）
+                  <RadioGroupItem id="export-format-md-zip" value="md-zip" /> Markdown split files (one .md per vulnerability, packaged as .zip)
                 </label>
                 <label htmlFor="export-format-csv" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-format-csv" value="csv" /> CSV 表格（.csv）
+                  <RadioGroupItem id="export-format-csv" value="csv" /> CSV table (.csv)
                 </label>
                 <label htmlFor="export-format-json" className="flex items-center gap-2 text-sm">
-                  <RadioGroupItem id="export-format-json" value="json" /> JSON（.json）
+                  <RadioGroupItem id="export-format-json" value="json" /> JSON (.json)
                 </label>
               </RadioGroup>
             </div>
@@ -1363,10 +1363,10 @@ export default function FindingsPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setExportOpen(false)} disabled={exporting}>
-              取消
+              Cancel
             </Button>
             <Button onClick={doExport} disabled={exporting || (exportScope === "selected" && selectedIds.size === 0)}>
-              <DownloadIcon /> {exporting ? "导出中…" : "导出"}
+              <DownloadIcon /> {exporting ? "Exporting…" : "Export"}
             </Button>
           </DialogFooter>
         </DialogContent>

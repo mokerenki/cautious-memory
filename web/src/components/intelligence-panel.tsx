@@ -3,9 +3,11 @@
 import * as React from "react";
 
 import Link from "next/link";
+import { format } from "date-fns";
 
 import { CopyIcon, RefreshCwIcon } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 import { CredentialContent, CredentialTrafficViewer, intelligencePreview } from "@/components/credential-content";
 import { StatusBadge, ToneDot } from "@/components/status-badge";
@@ -26,17 +28,17 @@ import type { IntelligenceKind, IntelligencePage, TaskIntelligence } from "@/lib
 import { copyText } from "@/lib/utils";
 
 const KINDS: { value: IntelligenceKind; label: string }[] = [
-  { value: "credential", label: "凭据" },
-  { value: "lead", label: "重要线索" },
-  { value: "sensitive_data", label: "敏感数据" },
+  { value: "credential", label: "Credential" },
+  { value: "lead", label: "Lead" },
+  { value: "sensitive_data", label: "Sensitive Data" },
 ];
 const STATUS: Record<IntelligenceKind, Record<string, string>> = {
-  credential: { unverified: "未验证", verified: "已验证", invalid: "已失效" },
-  lead: { pending: "待跟进", in_progress: "跟进中", dismissed: "已排除", converted: "已转漏洞" },
-  sensitive_data: { suspected: "疑似", confirmed: "已确认", dismissed: "已排除" },
+  credential: { unverified: "Unverified", verified: "Verified", invalid: "Invalid" },
+  lead: { pending: "Pending follow-up", in_progress: "In progress", dismissed: "Dismissed", converted: "Converted to finding" },
+  sensitive_data: { suspected: "Suspected", confirmed: "Confirmed", dismissed: "Dismissed" },
 };
 function time(value: string) {
-  return new Date(value).toLocaleString("zh-CN");
+  return format(new Date(value), "MMM d, yyyy, h:mm a");
 }
 
 function conversationHref(item: TaskIntelligence) {
@@ -52,14 +54,14 @@ function AssetLinks({ ids, onNavigate }: { ids: number[]; onNavigate?: () => voi
           href={`/function/assets?asset=${id}`}
           onClick={onNavigate}
           className="underline underline-offset-2"
-          aria-label={`查看资产 #${id}`}
+          aria-label={`View asset #${id}`}
         >
           #{id}
         </Link>
       ))}
     </span>
   ) : (
-    <>未关联</>
+    <>Unassociated</>
   );
 }
 
@@ -72,6 +74,7 @@ export function IntelligencePanel({
   scopeId: string;
   onNavigate?: () => void;
 }) {
+  const { t } = useTranslation();
   const [kind, setKind] = React.useState("all");
   const [status, setStatus] = React.useState("all");
   const [search, setSearch] = React.useState("");
@@ -140,9 +143,9 @@ export function IntelligencePanel({
       await api.updateIntelligence(selected.task_id, selected.id, value);
       setSelected((item) => (item ? { ...item, status: value } : null));
       setRefresh((n) => n + 1);
-      toast.success("情报状态已更新");
+      toast.success(t("intelligence.status_updated"));
     } catch (e) {
-      toast.error("更新失败：" + (e as Error).message);
+      toast.error(t("intelligence.update_failed", { error: (e as Error).message }));
     } finally {
       setSaving(false);
     }
@@ -152,22 +155,19 @@ export function IntelligencePanel({
     <div className="flex min-w-0 flex-col gap-4">
       {data && !data.enabled && scope === "tasks" ? (
         <Alert>
-          <AlertTitle>自动记录已关闭</AlertTitle>
+          <AlertTitle>{t("intelligence.auto_recording_off")}</AlertTitle>
           <AlertDescription>
-            已有情报仍可查看。前往{" "}
-            <Link href="/system/settings" className="underline">
-              系统设置
-            </Link>{" "}
-            开启后，Agent 将在执行中记录新增情报，并产生额外 Token 消耗。
+            {t("intelligence.auto_recording_desc")} <Link href="/system/settings" className="underline">{t("intelligence.system_settings")}</Link>{" "}
+            {t("intelligence.auto_recording_on")}
           </AlertDescription>
         </Alert>
       ) : null}
       <Card>
         <CardHeader>
-          <CardTitle>{scope === "tasks" ? "任务情报" : "资产关联情报"}</CardTitle>
+          <CardTitle>{scope === "tasks" ? t("intelligence.task_intelligence") : t("intelligence.asset_intelligence")}</CardTitle>
           <CardDescription>
-            {scope === "tasks" ? "集中查看本次获取与直接关联任务继承的情报。" : "按来源任务查看此资产关联的情报。"}{" "}
-            直接展示凭据、敏感数据及来源证据，发现凭据不代表验证成功。
+            {scope === "tasks" ? t("intelligence.task_intelligence_desc") : t("intelligence.asset_intelligence_desc")}{" "}
+            {t("intelligence.intelligence_note")}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex min-w-0 flex-col gap-4">
@@ -181,7 +181,7 @@ export function IntelligencePanel({
           >
             <TabsList className="max-w-full overflow-x-auto">
               <TabsTrigger value="all">
-                全部 {data ? Object.values(data.counts).reduce((a, b) => a + b, 0) : ""}
+                {t("intelligence.all", { count: data ? Object.values(data.counts).reduce((a, b) => a + b, 0) : 0 })}
               </TabsTrigger>
               {KINDS.map((item) => (
                 <TabsTrigger key={item.value} value={item.value}>
@@ -193,8 +193,8 @@ export function IntelligencePanel({
           </Tabs>
           <div className="flex flex-wrap items-center gap-2">
             <Input
-              aria-label="搜索情报标题、内容或上报者"
-              placeholder="搜索标题、内容或上报者"
+              aria-label={t("intelligence.search_aria")}
+              placeholder={t("intelligence.search_placeholder")}
               value={search}
               maxLength={200}
               onChange={(e) => setSearch(e.target.value)}
@@ -208,12 +208,12 @@ export function IntelligencePanel({
                   setPage(0);
                 }}
               >
-                <SelectTrigger aria-label="筛选情报状态">
+                <SelectTrigger aria-label={t("intelligence.filter_status_aria")}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="all">{t("intelligence.all_status")}</SelectItem>
                     {Object.entries(statusOptions).map(([value, label]) => (
                       <SelectItem key={value} value={value}>
                         {label}
@@ -225,12 +225,12 @@ export function IntelligencePanel({
             ) : null}
             <Button variant="outline" onClick={() => setRefresh((n) => n + 1)}>
               <RefreshCwIcon data-icon="inline-start" />
-              刷新
+              {t("common.refresh")}
             </Button>
           </div>
           {error ? (
             <Alert variant="destructive">
-              <AlertTitle>读取情报失败</AlertTitle>
+              <AlertTitle>{t("intelligence.read_failed")}</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           ) : null}
@@ -249,13 +249,13 @@ export function IntelligencePanel({
               </colgroup>
               <TableHeader>
                 <TableRow>
-                  <TableHead>类别 / 标题</TableHead>
-                  <TableHead>内容 / 来源证据</TableHead>
-                  <TableHead>状态</TableHead>
-                  <TableHead>对话</TableHead>
-                  <TableHead>资产</TableHead>
-                  <TableHead>发现时间</TableHead>
-                  <TableHead>操作</TableHead>
+                  <TableHead>{t("intelligence.table.category_title")}</TableHead>
+                  <TableHead>{t("intelligence.table.content_evidence")}</TableHead>
+                  <TableHead>{t("common.status")}</TableHead>
+                  <TableHead>{t("intelligence.table.conversation")}</TableHead>
+                  <TableHead>{t("intelligence.table.asset")}</TableHead>
+                  <TableHead>{t("intelligence.table.discovered")}</TableHead>
+                  <TableHead>{t("common.action")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,11 +276,11 @@ export function IntelligencePanel({
                           onTraffic={(id) => setTrafficTarget({ item, id })}
                         />
                         <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                          <span>来源证据</span>
+                          <span>{t("intelligence.source_evidence")}</span>
                           <p className="whitespace-pre-wrap break-all">{intelligencePreview(item.evidence, 220)}</p>
                           {Array.from(item.evidence).length > 220 ? (
                             <button type="button" className="text-left underline" onClick={() => open(item)}>
-                              详情查看完整证据
+                              {t("intelligence.view_full_evidence")}
                             </button>
                           ) : null}
                         </div>
@@ -290,20 +290,20 @@ export function IntelligencePanel({
                       <div className="flex flex-col items-start gap-1">
                         <Badge variant="outline">{STATUS[item.kind][item.status] ?? item.status}</Badge>
                         <span className="text-xs text-muted-foreground">
-                          {item.confidence === "observed" ? "直接观察" : "推测"}
+                          {item.confidence === "observed" ? t("intelligence.directly_observed") : t("intelligence.inferred")}
                         </span>
                       </div>
                     </TableCell>
                     <TableCell className="align-top whitespace-normal [overflow-wrap:anywhere]">
                       <div className="flex flex-col gap-1">
                         <Link href={conversationHref(item)} onClick={navigate} className="underline">
-                          {item.source_session ? "查看对话" : "查看任务对话"}
+                          {item.source_session ? t("intelligence.view_conversation") : t("intelligence.view_task_conversation")}
                         </Link>
                         <span className="text-xs text-muted-foreground">
-                          任务 #{item.task_id} · {item.worker || "Agent"}
-                          {item.node_id ? ` · 节点 #${item.node_id}` : ""}
+                          {t("intelligence.task", { id: item.task_id })} · {item.worker || "Agent"}
+                          {item.node_id ? ` · ${t("intelligence.node", { id: item.node_id })}` : ""}
                         </span>
-                        {item.inherited ? <Badge variant="outline">继承 · 只读</Badge> : null}
+                        {item.inherited ? <Badge variant="outline">{t("intelligence.inherited_readonly")}</Badge> : null}
                       </div>
                     </TableCell>
                     <TableCell className="align-top whitespace-normal [overflow-wrap:anywhere]">
@@ -312,7 +312,7 @@ export function IntelligencePanel({
                     <TableCell className="align-top whitespace-normal text-xs">{time(item.created_at)}</TableCell>
                     <TableCell className="align-top whitespace-normal [overflow-wrap:anywhere]">
                       <Button size="sm" variant="outline" onClick={() => open(item)}>
-                        详情
+                        {t("common.details")}
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -322,23 +322,23 @@ export function IntelligencePanel({
           ) : data ? (
             <Empty>
               <EmptyHeader>
-                <EmptyTitle>暂无符合条件的情报</EmptyTitle>
+                <EmptyTitle>{t("intelligence.empty.no_matching")}</EmptyTitle>
                 <EmptyDescription>
                   {query || kind !== "all" || status !== "all"
-                    ? "尝试调整分类或筛选条件。"
+                    ? t("intelligence.empty.adjust_filter")
                     : data.enabled
-                      ? "Agent 在后续执行中发现有价值的信息后，会在此显示。"
-                      : "开启自动记录后，新增情报会在此显示；历史会话不会自动补提取。"}
+                      ? t("intelligence.empty.will_show")
+                      : t("intelligence.empty.enable_auto_record")}
                 </EmptyDescription>
               </EmptyHeader>
             </Empty>
           ) : null}
         </CardContent>
         <CardFooter className="flex items-center justify-between gap-2">
-          <span className="text-sm text-muted-foreground">共 {data?.total ?? 0} 条 · 每页 25 条</span>
+          <span className="text-sm text-muted-foreground">{t("intelligence.total_per_page", { total: data?.total ?? 0 })}</span>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" disabled={page === 0} onClick={() => setPage((n) => n - 1)}>
-              上一页
+              {t("pagination.prev_page")}
             </Button>
             <Button
               size="sm"
@@ -346,7 +346,7 @@ export function IntelligencePanel({
               disabled={!data || (page + 1) * 25 >= data.total}
               onClick={() => setPage((n) => n + 1)}
             >
-              下一页
+              {t("pagination.next_page")}
             </Button>
           </div>
         </CardFooter>
@@ -359,22 +359,22 @@ export function IntelligencePanel({
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{selected?.title ?? "情报详情"}</DialogTitle>
-            <DialogDescription>完整展示记录内容与实际来源证据。</DialogDescription>
+            <DialogTitle>{selected?.title ?? t("intelligence.dialog.title")}</DialogTitle>
+            <DialogDescription>{t("intelligence.dialog.desc")}</DialogDescription>
           </DialogHeader>
           {selected ? (
             <div className="flex min-w-0 flex-col gap-4">
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge domain="intelligence" value={selected.kind} />
-                <Badge variant="outline">{selected.confidence === "observed" ? "直接观察" : "推测"}</Badge>
+                <Badge variant="outline">{selected.confidence === "observed" ? t("intelligence.directly_observed") : t("intelligence.inferred")}</Badge>
                 <span className="text-xs text-muted-foreground">
-                  任务 #{selected.task_id}
-                  {selected.node_id ? ` · 来源节点 #${selected.node_id}` : ""} · {selected.worker || "Agent"}
+                  {t("intelligence.task", { id: selected.task_id })}
+                  {selected.node_id ? ` · ${t("intelligence.node", { id: selected.node_id })}` : ""} · {selected.worker || "Agent"}
                 </span>
               </div>
               {scope === "tasks" && !selected.inherited ? (
                 <Select value={selected.status} disabled={saving} onValueChange={(value) => void update(value)}>
-                  <SelectTrigger aria-label="更新情报状态">
+                  <SelectTrigger aria-label={t("intelligence.update_status_aria")}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -389,21 +389,21 @@ export function IntelligencePanel({
                 </Select>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  {STATUS[selected.kind][selected.status]} · 请到来源任务修改状态
+                  {STATUS[selected.kind][selected.status]} · {t("intelligence.modify_in_source_task")}
                 </p>
               )}
               <div className="flex items-center justify-between gap-2">
-                <span className="text-sm">内容</span>
+                <span className="text-sm">{t("intelligence.content")}</span>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={async () => {
-                    if (await copyText(selected.content)) toast.success("已复制");
-                    else toast.error("复制失败，请手动选择内容复制");
+                    if (await copyText(selected.content)) toast.success(t("http.copied"));
+                    else toast.error(t("copy.failed"));
                   }}
                 >
                   <CopyIcon data-icon="inline-start" />
-                  复制
+                  {t("common.copy")}
                 </Button>
               </div>
               <CredentialContent
@@ -424,7 +424,7 @@ export function IntelligencePanel({
                     try {
                       await api.retryCredentials(selected.task_id, selected.id);
                       setRefresh((n) => n + 1);
-                      toast.success("已加入凭据处理队列");
+                      toast.success(t("intelligence.reprocessed"));
                     } catch (e) {
                       toast.error((e as Error).message);
                     } finally {
@@ -432,22 +432,22 @@ export function IntelligencePanel({
                     }
                   }}
                 >
-                  重新处理凭据
+                  {t("intelligence.reprocess_credentials")}
                 </Button>
               ) : null}
-              <p className="text-sm">来源证据</p>
+              <p className="text-sm">{t("intelligence.source_evidence")}</p>
               <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-muted p-3 text-xs">
                 {selected.evidence}
               </pre>
               <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                 <span>
-                  关联资产：
+                  {t("intelligence.associated_assets")}:
                   <AssetLinks ids={selected.asset_ids} onNavigate={navigate} />
                 </span>
-                <span>发现于 {time(selected.created_at)}</span>
+                <span>{t("intelligence.discovered_at", { time: time(selected.created_at) })}</span>
               </div>
               <Link href={conversationHref(selected)} onClick={navigate} className="text-sm underline">
-                {selected.source_session ? "查看来源任务会话" : "查看来源任务"}
+                {selected.source_session ? t("intelligence.view_source_task_conversation") : t("intelligence.view_source_task")}
               </Link>
             </div>
           ) : null}

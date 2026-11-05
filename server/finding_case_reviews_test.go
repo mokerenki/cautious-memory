@@ -13,33 +13,31 @@ import (
 func TestFindingCaseReviewTaskMessagePolicy(t *testing.T) {
 	message := fmt.Sprintf(findingCaseReviewTaskMessage, `[101,102,103]`)
 	for _, want := range []string{
-		"finding_ids=[101,102,103]",
-		"根因明确相同则直接归并",
-		"相同端点、处理器/后端组件、参数或缺失检查",
-		"缺少确认共同根因的关键证据",
-		"一个覆盖2..20条同任务疑似成员的分组",
-		"不要拆成两两建议",
-		"仅类型或资产相同不足以建议",
-		"没有具体共同点时保持 independent",
-		"不同代码路径时可判 independent",
-		"尽力更新统一报告",
-		"统一报告暂缺或待更新不阻塞 complete_finding_case_review",
-		"不归并未选记录",
-		"不探测目标",
-		"遵守人工否决",
+		"selected finding_ids for this task are [101,102,103]",
+		"merge them directly only when the common cause is clear",
+		"same endpoint, handler/backend component, parameter, or missing check",
+		"lacks key proof of a shared root cause",
+		"one suspected-duplicate group of 2–20 records from the same task",
+		"Do not split the group into pairwise suggestions",
+		"Matching types or assets alone is insufficient",
+		"mark the records independent",
+		"Findings from different code paths may be marked independent",
+		"Make a reasonable effort to update the unified report",
+		"a missing or outdated unified report does not block complete_finding_case_review",
+		"merge unselected records",
+		"probe targets",
+		"Honor human rejections",
+		"do not submit a suggestion merely because the evidence is uncertain",
 	} {
 		if !strings.Contains(message, want) {
 			t.Errorf("task message missing policy: %s", want)
 		}
 	}
-	if strings.Contains(message, "不确定提交建议") {
-		t.Fatal("task message suggests solely because of uncertainty")
-	}
 	schema, err := json.Marshal((&Server{}).toolCompleteFindingCaseReview().InputSchema())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(string(schema), "没有具体共同点应判 independent") || strings.Contains(string(schema), "不确定则说明缺失证据及已保存建议") {
+	if !strings.Contains(string(schema), "Mark as independent when there is no specific commonality.") {
 		t.Fatal("completion schema must not require suggestions solely because of uncertainty")
 	}
 }

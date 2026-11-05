@@ -34,8 +34,8 @@ func (s *Server) toolCompleteFindingCaseReview() actool.CoreTool {
 		"finding_id":          idParam("所选独立漏洞记录 ID"),
 		"verdict":             map[string]any{"type": "string", "enum": []string{"independent", "merged", "suggested"}},
 		"reason":              strParam("判断理由，引用已证据化的共同点或不同代码路径；仅类型、标题或资产相同不足以证明共同根因"),
-		"root_cause_evidence": strParam("原始报告/证据中支持实际共同或不同根因的具体材料；suggested 须说明具体共同点、缺失的关键证据及已保存分组；没有具体共同点应判 independent")}, "finding_id", "verdict", "reason", "root_cause_evidence")
-	return wrTool("complete_finding_case_review", "历史整理结束前提交每条所选记录的根因判断并验收：必须已读取全部记录，疑似必须已有待确认分组建议；归并只需已在活动文件夹中，统一报告可稍后补齐。验收失败不能宣布完成。", objSchema(map[string]any{"summary": strParam("整理结果总结"), "decisions": map[string]any{"type": "array", "items": decision}}, "summary", "decisions"), func(ctx context.Context, raw json.RawMessage) (actool.Result, error) {
+		"root_cause_evidence": strParam("Specific evidence from the original report or evidence supporting the same or different root cause. For suggested, explain the specific commonality, missing key evidence, and saved group. Mark as independent when there is no specific commonality.")}, "finding_id", "verdict", "reason", "root_cause_evidence")
+	return wrTool("complete_finding_case_review", "Before finishing the review, submit and validate a root-cause decision for every selected record. All records must have been read; suspected duplicates must already have a pending group suggestion. Merges only need to exist in the active folder; the unified report can be completed later. Do not report completion if validation fails.", objSchema(map[string]any{"summary": strParam("Summary of the review results"), "decisions": map[string]any{"type": "array", "items": decision}}, "summary", "decisions"), func(ctx context.Context, raw json.RawMessage) (actool.Result, error) {
 		var a findingReviewConclusion
 		if err := json.Unmarshal(raw, &a); err != nil {
 			return actool.Errorf(err.Error()), nil
@@ -145,7 +145,7 @@ func (s *Server) validateFindingReviewCompletion(conv int64) error {
 		return err
 	}
 	if len(a.Decisions) == 0 {
-		return errors.New("整理未通过验收：未提交 complete_finding_case_review 逐条根因判断；请查看执行记录")
+		return errors.New("Review validation failed: per-finding root-cause decisions were not submitted with complete_finding_case_review. Check the execution history.")
 	}
 	// Recheck after the last model turn; concurrent evidence changes invalidate completion.
 	return s.saveFindingReviewConclusion(context.Background(), conv, a)

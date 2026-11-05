@@ -44,15 +44,15 @@ func (s *Server) wireInterceptReviewer() {
 			}
 		}
 		if profileID == 0 {
-			return intercept.Decision{}, fmt.Errorf("未配置可用的裁判模型")
+			return intercept.Decision{}, fmt.Errorf("No available judge model configured")
 		}
 		profile, err := s.m.pg.ProfileByID(profileID)
 		if err != nil || profile == nil {
-			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("裁判模型 profile %d 不可用", profileID)
+			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("Judge model profile %d unavailable", profileID)
 		}
 		if profile.Format == "jev" {
 			if strings.TrimSpace(profile.APIKey) == "" {
-				return intercept.Decision{ProfileID: profileID}, fmt.Errorf("Jev 判定模型未设置 API Key")
+				return intercept.Decision{ProfileID: profileID}, fmt.Errorf("Jev judge model API Key not set")
 			}
 			ctx = llmrec.WithWorker(ctx, judgeWorkerLane)
 			started := time.Now()
@@ -64,7 +64,7 @@ func (s *Server) wireInterceptReviewer() {
 		}
 		prov, _, ok := s.providerForProfile(profileID)
 		if !ok {
-			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("裁判模型 profile %d 不可用", profileID)
+			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("Judge model profile %d unavailable", profileID)
 		}
 		// Tag this call's usage as the "judge" lane so the config page can report
 		// how much the fallback approval has spent, separate from model profiles.
@@ -75,7 +75,7 @@ func (s *Server) wireInterceptReviewer() {
 		}
 		v := intercept.ParseVerdict(text)
 		if v.Action == "" {
-			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("模型裁决格式无效，必须包含裁决、实际操作、成功后的后果和命中规则")
+			return intercept.Decision{ProfileID: profileID}, fmt.Errorf("Invalid model verdict format, must contain verdict, actual action, post-success consequences, and matched rules")
 		}
 		return intercept.Decision{Action: v.Action, Message: v.Reason, ProfileID: profileID}, nil
 	})

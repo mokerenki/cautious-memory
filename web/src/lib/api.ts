@@ -161,7 +161,7 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
       document.cookie = "artex_token=; path=/; max-age=0";
       window.location.href = "/login";
     }
-    throw new Error("未授权");
+    throw new Error("Unauthorized");
   }
   if (!r.ok) {
     const fallback = `${init?.method ?? "GET"} ${path}: ${r.status}`;
@@ -198,25 +198,25 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
 // Token is appended as ?token= because SSE can't carry cookies cross-origin.
 // mockReport returns a canned Markdown report for the demo.
 function mockReport(_task?: string): string {
-  return `# ARTEX 渗透测试报告 — Acme Corp
+  return `# ARTEX Penetration Test Report — Acme Corp
 
-## 概览
-- 范围：acme.com（含 www / admin / api / shop / vpn 子域）
-- 已确认发现：6 项（高危 3 · 中危 3 · 低危 2）
-- 引擎模式：exploring
+## Overview
+- Scope: acme.com (including www / admin / api / shop / vpn subdomains)
+- Confirmed findings: 6 items (High 3 · Medium 3 · Low 2)
+- Engine mode: exploring
 
-## 关键发现
-1. **[高] 后台默认口令** admin.acme.com admin/admin123 → 可完全接管后台。
-2. **[高] SQL 注入** www.acme.com/search?q= → 可读取 acme_prod 库。
-3. **[高] IDOR** api.acme.com/v1/orders?id= → 可越权读取他人订单（含手机号/地址）。
-4. **[中] 反射型 XSS**、**暴露 .git 源码**、**登录无速率限制**。
+## Key Findings
+1. **[High] Backend default password** admin.acme.com admin/admin123 → full backend takeover.
+2. **[High] SQL Injection** www.acme.com/search?q= → read acme_prod database.
+3. **[High] IDOR** api.acme.com/v1/orders?id= → escalate to read others' orders (including phone/address).
+4. **[Medium] Reflected XSS**, **exposed .git source code**, **login without rate limiting**.
 
-## 建议
-- 后台强制改密 + 启用 MFA、封禁默认口令。
-- search 接口参数化查询、输出编码。
-- API 增加对象级授权校验（IDOR）、更换强 JWT 密钥。
+## Recommendations
+- Force a backend password change, enable MFA, and block default passwords.
+- Use parameterized queries for the search endpoint and encode output.
+- Add object-level authorization checks to the API (IDOR) and replace the JWT signing key.
 
-> （demo）本报告由 mock 数据生成，仅用于界面演示。`;
+> (Demo) This report is generated from mock data for interface demonstration only.`;
 }
 
 export function sseUrl(path: string): string {

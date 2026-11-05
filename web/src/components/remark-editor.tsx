@@ -19,11 +19,11 @@ type EditorProps = {
 };
 
 export function RemarkEditor(props: EditorProps) {
-  return <InlineTextEditor {...props} multiline fieldName="备注" maxCharacters={MAX_TASK_REMARK_RUNES} emptyLabel="添加备注" />;
+  return <InlineTextEditor {...props} multiline fieldName="Remark" maxCharacters={MAX_TASK_REMARK_RUNES} emptyLabel="Add remark" />;
 }
 
 export function ScheduleNameEditor(props: EditorProps) {
-  return <InlineTextEditor {...props} multiline={false} fieldName="名称" maxCharacters={200} emptyLabel="未命名" />;
+  return <InlineTextEditor {...props} multiline={false} fieldName="Name" maxCharacters={200} emptyLabel="Untitled" />;
 }
 
 function InlineTextEditor({
@@ -68,12 +68,12 @@ function InlineTextEditor({
       return;
     }
     if (!multiline && next.length === 0) {
-      setError("名称不能为空");
+      setError("Name cannot be empty");
       refocus();
       return;
     }
     if (Array.from(next).length > maxCharacters) {
-      setError(`${fieldName}最多 ${maxCharacters} 个字符`);
+      setError(`${fieldName} at most ${maxCharacters} characters`);
       refocus();
       return;
     }
@@ -81,10 +81,10 @@ function InlineTextEditor({
     setSaving(true);
     try {
       await onSave(next);
-      toast.success(`${fieldName}已保存`);
+      toast.success(`${fieldName} saved`);
       setEditing(false);
     } catch (cause) {
-      setError(`${fieldName}保存失败：${(cause as Error).message}`);
+      setError(`${fieldName} save failed: ${(cause as Error).message}`);
       refocus();
     } finally {
       savingRef.current = false;
@@ -101,7 +101,7 @@ function InlineTextEditor({
       "aria-label": `${label}${fieldName}`,
       "aria-invalid": error.length > 0,
       "aria-describedby": error ? errorID : undefined,
-      title: multiline ? "Enter 保存，Shift+Enter 换行，Esc 取消；留空可清除备注" : "Enter 或失焦保存，Esc 取消",
+      title: multiline ? "Enter to save, Shift+Enter to break line, Esc to cancel; leave blank to clear remark" : "Enter or blur to save, Esc to cancel",
       onFocus: (event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => event.currentTarget.select(),
       onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setDraft(event.target.value);
@@ -156,8 +156,8 @@ function InlineTextEditor({
       <button
         type="button"
         className="min-w-0 truncate rounded-sm text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label={`${label}${fieldName}，点击编辑`}
-        title={value.length > 0 ? value : `点击编辑${fieldName}`}
+        aria-label={`${label}${fieldName}, click to edit`}
+        title={value.length > 0 ? value : `Click to edit ${fieldName}`}
         onClick={startEditing}
       >
         {value.length > 0 ? (
@@ -173,14 +173,14 @@ function InlineTextEditor({
             variant="ghost"
             size="icon-xs"
             className="shrink-0 opacity-100 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:opacity-100 [@media(hover:hover)]:group-focus-within/inline-editor:opacity-100 [@media(hover:hover)]:group-hover/inline-editor:opacity-100"
-            aria-label={`编辑${label}的${fieldName}`}
+            aria-label={`Edit ${label}'s ${fieldName}`}
             onClick={startEditing}
           >
             <PencilIcon />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={6}>
-          编辑{fieldName}：输入完成后按 Enter 或点击其他位置保存，按 Esc 取消。
+          Edit {fieldName}: press Enter or click elsewhere to save after input, press Esc to cancel.
         </TooltipContent>
       </Tooltip>
     </div>

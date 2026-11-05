@@ -454,11 +454,11 @@ func (e *Engine) ControlWork(ctx context.Context, intentID int64, action string)
 	run := e.work[intentID]
 	if run == nil {
 		e.workMu.Unlock()
-		return fmt.Errorf("%w: 意图 %d 当前没有运行中的 work（可能已结束或未被领取）", errWorkControlConflict, intentID)
+		return fmt.Errorf("%w: Intent %d has no running work (may have ended or not been claimed)", errWorkControlConflict, intentID)
 	}
 	if run.action != "" {
 		e.workMu.Unlock()
-		return fmt.Errorf("%w: 意图 %d 正在执行 %s 操作", errWorkControlConflict, intentID, run.action)
+		return fmt.Errorf("%w: Intent %d is executing %s operation", errWorkControlConflict, intentID, run.action)
 	}
 	run.action = action
 	done := run.done
@@ -476,10 +476,10 @@ func (e *Engine) ControlWork(ctx context.Context, intentID int64, action string)
 		return err
 	case <-ctx.Done():
 		e.releaseWorkControl(intentID, run, action)
-		return fmt.Errorf("等待意图 %d %s 收尾: %w", intentID, action, ctx.Err())
+		return fmt.Errorf("Waiting for intent %d %s to finish: %w", intentID, action, ctx.Err())
 	case <-timer.C:
 		e.releaseWorkControl(intentID, run, action)
-		return fmt.Errorf("等待意图 %d %s 收尾: %w", intentID, action, context.DeadlineExceeded)
+		return fmt.Errorf("Waiting for intent %d %s to finish: %w", intentID, action, context.DeadlineExceeded)
 	}
 }
 
@@ -501,7 +501,7 @@ func transitionIntentState(store *db.ExplorationStore, intentID int64, expected,
 		return err
 	}
 	if !changed {
-		return fmt.Errorf("%w: 意图 %d 不再是 %s 状态", db.ErrIntentStateConflict, intentID, expected)
+		return fmt.Errorf("%w: Intent %d is no longer in %s state", db.ErrIntentStateConflict, intentID, expected)
 	}
 	return nil
 }
@@ -511,13 +511,13 @@ func transitionIntentState(store *db.ExplorationStore, intentID int64, expected,
 // re-plans — no kill. Errors if no work is currently running that intent.
 func (e *Engine) SteerWork(intentID int64, msg string) error {
 	if strings.TrimSpace(msg) == "" {
-		return fmt.Errorf("纠偏消息不能为空")
+		return fmt.Errorf("Steering message cannot be empty")
 	}
 	e.workMu.Lock()
 	running := e.work[intentID] != nil
 	e.workMu.Unlock()
 	if !running {
-		return fmt.Errorf("意图 %d 当前没有运行中的 work（可能已结束或未被领取）", intentID)
+		return fmt.Errorf("Intent %d has no running work (may have ended or not been claimed)", intentID)
 	}
 	e.steerMu.Lock()
 	e.steerBox[intentID] = append(e.steerBox[intentID], msg)
@@ -645,7 +645,7 @@ func (e *Engine) KillWork(intentID int64) error {
 	run := e.work[intentID]
 	e.workMu.Unlock()
 	if run == nil {
-		return fmt.Errorf("意图 %d 当前没有运行中的 work（可能已结束或未被领取）", intentID)
+		return fmt.Errorf("Intent %d has no running work (may have ended or not been claimed)", intentID)
 	}
 	run.cancel(agent.AbortKilledByPlanner)
 	return nil
@@ -746,7 +746,7 @@ func (e *Engine) reportSlotAvailability(t *Task, slot WorkerSlot, err error) {
 	if err == nil {
 		if loaded && !state.available {
 			e.slotState.Store(key, slotAvailability{available: true, lastEmit: now})
-			e.emitActivity(t, db.Activity{Worker: "system", Kind: "text", Summary: fmt.Sprintf("%s 绑定的 LLM 配置 #%d 已恢复，可以继续领取任务", slot.Name, slot.ProfileID)})
+			e.emitActivity(t, db.Activity{Worker: "system", Kind: "text", 			Summary: fmt.Sprintf("%s bound LLM config #%d recovered, can continue claiming tasks", slot.Name, slot.ProfileID)})
 		}
 		return
 	}
@@ -760,7 +760,7 @@ func (e *Engine) reportSlotAvailability(t *Task, slot WorkerSlot, err error) {
 		state = slotAvailability{available: false, lastEmit: now}
 		e.slotState.Store(key, state)
 	}
-	summary := fmt.Sprintf("%s 绑定的 LLM 配置 #%d 不可用（已删除或配置无效），该会话暂停领取任务，不会回退到默认模型", slot.Name, slot.ProfileID)
+	summary := fmt.Sprintf("%s bound LLM config #%d unavailable (deleted or invalid config), this session pauses task claiming and will not fall back to default model", slot.Name, slot.ProfileID)
 	e.emitActivity(t, db.Activity{Worker: "system", Kind: "text", IsError: true, Summary: summary, Detail: err.Error()})
 	log.Printf("[worker %s] task %s pinned profile #%d unavailable: %v", slot.Name, t.ID, slot.ProfileID, err)
 }
@@ -959,7 +959,7 @@ func (e *Engine) plannerLoop(ctx context.Context, t *Task) {
 		// round marker: each Plan() is one planner round; emit a boundary so the
 		// UI can separate rounds in the transcript (kind='round').
 		e.emitActivity(t, db.Activity{Worker: "planner", Kind: "round",
-			Summary: fmt.Sprintf("第 %d 轮规划", e.nextPlannerRound(t.ID))})
+			Summary: fmt.Sprintf("Planning round %d", e.nextPlannerRound(t.ID))})
 		// what fired this round (worker done / finding; may be several — debounce
 		// coalesces a burst; empty for time/heartbeat wakes).
 		triggers := t.drainTriggers()
@@ -1119,7 +1119,7 @@ func (e *Engine) runIntent(ctx context.Context, t *Task, name string, worker *ag
 		a.NodeID, a.Worker = &nid, name
 		emit(a)
 	}
-	label := fmt.Sprintf("%s · #%d", name, iid)
+	label := fmt.Sprintf("%s #%d", name, iid)
 	workCtx = intercept.WithTaskContext(workCtx, t.ID, label, taskEmit)
 	// nudges 有意建在 model_error 重跑循环之外:空转续跑的上限是「这条意图」的总量，
 	// 重跑一轮不该把额度清零重来。
@@ -1311,14 +1311,14 @@ func (e *Engine) runDetachedIntent(ctx context.Context, t *Task, intentID int64,
 		if plan, ok := value.(map[string]int64); ok {
 			if profileID, pinned := plan[owner]; pinned && profileID > 0 {
 				if e.workerResolve == nil {
-					return fmt.Errorf("意图所属的 LLM 配置 #%d 不可用：pinned worker resolver unavailable", profileID)
+					return fmt.Errorf("Intent's LLM config #%d unavailable: pinned worker resolver unavailable", profileID)
 				}
 				worker, err = e.workerResolve(t, WorkerSlot{Name: owner, ProfileID: profileID})
 				if err != nil || worker == nil {
 					if err == nil {
 						err = errors.New("worker resolver returned no worker")
 					}
-					return fmt.Errorf("意图所属的 LLM 配置 #%d 不可用：%w", profileID, err)
+					return fmt.Errorf("Intent's LLM config #%d unavailable: %w", profileID, err)
 				}
 			}
 		}
@@ -1326,7 +1326,7 @@ func (e *Engine) runDetachedIntent(ctx context.Context, t *Task, intentID int64,
 	if worker == nil {
 		_, worker = e.snapshotFor(t)
 		if worker == nil {
-			return fmt.Errorf("worker 尚未就绪")
+			return fmt.Errorf("worker not ready yet")
 		}
 	}
 	changed, err := t.Store.CompareAndSetIntentState(intentID, "paused", "running")

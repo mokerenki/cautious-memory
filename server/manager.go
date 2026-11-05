@@ -361,11 +361,11 @@ func (p *WorkerPool) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(raw.ProfileID, &id); err != nil {
 		var text string
 		if err := json.Unmarshal(raw.ProfileID, &text); err != nil {
-			return fmt.Errorf("profile_id 必须是整数或数字字符串")
+			return fmt.Errorf("profile_id must be an integer or numeric string")
 		}
 		parsed, err := strconv.ParseInt(strings.TrimSpace(text), 10, 64)
 		if err != nil {
-			return fmt.Errorf("profile_id 必须是整数或数字字符串")
+			return fmt.Errorf("profile_id must be an integer or numeric string")
 		}
 		id = parsed
 	}
@@ -390,22 +390,22 @@ func ValidateWorkerPools(pools []WorkerPool) error {
 	total := 0
 	for _, pool := range pools {
 		if pool.ProfileID <= 0 {
-			return fmt.Errorf("worker_pools 中 profile_id 必须大于 0")
+			return fmt.Errorf("worker_pools profile_id must be greater than 0")
 		}
 		if pool.Workers <= 0 {
-			return fmt.Errorf("worker_pools 中 workers 必须大于 0")
+			return fmt.Errorf("worker_pools workers must be greater than 0")
 		}
 		if seen[pool.ProfileID] {
-			return fmt.Errorf("worker_pools 中 profile_id %d 重复", pool.ProfileID)
+			return fmt.Errorf("worker_pools profile_id %d duplicated", pool.ProfileID)
 		}
 		seen[pool.ProfileID] = true
 		if total > 50-pool.Workers {
-			return fmt.Errorf("worker_pools 的 Worker 总数必须在 1 到 50 之间")
+			return fmt.Errorf("worker_pools Worker total must be between 1 and 50")
 		}
 		total += pool.Workers
 	}
 	if total < 1 || total > 50 {
-		return fmt.Errorf("worker_pools 的 Worker 总数必须在 1 到 50 之间")
+		return fmt.Errorf("worker_pools Worker total must be between 1 and 50")
 	}
 	return nil
 }

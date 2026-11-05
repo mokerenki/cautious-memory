@@ -227,7 +227,7 @@ func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 	agent.IntelligenceEnabled = func() bool { return pg.GetBool(db.SettingTaskIntelligence, false) }
 	agent.IntelligenceRecord = func(ctx context.Context, taskID, nodeID int64, worker string, input db.IntelligenceInput) (int64, error) {
 		if !pg.GetBool(db.SettingTaskIntelligence, false) {
-			return 0, fmt.Errorf("任务情报自动记录已关闭")
+			return 0, fmt.Errorf("Task intelligence auto-recording is disabled")
 		}
 		item, err := pg.RecordIntelligence(ctx, taskID, nodeID, worker, input)
 		if err != nil {

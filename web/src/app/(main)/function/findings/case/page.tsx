@@ -71,7 +71,7 @@ function CaseDetail() {
     setBusy(true);
     try {
       await api.regenerateFindingCase(id, contextTask);
-      toast.success("已提交重新整理，可查看执行状态");
+      toast.success("Review started. You can check its status.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -81,10 +81,10 @@ function CaseDetail() {
   async function detach() {
     setBusy(true);
     try {
-      for (const fid of selected) await api.removeFindingCaseMember(id, fid, "人工撤销归并");
+      for (const fid of selected) await api.removeFindingCaseMember(id, fid, "Manually unmerged");
       setSelected(new Set());
       setRefresh((v) => v + 1);
-      toast.success("已移出，原始记录保留");
+      toast.success("Removed from the group. The original findings were preserved.");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -104,7 +104,7 @@ function CaseDetail() {
     <div className="flex min-w-0 flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="outline">
-          <Link href="/function/findings">返回漏洞列表</Link>
+          <Link href="/function/findings">Back to findings</Link>
         </Button>
         <h1 className="font-semibold text-xl">{c.title}</h1>
         <FindingSeverityCounts counts={c} />
@@ -116,43 +116,43 @@ function CaseDetail() {
       ) : null}
       {!c.active ? (
         <Alert>
-          <AlertDescription>此文件夹已解散或并入其他组，原始记录仍可从漏洞列表查看。</AlertDescription>
+          <AlertDescription>This case was dissolved or merged into another group. The original findings are still available in the findings list.</AlertDescription>
         </Alert>
       ) : null}
       {readOnly ? (
         <Alert>
-          <AlertDescription>继承任务的漏洞组，只读。</AlertDescription>
+          <AlertDescription>Inherited case group from the task. This group is read-only.</AlertDescription>
         </Alert>
       ) : (
         <FindingCaseReviewPanel taskId={c.task_id ?? undefined} />
       )}
       <Tabs defaultValue="report">
         <TabsList>
-          <TabsTrigger value="report">统一报告</TabsTrigger>
-          <TabsTrigger value="members">原始上报（{c.count}）</TabsTrigger>
-          <TabsTrigger value="history">归并历史</TabsTrigger>
+          <TabsTrigger value="report">Unified report</TabsTrigger>
+          <TabsTrigger value="members">Original findings ({c.count})</TabsTrigger>
+          <TabsTrigger value="history">Merge history</TabsTrigger>
         </TabsList>
         <TabsContent value="report">
           <Card>
             <CardHeader>
-              <CardTitle>完整复现与修复报告</CardTitle>
-              <CardDescription>集中查看所有成员的复现步骤、证据与修复建议。</CardDescription>
+              <CardTitle>Complete reproduction and remediation report</CardTitle>
+              <CardDescription>Review reproduction steps, evidence, and remediation recommendations for all members in one place.</CardDescription>
             </CardHeader>
             <CardContent className="flex min-w-0 flex-col gap-4">
               {c.report_version !== c.version ? (
                 <Alert>
-                  <AlertDescription>成员或证据已变化，统一报告待更新。</AlertDescription>
+                  <AlertDescription>Members or evidence have changed. The unified report needs to be updated.</AlertDescription>
                 </Alert>
               ) : null}
               {!readOnly && c.active ? (
                 <Button variant="outline" onClick={regenerate} disabled={busy}>
-                  {busy ? <Spinner /> : null}重新生成统一报告
+                  {busy ? <Spinner /> : null}Regenerate unified report
                 </Button>
               ) : null}
               {c.report ? (
                 <Markdown text={c.report} />
               ) : (
-                <p className="text-muted-foreground text-sm">统一报告尚未生成，原始报告可在“原始上报”中查看。</p>
+                <p className="text-muted-foreground text-sm">The unified report has not been generated. View the original reports under “Original findings.”</p>
               )}
             </CardContent>
           </Card>
@@ -160,27 +160,27 @@ function CaseDetail() {
         <TabsContent value="members">
           <Card>
             <CardHeader>
-              <CardTitle>原始报告和证据完整保留</CardTitle>
-              <CardDescription>各条原始上报保留各自的等级、报告和证据。</CardDescription>
+              <CardTitle>Original reports and evidence are preserved</CardTitle>
+              <CardDescription>Each original finding retains its own severity, report, and evidence.</CardDescription>
             </CardHeader>
             <CardContent>
               {!readOnly && selected.size > 0 ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" disabled={busy}>
-                      移出所选（{selected.size}）
+                      Remove selected ({selected.size})
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
                     <AlertDialogHeader>
-                      <AlertDialogTitle>移出归并组？</AlertDialogTitle>
+                      <AlertDialogTitle>Remove from the merged group?</AlertDialogTitle>
                       <AlertDialogDescription>
-                        原报告和证据保留，Agent 不会自动把这些关系再次归并。
+                        Original reports and evidence will be preserved. The Agent will not automatically merge these findings again.
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                      <AlertDialogCancel>取消</AlertDialogCancel>
-                      <AlertDialogAction onClick={detach}>移出</AlertDialogAction>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={detach}>Remove</AlertDialogAction>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>
@@ -198,22 +198,22 @@ function CaseDetail() {
         <TabsContent value="history">
           <Card>
             <CardHeader>
-              <CardTitle>判断依据与操作记录</CardTitle>
+              <CardTitle>Decision rationale and activity</CardTitle>
               <CardDescription>{c.reason}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
               {data.events.map((e) => (
                 <div key={e.id} className="border-b pb-3 text-sm">
                   <p>
-                    {({ reporter: "报告 Agent", human: "人工", system: "系统" } as Record<string, string>)[e.actor] ??
+                    {({ reporter: "Reporting Agent", human: "Human", system: "System" } as Record<string, string>)[e.actor] ??
                       e.actor}{" "}
                     ·{" "}
                     {(
                       {
-                        merge: "归并",
-                        detach: "移出成员",
-                        member_deleted: "成员移出或删除",
-                        report_updated: "更新统一报告",
+                        merge: "Merged",
+                        detach: "Member removed",
+                        member_deleted: "Member removed or deleted",
+                        report_updated: "Unified report updated",
                       } as Record<string, string>
                     )[e.action] ?? e.action}{" "}
                     · {new Date(e.created_at).toLocaleString("zh-CN")}
