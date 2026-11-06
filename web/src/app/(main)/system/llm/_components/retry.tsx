@@ -188,11 +188,11 @@ export function RetryRuleFields({
         </div>
         {/* 哪些错误会走到这层，具体到状态码——填了旋钮却看不到效果，多半是错误压根不落在这层。 */}
         <p className="text-muted-foreground text-xs">
-          <span className="font-medium text-foreground">Trigger</span>：{meta.trigger}
+          <span className="font-medium text-foreground">Trigger</span>: {meta.trigger}
         </p>
         {!compact && meta.skips && (
           <p className="text-muted-foreground text-xs">
-            <span className="font-medium text-foreground">Skip this layer</span>：{meta.skips}
+            <span className="font-medium text-foreground">Skip this layer</span>: {meta.skips}
           </p>
         )}
         {!compact && <p className="text-muted-foreground text-xs">{meta.desc}</p>}

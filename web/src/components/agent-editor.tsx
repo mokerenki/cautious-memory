@@ -1371,7 +1371,7 @@ function AgentTriggersTab({ agentKey, agent }: { agentKey: string; agent?: Agent
                   <>
                     <div className="line-clamp-1">
                       {t("agent_editor.triggers.existing.tools", {
-                        names: trigger.tool_names.join("、") || t("agent_editor.triggers.existing.tools_none"),
+                        names: trigger.tool_names.join(", ") || t("agent_editor.triggers.existing.tools_none"),
                       })}
                     </div>
                     {trigger.tool_call_message && (

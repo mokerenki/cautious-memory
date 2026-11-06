@@ -49,7 +49,7 @@ func parseChatMentions(message string) ([]chatMentionRef, error) {
 		seen[key] = true
 		refs = append(refs, chatMentionRef{kind, id, m[1]})
 		if len(refs) > maxChatMentions {
-			return nil, &chatMentionInputError{"每条消息最多引用 10 条记录"}
+			return nil, &chatMentionInputError{"You can reference at most 10 records per message"}
 		}
 	}
 	return refs, nil
@@ -58,7 +58,7 @@ func parseChatMentions(message string) ([]chatMentionRef, error) {
 func (s *Server) searchChatMentions(w http.ResponseWriter, r *http.Request) {
 	kind, query := r.URL.Query().Get("kind"), strings.TrimSpace(r.URL.Query().Get("q"))
 	if (kind != "" && !db.ValidChatMentionKind(kind)) || utf8.RuneCountInString(query) > 200 {
-		writeErr(w, 400, "引用类型无效或搜索关键词超过 200 字")
+		writeErr(w, 400, "Invalid reference type or search query exceeds 200 characters")
 		return
 	}
 	pg := s.pg(w)
@@ -100,7 +100,7 @@ func composeChatMentionMessage(pg *db.DB, message string) (string, error) {
 		return message, err
 	}
 	if pg == nil {
-		return "", errors.New("引用数据暂不可用")
+		return "", errors.New("Referenced data is temporarily unavailable")
 	}
 	var b strings.Builder
 	b.WriteString(message)
@@ -111,7 +111,7 @@ func composeChatMentionMessage(pg *db.DB, message string) (string, error) {
 			return "", err
 		}
 		if data == nil {
-			return "", &chatMentionInputError{fmt.Sprintf("引用的%s #%d 不存在或类型不匹配，请移除后重新选择", ref.Name, ref.ID)}
+			return "", &chatMentionInputError{fmt.Sprintf("Referenced %s #%d does not exist or has the wrong type; remove it and select it again", ref.Name, ref.ID)}
 		}
 		blob, err := json.Marshal(data)
 		if err != nil {
@@ -130,7 +130,7 @@ func composeChatMentionMessage(pg *db.DB, message string) (string, error) {
 		}
 		fmt.Fprintf(&b, "\n%s #%d:\n%s\n", ref.Name, ref.ID, blob)
 		if b.Len() > 384<<10 {
-			return "", &chatMentionInputError{"引用内容过大，请减少引用记录后重试"}
+			return "", &chatMentionInputError{"Referenced content is too large; remove some records and try again"}
 		}
 	}
 	return b.String(), nil

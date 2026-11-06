@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	actool "github.com/Autumn-27/norma/tool"
 	"github.com/mokerenki/cautious-memory/agent"
 	"github.com/mokerenki/cautious-memory/db"
-	actool "github.com/Autumn-27/norma/tool"
 )
 
 func workflowCall(t *testing.T, ctx context.Context, tool actool.CoreTool, input any, wantError bool) string {
@@ -131,7 +131,7 @@ func TestFindingWorkflowAutoHintToPlannerAndSetting(t *testing.T) {
 	}
 	workflowCall(t, ctx, s.toolGetFindingTraffic(), map[string]any{"finding_id": recorded.FindingID}, false)
 	wrong := workflowCall(t, ctx, s.toolGetFindingTraffic(), map[string]any{"finding_id": int64(900000000000000000)}, true)
-	if !strings.Contains(wrong, "独立漏洞记录 ID") {
+	if !strings.Contains(wrong, "standalone finding record ID") {
 		t.Fatal("ambiguous ID error", wrong)
 	}
 	input["finding_id"] = recorded.FindingID

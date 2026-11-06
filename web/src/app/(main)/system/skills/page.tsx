@@ -42,7 +42,7 @@ import {
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import type { Agent, SkillItem, MCPServer, SkillCall, MissingSkill } from "@/lib/types";
 
 function fmtTime(ts?: string) {
@@ -367,7 +367,7 @@ export default function SkillsPage() {
     } catch (e) {
       const msg = (e as Error).message;
       // offer overwrite when the skill already exists
-      if (!overwrite && msg.includes("已存在")) {
+      if (!overwrite && e instanceof ApiError && e.status === 409) {
         if (window.confirm(`${msg}\n\nOverwrite same-named Skill?`)) {
           await uploadZip(file, true);
           return;

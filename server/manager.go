@@ -14,13 +14,13 @@ import (
 	"sync"
 	"time"
 
+	actool "github.com/Autumn-27/norma/tool"
 	"github.com/mokerenki/cautious-memory/agent"
 	pgdb "github.com/mokerenki/cautious-memory/db"
 	"github.com/mokerenki/cautious-memory/enrich"
 	"github.com/mokerenki/cautious-memory/guard"
 	"github.com/mokerenki/cautious-memory/intercept"
 	"github.com/mokerenki/cautious-memory/traffic"
-	actool "github.com/Autumn-27/norma/tool"
 )
 
 // Task is one engagement: a description + goal + its own exploration store,
@@ -331,7 +331,7 @@ func (m *Manager) Workers() int {
 // SetWorkers persists the concurrent work-agent count. Values <=0 are rejected.
 func (m *Manager) SetWorkers(n int) error {
 	if n <= 0 {
-		return fmt.Errorf("workers 必须 >0")
+		return fmt.Errorf("workers must be greater than 0")
 	}
 	return m.pg.SetSetting(settingWorkers, strconv.Itoa(n))
 }
@@ -381,7 +381,7 @@ func NewManager(dir, proxyAddr string) (*Manager, error) {
 		} else {
 			err = tr.RecoverHostDeleteStages(func(_ int64, taskID int64) (bool, error) {
 				if taskID <= 0 {
-					return false, errors.New("归档流量暂存日志缺少任务 ID")
+					return false, errors.New("Archive traffic staging log is missing the task ID")
 				}
 				task, taskErr := pg.GetTask(taskID)
 				if taskErr != nil {

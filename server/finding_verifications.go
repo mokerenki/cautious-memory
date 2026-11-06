@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"slices"
 
+	actool "github.com/Autumn-27/norma/tool"
 	"github.com/mokerenki/cautious-memory/agent"
 	"github.com/mokerenki/cautious-memory/db"
 	"github.com/mokerenki/cautious-memory/intercept"
-	actool "github.com/Autumn-27/norma/tool"
 )
 
 func (s *Server) listFindingVerifications(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +78,7 @@ func (s *Server) enqueueFindingVerification(ctx context.Context, findingID int64
 		return nil, nil, false, err
 	}
 	if a == nil || !a.Enabled {
-		return nil, nil, false, errors.New("验证 Agent 不存在或未启用，请在 Agent 管理中配置 verifier")
+		return nil, nil, false, errors.New("Verification Agent does not exist or is disabled; configure verifier in Agent management")
 	}
 	for _, key := range []string{"get_finding_verify_context", "record_finding_verify_result"} {
 		t, err := s.m.pg.GetTool(key)
@@ -86,14 +86,14 @@ func (s *Server) enqueueFindingVerification(ctx context.Context, findingID int64
 			return nil, nil, false, err
 		}
 		if t == nil || !t.Enabled || !slices.Contains(t.Agents, a.Key) {
-			return nil, nil, false, errors.New("请为验证 Agent 启用并绑定工具：" + key)
+			return nil, nil, false, errors.New("Enable the tool and bind it to the verification Agent: " + key)
 		}
 	}
 	if s.resolveChatAgent(&db.Conversation{AgentKey: a.Key}) == nil {
 		return nil, nil, false, errors.New(s.chatUnavailableReason())
 	}
 	if s.ctx.Err() != nil {
-		return nil, nil, false, errors.New("服务正在停止")
+		return nil, nil, false, errors.New("Service is shutting down")
 	}
 	v, conv, created, err := s.m.pg.CreateFindingVerification(ctx, findingID)
 	if err != nil {

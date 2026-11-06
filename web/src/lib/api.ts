@@ -141,10 +141,18 @@ export async function http<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // Keep the status-based fallback for empty or non-JSON error responses.
     }
-    throw new Error(message);
+    throw new ApiError(message, r.status);
   }
+
   if (r.status === 204) return undefined as T;
   return r.json();
+}
+
+export class ApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiError";
+  }
 }
 
 // sseUrl builds a URL for Server-Sent Events streams.
@@ -1160,7 +1168,7 @@ export const api = {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
     const body = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(body?.error || `Upload failed (${r.status})`);
+    if (!r.ok) throw new ApiError(body?.error || `Upload failed (${r.status})`, r.status);
     return body;
   },
   deleteSkill: (name: string) => del<{ deleted: string }>(`/skills/${name}`),

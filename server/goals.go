@@ -130,10 +130,10 @@ func (s *Server) admitTaskWhen(t *Task, mode string, requirePaused bool) (queued
 	lifecycle := t.lifecycleSnapshot()
 	if requirePaused {
 		if isTerminalStatus(lifecycle.Status) {
-			return false, fmt.Errorf("终态任务不能执行继续")
+			return false, fmt.Errorf("A task in a terminal state cannot be resumed")
 		}
 		if !lifecycle.Paused {
-			return false, fmt.Errorf("仅已暂停的任务可以继续")
+			return false, fmt.Errorf("Only paused tasks can be resumed")
 		}
 		mode = s.resumeAdmissionMode(t)
 	}

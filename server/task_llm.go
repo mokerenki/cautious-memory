@@ -12,11 +12,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Autumn-27/norma/llm"
+	"github.com/Autumn-27/norma/transcript"
 	"github.com/mokerenki/cautious-memory/agent"
 	"github.com/mokerenki/cautious-memory/db"
 	"github.com/mokerenki/cautious-memory/llmrec"
-	"github.com/Autumn-27/norma/llm"
-	"github.com/Autumn-27/norma/transcript"
 )
 
 type taskAgentBundle struct {
@@ -691,7 +691,7 @@ func (s *Server) emitManualTaskLLMSwitch(t *Task, previousID, nextID *int64) db.
 	}
 	summary := fmt.Sprintf("用户手动将任务 LLM 从 %s 切换到 %s", llmAuditProfileLabel(previous), llmAuditProfileLabel(next))
 	metadata, _ := json.Marshal(llmActivityMetadata{LLMTransition: llmTransitionAudit{
-		Mode: "manual", Reason: "用户手动切换任务 LLM", Previous: previous, Next: next,
+		Mode: "manual", Reason: "Task LLM switched manually", Previous: previous, Next: next,
 	}})
 	return s.engine.emitActivity(t, db.Activity{Worker: "system", Kind: "llm_switch", Summary: summary, Detail: summary, Metadata: metadata})
 }

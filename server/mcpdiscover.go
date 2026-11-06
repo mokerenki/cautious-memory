@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/mokerenki/cautious-memory/db"
-	"github.com/mokerenki/cautious-memory/mcphttp"
 	"github.com/Autumn-27/norma/mcp"
 	actool "github.com/Autumn-27/norma/tool"
+	"github.com/mokerenki/cautious-memory/db"
+	"github.com/mokerenki/cautious-memory/mcphttp"
 )
 
 // mcpClient is the shared surface of a connected MCP server (stdio, Streamable HTTP,
@@ -25,22 +25,22 @@ func connectMCP(ctx context.Context, m *db.MCPServer) (mcpClient, error) {
 	switch m.Transport {
 	case "stdio":
 		if m.Command == "" {
-			return nil, fmt.Errorf("stdio 传输缺少命令")
+			return nil, fmt.Errorf("stdio transport requires a command")
 		}
 		return mcp.NewStdioClient(ctx, m.Name, m.Command, jsonStrMap(m.Env), jsonStrSlice(m.Args)...)
 	case "http":
 		if m.URL == "" {
-			return nil, fmt.Errorf("http 传输缺少 URL")
+			return nil, fmt.Errorf("http transport requires a URL")
 		}
 		// env map doubles as HTTP headers (e.g. Authorization).
 		return mcphttp.New(ctx, m.Name, m.URL, jsonStrMap(m.Env), m.Insecure)
 	case "sse":
 		if m.URL == "" {
-			return nil, fmt.Errorf("sse 传输缺少 URL")
+			return nil, fmt.Errorf("sse transport requires a URL")
 		}
 		return mcphttp.NewSSE(ctx, m.Name, m.URL, jsonStrMap(m.Env), m.Insecure)
 	default:
-		return nil, fmt.Errorf("未知传输方式 %q", m.Transport)
+		return nil, fmt.Errorf("unknown transport: %q", m.Transport)
 	}
 }
 

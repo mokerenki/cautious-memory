@@ -120,7 +120,7 @@ export function ConfigField({
   const hint = masked ? (
     <p className="text-muted-foreground flex items-center gap-1 text-xs">
       <CheckIcon className="size-3" />
-      已保存{maskedTail ? ` (tail ${maskedTail})` : ""} · Enter new value to overwrite, clear to remove this entry
+      Saved{maskedTail ? ` (tail ${maskedTail})` : ""} · Enter new value to overwrite, clear to remove this entry
     </p>
   ) : (
     def.help && <p className="text-muted-foreground text-xs">{def.help}</p>

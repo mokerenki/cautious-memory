@@ -173,7 +173,7 @@ export default function SystemSettingsPage() {
         toast.success("Saved web search configuration");
       })
       .catch((e) => {
-        toast.error("保存失败：" + (e as Error).message);
+        toast.error("Save failed: " + (e as Error).message);
         api
           .settings()
           .then(apply)

@@ -289,7 +289,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 	if err == nil {
 		// 渠道既没报错也没说送达了多少条。按失败处理（走退避），
 		// 免得这条投递被反复领取却永远标记不掉。
-		err = fmt.Errorf("渠道未报告送达条数（delivered=%d）", delivered)
+		err = fmt.Errorf("Channel did not report a delivery count (delivered=%d)", delivered)
 	}
 
 	// 失败处置**逐条**决定，而不是拿整批的最大尝试次数做判断。
@@ -412,7 +412,7 @@ func (n *Notifier) renderBatch(ctx context.Context, deliveries []*db.Notificatio
 		included = append(included, dl)
 	}
 	if len(items) == 0 {
-		return notify.Message{}, nil, fmt.Errorf("汇总批次 %d 条投递全部无法解析", len(deliveries))
+		return notify.Message{}, nil, fmt.Errorf("Could not parse any of the %d deliveries in the digest batch", len(deliveries))
 	}
 	return notify.Message{
 		Items:         items,
@@ -520,10 +520,10 @@ func (n *Notifier) digestInterval() time.Duration {
 func parseSnapshot(dl *db.NotificationDelivery) (notify.Snapshot, error) {
 	var snap notify.Snapshot
 	if len(dl.Snapshot) == 0 {
-		return snap, fmt.Errorf("投递 %d 的事件快照为空", dl.ID)
+		return snap, fmt.Errorf("Event snapshot for delivery %d is empty", dl.ID)
 	}
 	if err := json.Unmarshal(dl.Snapshot, &snap); err != nil {
-		return snap, fmt.Errorf("解析投递 %d 的事件快照失败: %w", dl.ID, err)
+		return snap, fmt.Errorf("Failed to parse event snapshot for delivery %d: %w", dl.ID, err)
 	}
 	if snap.Kind == "" {
 		// 事件类型以事件行为准，快照里那份可能由旧版本写过。

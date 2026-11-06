@@ -573,9 +573,9 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
           <Input
             value={queryInput}
             onChange={(e) => setQueryInput(e.target.value)}
-            placeholder="搜索内容 / 来源 / 节点 id"
+            placeholder="Search content / source / node id"
             className="h-8 pl-8"
-            aria-label="搜索播报"
+            aria-label="Search broadcasts"
           />
         </div>
         <div className="flex flex-wrap items-center gap-1">
@@ -620,7 +620,11 @@ export function BroadcastTab({ taskId }: { taskId: string }) {
               setOrder((o) => (o === "desc" ? "asc" : "desc"));
               setPage(1);
             }}
-            aria-label={order === "desc" ? "当前最新在前，点击改为最早在前" : "当前最早在前，点击改为最新在前"}
+            aria-label={
+              order === "desc"
+                ? "Currently newest first; click to show oldest first"
+                : "Currently oldest first; click to show newest first"
+            }
           >
             {order === "desc" ? <ArrowDownIcon /> : <ArrowUpIcon />}
             {order === "desc" ? "Latest first" : "Earliest first"}

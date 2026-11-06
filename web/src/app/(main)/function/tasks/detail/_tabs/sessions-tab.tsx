@@ -1789,7 +1789,7 @@ export function SessionsTab({ taskId }: { taskId: string }) {
                 </span>
               )}
               {activeState?.hasMore && (
-                <span className="text-[10px] text-muted-foreground" title="向上滚动加载更早历史">
+                <span className="text-[10px] text-muted-foreground" title="Scroll up to load earlier history">
                   ↑ Earlier history
                 </span>
               )}
