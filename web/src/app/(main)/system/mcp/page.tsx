@@ -241,21 +241,21 @@ export default function MCPPage() {
               variant={form.transport === "stdio" ? "default" : "outline"}
               onClick={() => setF({ transport: "stdio" })}
             >
-              stdio（{t("mcp.local")}）
+              stdio ({t("mcp.local")})
             </Button>
             <Button
               type="button"
               variant={form.transport === "http" ? "default" : "outline"}
               onClick={() => setF({ transport: "http" })}
             >
-              http（{t("mcp.remote")}）
+              http ({t("mcp.remote")})
             </Button>
             <Button
               type="button"
               variant={form.transport === "sse" ? "default" : "outline"}
               onClick={() => setF({ transport: "sse" })}
             >
-              sse（{t("mcp.legacy")}）
+              sse ({t("mcp.legacy")})
             </Button>
           </div>
         </div>

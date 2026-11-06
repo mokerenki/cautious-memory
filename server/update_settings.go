@@ -52,7 +52,7 @@ func (s *Server) getUpdateSettings(w http.ResponseWriter, r *http.Request) {
 func (s *Server) putUpdateSettings(w http.ResponseWriter, r *http.Request) {
 	var cfg updateSettings
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8192)).Decode(&cfg); err != nil {
-		writeErr(w, 400, "更新网络设置格式无效")
+		writeErr(w, 400, "Update network settings format invalid")
 		return
 	}
 	if err := cfg.validate(); err != nil {
@@ -65,7 +65,7 @@ func (s *Server) putUpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := s.m.pg.SetSettingContext(r.Context(), updateSettingsKey, string(raw)); err != nil {
-		writeErr(w, 500, "保存更新网络设置失败")
+		writeErr(w, 500, "Failed to save update network settings")
 		return
 	}
 	writeJSON(w, 200, cfg)

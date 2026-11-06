@@ -196,7 +196,7 @@ var (
 	ErrActiveLLMProfileDelete      = errors.New("cannot delete the active LLM profile; activate another profile first")
 	ErrLLMProfileReferencesChanged = errors.New("LLM profile references changed while deleting; retry the request")
 	ErrLLMProfileNotFound          = errors.New("LLM profile not found")
-	ErrJevProfileJudgeOnly         = errors.New("Jev System One 配置仅可用于拦截判定模型，不能用于对话或任务")
+	ErrJevProfileJudgeOnly         = errors.New("Jev System One config is only for interception judgment model, cannot be used for conversation or tasks")
 )
 
 func (d *DB) DeleteProfile(id int64) error {

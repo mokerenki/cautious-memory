@@ -24,7 +24,7 @@ func (s *Server) taskAssetMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if agentInfo, err := s.m.pg.GetAgentByKey("asset_mapper"); err != nil || agentInfo == nil || !agentInfo.Enabled {
-		writeErr(w, http.StatusServiceUnavailable, "网络拓扑梳理 Agent 未启用")
+		writeErr(w, http.StatusServiceUnavailable, "Asset network topology Agent not enabled")
 		return
 	}
 	taskID, _ := strconv.ParseInt(t.ID, 10, 64)
@@ -81,13 +81,13 @@ func (s *Server) taskAssetMapping(w http.ResponseWriter, r *http.Request) {
 	title := fmt.Sprintf("资产与网络梳理 · 任务 #%d", taskID)
 	conversation, err := s.m.pg.CreateConversation("asset_mapper", title, nil)
 	if err != nil || conversation == nil {
-		writeErr(w, http.StatusInternalServerError, "创建拓扑梳理会话失败")
+		writeErr(w, http.StatusInternalServerError, "Failed to create topology mapping session")
 		return
 	}
 	if _, err := s.m.pg.AppendConvActivity(conversation.ID, db.Activity{
 		Worker: "asset_mapper", Kind: "user", Summary: title, Detail: message,
 	}); err != nil {
-		writeErr(w, http.StatusInternalServerError, "写入拓扑梳理会话失败")
+		writeErr(w, http.StatusInternalServerError, "Failed to write topology mapping session")
 		return
 	}
 	busyKey := s.convBusyKey(conversation.ID)

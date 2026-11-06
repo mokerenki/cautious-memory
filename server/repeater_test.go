@@ -77,7 +77,7 @@ func TestRepeaterBlockedIPs(t *testing.T) {
 	}))
 	defer srv.Close()
 	code, _, body := repeaterTestSend(t, &Server{}, map[string]any{"url": srv.URL, "use_recording_proxy": false})
-	if code != http.StatusBadRequest || !strings.Contains(body, "拒绝") {
+	if code != http.StatusBadRequest || !strings.Contains(body, "Rejected") {
 		t.Fatalf("loopback status=%d body=%s", code, body)
 	}
 }
@@ -108,7 +108,7 @@ func TestRepeaterRejectsLegacyNumericHostsIncludingProxyPath(t *testing.T) {
 	defer proxy.Close()
 	s := &Server{m: &Manager{globalProxy: proxy.URL}}
 	code, _, body := repeaterTestSend(t, s, map[string]any{"url": "http://2130706433/"})
-	if code != http.StatusBadRequest || !strings.Contains(body, "拒绝") {
+	if code != http.StatusBadRequest || !strings.Contains(body, "Rejected") {
 		t.Fatalf("proxied legacy host status=%d body=%s", code, body)
 	}
 }
@@ -135,7 +135,7 @@ func TestRepeaterTransportBlocksSensitiveDial(t *testing.T) {
 	if conn != nil {
 		conn.Close()
 	}
-	if err == nil || !strings.Contains(err.Error(), "拒绝访问本机/链路本地地址 127.0.0.1") {
+	if err == nil || !strings.Contains(err.Error(), "Rejected access to local/link-local address 127.0.0.1") {
 		t.Fatalf("dial should fail at the sensitive-address guard, got %v", err)
 	}
 }
@@ -308,7 +308,7 @@ func TestRepeaterRejectsCrossHostRedirect(t *testing.T) {
 	}))
 	defer redirect.Close()
 	_, out, _ := repeaterTestSend(t, &Server{}, map[string]any{"url": redirect.URL, "use_recording_proxy": false})
-	if out.Status != 0 || !strings.Contains(out.Error, "跨主机") {
+	if out.Status != 0 || !strings.Contains(out.Error, "cross-host redirect") {
 		t.Fatalf("redirect response=%+v", out)
 	}
 }

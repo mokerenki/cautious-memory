@@ -310,7 +310,7 @@ func (m *Manager) applyActiveProxyLockedWithHealth(id, reason string, allowUnhea
 		next = ""
 	}
 	if id != "" && next == "" {
-		return errors.New("代理未启用或不健康")
+		return errors.New("Proxy not enabled or not healthy")
 	}
 	m.mu.RLock()
 	from := m.globalProxy
@@ -454,13 +454,13 @@ func (m *Manager) proxyHealthConfig() (threshold int, cooldown, interval time.Du
 
 func (m *Manager) SetProxyPoolSettings(timed bool, interval int, onFailure bool, strategy string, threshold, cooldown, healthInterval int) error {
 	if interval < minProxyRotateInterval {
-		return fmt.Errorf("定时轮换间隔不能小于 %d 秒", minProxyRotateInterval)
+		return fmt.Errorf("Scheduled rotation interval cannot be less than %d seconds", minProxyRotateInterval)
 	}
 	if strategy != "sequential" && strategy != "random" {
-		return errors.New("proxy_rotate_strategy 必须是 sequential 或 random")
+		return errors.New("proxy_rotate_strategy must be sequential or random")
 	}
 	if threshold < 1 || cooldown < 1 || healthInterval < 1 {
-		return errors.New("健康检查参数必须大于 0")
+		return errors.New("Health check parameters must be greater than 0")
 	}
 	return m.pg.SetSettingsAtomic(context.Background(), map[string]string{settingProxyRotateTimed: fmt.Sprint(timed), settingProxyRotateInterval: fmt.Sprint(interval), settingProxyRotateFailure: fmt.Sprint(onFailure), settingProxyRotateStrategy: strategy, settingProxyHealthThreshold: fmt.Sprint(threshold), settingProxyHealthCooldown: fmt.Sprint(cooldown), settingProxyHealthInterval: fmt.Sprint(healthInterval)})
 }
@@ -670,14 +670,14 @@ func (s *Server) reconcileProxyPoolAfterProbe(activeConfirmed bool) bool {
 		}
 	}
 	if id == "" && enabled > 0 && allCooling && (activeID != "" || strings.TrimSpace(s.m.GlobalProxy()) != "") {
-		s.pauseAllProxyTasks(errors.New("代理池暂无健康成员"))
+		s.pauseAllProxyTasks(errors.New("Proxy pool has no healthy members"))
 	}
 	return false
 }
 
 func (m *Manager) activateProxyID(id, reason string) error {
 	if m.proxyPool == nil {
-		return errors.New("代理池未初始化")
+		return errors.New("Proxy pool not initialized")
 	}
 	m.proxyPool.mu.Lock()
 	defer m.proxyPool.mu.Unlock()
@@ -893,7 +893,7 @@ func (s *Server) updateProxyPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.m.proxyPool == nil {
-		writeErr(w, 404, "代理池为空")
+		writeErr(w, 404, "Proxy pool is empty")
 		return
 	}
 	needPause := false
@@ -1009,7 +1009,7 @@ func (s *Server) updateProxyPool(w http.ResponseWriter, r *http.Request) {
 		}
 		s.m.proxyPool.mu.Unlock()
 		if needPause {
-			s.pauseAllProxyTasks(errors.New("代理池暂无健康成员"))
+			s.pauseAllProxyTasks(errors.New("Proxy pool has no healthy members"))
 		}
 		if switched {
 			s.proxyReconnectSuccess()
@@ -1021,13 +1021,13 @@ func (s *Server) updateProxyPool(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.m.proxyPool.mu.Unlock()
-	writeErr(w, 404, "代理不存在")
+	writeErr(w, 404, "Proxy not found")
 }
 
 func (s *Server) deleteProxyPool(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if s.m.proxyPool == nil {
-		writeErr(w, 404, "代理不存在")
+		writeErr(w, 404, "Proxy not found")
 		return
 	}
 	needPause := false
@@ -1046,7 +1046,7 @@ func (s *Server) deleteProxyPool(w http.ResponseWriter, r *http.Request) {
 	}
 	if !found {
 		s.m.proxyPool.mu.Unlock()
-		writeErr(w, 404, "代理不存在")
+		writeErr(w, 404, "Proxy not found")
 		return
 	}
 	s.m.proxyPool.entries = out
@@ -1104,7 +1104,7 @@ func (s *Server) deleteProxyPool(w http.ResponseWriter, r *http.Request) {
 	}
 	s.m.proxyPool.mu.Unlock()
 	if needPause {
-		s.pauseAllProxyTasks(errors.New("代理池暂无健康成员"))
+		s.pauseAllProxyTasks(errors.New("Proxy pool has no healthy members"))
 	}
 	if switched {
 		s.proxyReconnectSuccess()
@@ -1143,7 +1143,7 @@ func (s *Server) testProxyPoolEntry(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	writeErr(w, 404, "代理不存在")
+	writeErr(w, 404, "Proxy not found")
 }
 
 func (s *Server) testAllProxyPool(w http.ResponseWriter, r *http.Request) {

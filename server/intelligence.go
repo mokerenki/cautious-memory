@@ -13,7 +13,7 @@ func intelligenceError(w http.ResponseWriter, err error) {
 	case errors.Is(err, db.ErrIntelligenceInvalid):
 		writeErr(w, 400, err.Error())
 	case errors.Is(err, db.ErrIntelligenceNotFound):
-		writeErr(w, 404, "情报不存在或不属于当前范围")
+		writeErr(w, 404, "Intelligence not found or not in current scope")
 	default:
 		writeErr(w, 500, err.Error())
 	}
@@ -22,7 +22,7 @@ func (s *Server) intelligenceFilter(w http.ResponseWriter, r *http.Request) (db.
 	f := db.IntelligenceFilter{}
 	id, ok := pathInt(r, "id")
 	if !ok || id <= 0 {
-		writeErr(w, 400, "无效 ID")
+		writeErr(w, 400, "Invalid ID")
 		return f, false
 	}
 	if r.PathValue("scope") == "assets" {
@@ -42,7 +42,7 @@ func (s *Server) intelligenceFilter(w http.ResponseWriter, r *http.Request) (db.
 		return f, false
 	}
 	if !exists {
-		writeErr(w, 404, "任务或资产不存在")
+		writeErr(w, 404, "Task or asset not found")
 		return f, false
 	}
 	q := r.URL.Query()
@@ -52,7 +52,7 @@ func (s *Server) intelligenceFilter(w http.ResponseWriter, r *http.Request) (db.
 	f.Limit, _ = strconv.Atoi(q.Get("limit"))
 	f.Offset, _ = strconv.Atoi(q.Get("offset"))
 	if len(f.Query) > 500 {
-		writeErr(w, 400, "搜索关键词过长")
+		writeErr(w, 400, "Search keyword too long")
 		return f, false
 	}
 	return f, true
@@ -77,7 +77,7 @@ func (s *Server) getIntelligence(w http.ResponseWriter, r *http.Request) {
 	}
 	id, ok := pathInt(r, "intelID")
 	if !ok {
-		writeErr(w, 400, "无效情报 ID")
+		writeErr(w, 400, "Invalid intelligence ID")
 		return
 	}
 	item, err := s.m.pg.GetIntelligence(r.Context(), id)
@@ -110,12 +110,12 @@ func (s *Server) getIntelligence(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateIntelligence(w http.ResponseWriter, r *http.Request) {
 	taskID, ok := pathInt(r, "id")
 	if !ok {
-		writeErr(w, 400, "无效任务 ID")
+		writeErr(w, 400, "Invalid task ID")
 		return
 	}
 	id, ok := pathInt(r, "intelID")
 	if !ok {
-		writeErr(w, 400, "无效情报 ID")
+		writeErr(w, 400, "Invalid intelligence ID")
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, 4096)
@@ -123,7 +123,7 @@ func (s *Server) updateIntelligence(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := decode(r, &req); err != nil {
-		writeErr(w, 400, "无效请求")
+		writeErr(w, 400, "Invalid request")
 		return
 	}
 	if err := s.m.pg.UpdateIntelligenceStatus(r.Context(), taskID, id, req.Status); err != nil {

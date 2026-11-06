@@ -135,7 +135,7 @@ func composeAgentMessage(msg string, atts []chatAttachment, baseDir string) stri
 	b.WriteString(msg)
 	b.WriteString("\n\n[User-uploaded attachments] (absolute paths; use Read/Bash to inspect them if needed):")
 	for _, a := range atts {
-		fmt.Fprintf(&b, "\n- %s（%s）", filepath.Join(baseDir, a.Path), humanBytes(a.Size))
+		fmt.Fprintf(&b, "\n- %s (%s)", filepath.Join(baseDir, a.Path), humanBytes(a.Size))
 	}
 	return b.String()
 }

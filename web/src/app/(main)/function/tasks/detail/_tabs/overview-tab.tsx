@@ -843,7 +843,7 @@ export function OverviewTab({ taskId }: { taskId: string }) {
                   : scopeKind === "ip" || scopeKind === "cidr"
                     ? "e.g. 10.0.0.1 or 10.0.0.0/24"
                     : scopeKind === "icp"
-                      ? "e.g. 京ICP备12345678号-1"
+                      ? "e.g. ICP filing No. 12345678-1"
                       : scopeKind === "keyword"
                         ? "e.g. company name keyword"
                         : "e.g. example.com"

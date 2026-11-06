@@ -98,19 +98,19 @@ func (s *Server) consolidateFindingCaseExport(fs []*db.DBFinding, plan *findingC
 					}
 				}
 				refs = append(refs, fmt.Sprintf("#%d [%s] %s", member.ID, member.Severity, member.Name))
-				fmt.Fprintf(&evidence, "原始上报 #%d：%s\n%s\n\n", member.ID, member.Summary, member.Evidence)
+				fmt.Fprintf(&evidence, "Original report #%d: %s\n%s\n\n", member.ID, member.Summary, member.Evidence)
 				if member.Report != "" {
-					fmt.Fprintf(&evidence, "原始报告 #%d：\n%s\n\n", member.ID, member.Report)
+					fmt.Fprintf(&evidence, "Original report #%d:\n%s\n\n", member.ID, member.Report)
 				}
 				for _, b := range member.TrafficBindings {
-					b.Note = fmt.Sprintf("来自上报 #%d；%s", member.ID, b.Note)
+					b.Note = fmt.Sprintf("From report #%d; %s", member.ID, b.Note)
 					composite.TrafficBindings = append(composite.TrafficBindings, b)
 				}
 			}
-			composite.Summary = fmt.Sprintf("漏洞文件夹 #%d；原始记录：%s。统一评级依据：%s", cid, strings.Join(refs, "；"), c.SeverityReason)
+			composite.Summary = fmt.Sprintf("Vulnerability folder #%d; Original records: %s. Unified rating basis: %s", cid, strings.Join(refs, "; "), c.SeverityReason)
 			composite.TrafficCount = len(composite.TrafficBindings)
 			if stale || c.Report == "" {
-				composite.Report = "**统一报告尚未生成或已过期，以下提供全部原始证据，不能视为完整复现已验证。**\n\n" + c.Report
+				composite.Report = "**Unified report not yet generated or expired; all original evidence is provided below, cannot be considered complete verified reproduction.**\n\n" + c.Report
 				composite.Evidence = evidence.String()
 				composite.ReportEvidenceVersion = -1
 			}

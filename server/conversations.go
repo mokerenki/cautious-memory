@@ -449,7 +449,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 	if _, err := pg.AppendConvActivity(c.ID, ua); err != nil {
 		log.Printf("[conv %d] append user msg failed: %v", c.ID, err)
 	}
-	if c.Title == "" || c.Title == "新对话" {
+	if c.Title == "" || c.Title == "New conversation" || c.Title == "新对话" {
 		title := firstLine(msg, 40)
 		if title == "" {
 			title = "Attachment message"
@@ -471,7 +471,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 					if promptContent != "" {
 						promptContent += "\n"
 					}
-					promptContent += "附件：" + strings.Join(names, "、")
+					promptContent += "Attachments: " + strings.Join(names, ", ")
 				}
 			}
 			go func() {
@@ -524,7 +524,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 // autoTitleMayReplace protects a user's later rename while allowing the
 // asynchronous title completion to replace the initial placeholder/preview.
 func autoTitleMayReplace(current, initial string) bool {
-	return current == "" || current == "新对话" || current == "New conversation" || current == initial
+	return current == "" || current == "New conversation" || current == "新对话" || current == initial
 }
 
 func autoTitleIsUsable(generated string) bool {
@@ -576,7 +576,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 	}()
 	// Only the first turn executes a historical retest. Follow-up conversation
 	// turns may explain the sealed result; the result tool refuses to overwrite it.
-	finishStatus, finishReason := "failed", "Agent 未能启动"
+	finishStatus, finishReason := "failed", "Agent failed to start"
 	if c.AgentKey == "reporter" {
 		manualReview, err := s.isHistoricalFindingReview(c.ID)
 		if err != nil {
@@ -594,7 +594,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 				state = "failed"
 				reason = finishReason
 				if ctx.Err() != nil {
-					reason = "整理已停止或服务关闭"
+					reason = "Organizer stopped or service closed"
 				}
 			}
 			if state == "done" && manualReview {
@@ -612,7 +612,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 			// The sealing defer below needs r.ID, which we do not have here. Seal by
 			// conversation instead, otherwise the row stays 'pending' forever.
 			log.Printf("[conv %d] load retest: %v", c.ID, err)
-			if err := s.m.pg.FailPendingRetestForConversation(c.ID, "复测状态读取失败，请重新发起"); err != nil {
+			if err := s.m.pg.FailPendingRetestForConversation(c.ID, "Retest status read failed, please re-initiate"); err != nil {
 				log.Printf("[conv %d] seal retest: %v", c.ID, err)
 			}
 			return
@@ -620,7 +620,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 		if r != nil && r.Status == "pending" {
 			defer func() {
 				if ctx.Err() != nil {
-					finishStatus, finishReason = "stopped", "复测已停止或服务已关闭"
+					finishStatus, finishReason = "stopped", "Retest stopped or service closed"
 				}
 				s.finishRetest(r.ID, finishStatus, finishReason)
 			}()
@@ -665,7 +665,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 		finishReason = err.Error()
 		if ctx.Err() == nil {
 			_, _ = pg.AppendConvActivity(c.ID, db.Activity{Worker: c.AgentKey, Kind: "text", IsError: true,
-				Summary: "（出错：" + err.Error() + "）", Detail: err.Error()})
+				Summary: "(Error: " + err.Error() + ")", Detail: err.Error()})
 		}
 	} else {
 		finishStatus, finishReason = "completed", ""
@@ -736,7 +736,7 @@ func (s *Server) startTriggeredRun(agentKey, title, message string, taskID int64
 }
 
 func normalizeReporterTriggerMessage(message string) string {
-	const marker = "【本次由工具调用触发】"
+	const marker = "[Triggered by tool call this time]"
 	if i := strings.Index(message, marker); i >= 0 {
 		return reporterToolCallMessage + message[i:]
 	}
@@ -945,7 +945,7 @@ func (s *Server) runTriggeredRun(item triggeredRun) {
 	}
 	if err != nil || c == nil {
 		if item.conversationID > 0 {
-			_, _ = pg.Exec(`UPDATE finding_case_review_runs SET state='failed',error='整理会话不可用' WHERE conversation_id=$1`, item.conversationID)
+			_, _ = pg.Exec(`UPDATE finding_case_review_runs SET state='failed',error='Organizer conversation unavailable' WHERE conversation_id=$1`, item.conversationID)
 		}
 		log.Printf("[trigger] create conversation for %s failed: %v", item.agentKey, err)
 		return

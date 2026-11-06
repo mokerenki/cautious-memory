@@ -511,7 +511,7 @@ func (m *Manager) SetWorkerPools(pools []WorkerPool, legacyWorkers ...int) error
 				return err
 			}
 			if profile == nil {
-				return fmt.Errorf("worker_pools 中 profile_id %d 不存在", pool.ProfileID)
+				return fmt.Errorf("worker_pools profile_id %d does not exist", pool.ProfileID)
 			}
 			if profile.Format == "jev" {
 				return pgdb.ErrJevProfileJudgeOnly
@@ -608,7 +608,7 @@ func NewManager(dir, proxyAddr string) (*Manager, error) {
 		} else {
 			err = tr.RecoverHostDeleteStages(func(_ int64, taskID int64) (bool, error) {
 				if taskID <= 0 {
-					return false, errors.New("归档流量暂存日志缺少任务 ID")
+					return false, errors.New("Archived traffic staging log missing task ID")
 				}
 				task, taskErr := pg.GetTask(taskID)
 				if taskErr != nil {

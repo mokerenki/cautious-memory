@@ -499,7 +499,7 @@ func maxTokensResolver(cfg agent.Config) func() int {
 // the running engine as the GLOBAL active pair. Safe to call at runtime (UI configures LLM).
 func (s *Server) applyLLM(cfg agent.Config) error {
 	if cfg.Jev {
-		return fmt.Errorf("Jev System One 仅可用于拦截判定模型，不能作为聊天 provider")
+		return fmt.Errorf("Jev System One is only for interception judgment models, cannot be used as chat provider")
 	}
 	var prov llm.Provider
 	// A persisted active profile must use the same cached provider as task chains
@@ -1362,7 +1362,7 @@ func (s *Server) controlIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.engine.beginTaskOperation(t.ID) {
-		writeErr(w, 409, "任务正在删除，无法控制意图")
+		writeErr(w, 409, "Task is being deleted, cannot control intent")
 		return
 	}
 	defer s.engine.decInflight(t.ID)
@@ -1419,7 +1419,7 @@ func (s *Server) rerunIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.engine.beginTaskOperation(t.ID) {
-		writeErr(w, 409, "任务正在删除，无法重跑意图")
+		writeErr(w, 409, "Task is being deleted, cannot rerun intent")
 		return
 	}
 	defer s.engine.decInflight(t.ID)
@@ -1434,7 +1434,7 @@ func (s *Server) rerunIntent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !reopened {
-		writeErr(w, 409, "该意图不是可重跑状态(仅 blocked/exhausted/stopped 可重跑)")
+		writeErr(w, 409, "This intent is not in a rerunnable state (only blocked/exhausted/stopped can be rerun)")
 		return
 	}
 	queued, err := s.admitTask(t, "resume")
@@ -1458,7 +1458,7 @@ func (s *Server) rerunBlocked(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.engine.beginTaskOperation(t.ID) {
-		writeErr(w, 409, "任务正在删除，无法重跑意图")
+		writeErr(w, 409, "Task is being deleted, cannot rerun intent")
 		return
 	}
 	defer s.engine.decInflight(t.ID)
@@ -1738,7 +1738,7 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 		req.TimeoutSeconds = 0
 	}
 	if len(req.SourceTaskIDs) > db.MaxTaskSourceCount {
-		writeErr(w, 400, fmt.Sprintf("关联任务最多选择 %d 个", db.MaxTaskSourceCount))
+		writeErr(w, 400, fmt.Sprintf("Associated tasks max %d", db.MaxTaskSourceCount))
 		return
 	}
 	sourceIDs := make([]int64, 0, len(req.SourceTaskIDs))
@@ -1746,11 +1746,11 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 	for _, raw := range req.SourceTaskIDs {
 		id, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
 		if err != nil || id <= 0 || seenSources[id] {
-			writeErr(w, 400, "关联任务 id 无效或重复")
+			writeErr(w, 400, "Associated task ID invalid or duplicate")
 			return
 		}
 		if _, ok := s.m.Task(strconv.FormatInt(id, 10)); !ok {
-			writeErr(w, 400, fmt.Sprintf("关联任务 #%d 不存在", id))
+			writeErr(w, 400, fmt.Sprintf("Associated task #%d does not exist", id))
 			return
 		}
 		seenSources[id] = true
@@ -1758,13 +1758,13 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 	}
 	companyIDs, err := db.NormalizeTaskCompanyIDs(req.CompanyIDs)
 	if err != nil {
-		writeErr(w, 400, fmt.Sprintf("关联企业无效：最多选择 %d 个有效企业", db.MaxTaskCompanyCount))
+		writeErr(w, 400, fmt.Sprintf("Associated enterprise invalid: max %d valid enterprises", db.MaxTaskCompanyCount))
 		return
 	}
 	req.CompanyIDs = companyIDs
 	interceptRules, err := buildTaskInterceptRules(req.InterceptRules)
 	if err != nil {
-		writeErr(w, 400, "任务级拦截规则无效："+err.Error())
+		writeErr(w, 400, "Task-level intercept rules invalid: "+err.Error())
 		return
 	}
 	var schedule *db.TaskScheduleInput
@@ -1783,11 +1783,11 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.WorkerCount < 0 {
-		writeErr(w, 400, "Worker 运行数量不能为负数")
+		writeErr(w, 400, "Worker running count cannot be negative")
 		return
 	}
 	if req.WorkerCount > db.MaxTaskWorkerCount {
-		writeErr(w, 400, fmt.Sprintf("Worker 运行数量最多 %d", db.MaxTaskWorkerCount))
+		writeErr(w, 400, fmt.Sprintf("Worker running count max %d", db.MaxTaskWorkerCount))
 		return
 	}
 	t, err := s.m.CreateTaskWithOptions(req.Description, req.Goal, db.TaskCreateOptions{
@@ -1803,11 +1803,11 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		if errors.Is(err, db.ErrTaskCategoryInvalid) || errors.Is(err, db.ErrTaskCategoryNotFound) {
-			writeErr(w, 400, "任务分类不存在或无效")
+			writeErr(w, 400, "Task category not found or invalid")
 			return
 		}
 		if errors.Is(err, db.ErrTaskCompanyIDsInvalid) || errors.Is(err, db.ErrTaskCompanyNotFound) {
-			writeErr(w, 400, "关联企业不存在或无效")
+			writeErr(w, 400, "Associated company not found or invalid")
 			return
 		}
 		writeErr(w, 500, err.Error())
@@ -1828,14 +1828,14 @@ func (s *Server) validateTaskProfileIDs(ids []int64) error {
 	seen := map[int64]bool{}
 	for _, id := range ids {
 		if id <= 0 || seen[id] {
-			return fmt.Errorf("LLM 配置 id 无效或重复")
+			return fmt.Errorf("LLM config ID invalid or duplicate")
 		}
 		seen[id] = true
 		if p, err := s.m.pg.ProfileByID(id); err == nil && p != nil && p.Format == "jev" {
 			return db.ErrJevProfileJudgeOnly
 		}
 		if _, ok := s.loadProfileConfig(id); !ok {
-			return fmt.Errorf("LLM 配置 #%d 不存在或未设置 API Key", id)
+			return fmt.Errorf("LLM config #%d does not exist or API Key not set", id)
 		}
 	}
 	return nil
@@ -2039,7 +2039,7 @@ func (s *Server) taskCoverage(w http.ResponseWriter, r *http.Request) {
 	}
 	as := s.m.Assets()
 	if as == nil {
-		writeErr(w, 503, "asset store 未启用")
+		writeErr(w, 503, "asset store not enabled")
 		return
 	}
 	// 资产覆盖度功能关闭 → 短路返回 {enabled:false}，前端据此隐藏覆盖度卡片/进度。
@@ -2067,7 +2067,7 @@ func (s *Server) taskCoverageGraph(w http.ResponseWriter, r *http.Request) {
 	}
 	as := s.m.Assets()
 	if as == nil {
-		writeErr(w, 503, "asset store 未启用")
+		writeErr(w, 503, "asset store not enabled")
 		return
 	}
 	taskID, _ := strconv.ParseInt(t.ID, 10, 64)
@@ -2089,7 +2089,7 @@ func (s *Server) taskAssetRefs(w http.ResponseWriter, r *http.Request) {
 	}
 	assetID, _ := strconv.ParseInt(r.URL.Query().Get("asset_id"), 10, 64)
 	if assetID <= 0 {
-		writeErr(w, 400, "需要 asset_id")
+		writeErr(w, 400, "asset_id is required")
 		return
 	}
 	refs, err := t.Store.AssetRefsWithSources(assetID)
@@ -2123,7 +2123,7 @@ func (s *Server) taskScopeList(w http.ResponseWriter, r *http.Request) {
 	}
 	as := s.m.Assets()
 	if as == nil {
-		writeErr(w, 503, "asset store 未启用")
+		writeErr(w, 503, "asset store not enabled")
 		return
 	}
 	taskID, _ := strconv.ParseInt(t.ID, 10, 64)
@@ -2143,7 +2143,7 @@ func (s *Server) taskScopeAdd(w http.ResponseWriter, r *http.Request) {
 	}
 	as := s.m.Assets()
 	if as == nil {
-		writeErr(w, 503, "asset store 未启用")
+		writeErr(w, 503, "asset store not enabled")
 		return
 	}
 	var body struct {
@@ -2172,7 +2172,7 @@ func (s *Server) taskScopeDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	as := s.m.Assets()
 	if as == nil {
-		writeErr(w, 503, "asset store 未启用")
+		writeErr(w, 503, "asset store not enabled")
 		return
 	}
 	taskID, _ := strconv.ParseInt(t.ID, 10, 64)
@@ -3749,7 +3749,7 @@ func notifyDigestIntervalMin(pg *db.DB) int {
 func (s *Server) pgDetectPython(w http.ResponseWriter, r *http.Request) {
 	p := detectPython()
 	if p == "" {
-		writeErr(w, 404, "未检测到 python(python3/python 均不在 PATH)")
+		writeErr(w, 404, "Python not detected (python3/python not in PATH)")
 		return
 	}
 	if err := s.m.pg.SetSetting(settingPythonInterp, p); err != nil {
@@ -3863,7 +3863,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		// 留着尾部斜杠会产出 "//function/..." 这种双斜杠路径。
 		base := trimTrailingSlash(strings.TrimSpace(*req.NotifyBaseURL))
 		if base != "" && !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
-			writeErr(w, 400, "回链地址需以 http:// 或 https:// 开头")
+			writeErr(w, 400, "Callback URL must start with http:// or https://")
 			return
 		}
 		if err := s.m.pg.SetSetting(settingNotifyPublicBaseURL, base); err != nil {
@@ -3874,7 +3874,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	if req.NotifyDigestMins != nil {
 		// 下限 1 分钟:更短的周期等于实时推送,那样应该直接把渠道改成 realtime 模式。
 		if *req.NotifyDigestMins < 1 || *req.NotifyDigestMins > 24*60 {
-			writeErr(w, 400, "汇总周期需在 1 到 1440 分钟之间")
+			writeErr(w, 400, "Digest interval must be between 1 and 1440 minutes")
 			return
 		}
 		if err := s.m.pg.SetSetting(settingNotifyDigestMinutes, strconv.Itoa(*req.NotifyDigestMins)); err != nil {
@@ -3887,7 +3887,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	// is also present it sets the legacy count for the newly restored legacy mode.
 	if req.WorkerPools != nil {
 		if len(*req.WorkerPools) == 0 && req.Workers != nil && *req.Workers <= 0 {
-			writeErr(w, 400, "workers 必须 >0")
+			writeErr(w, 400, "workers must be >0")
 			return
 		}
 		legacyWorkers := []int(nil)
@@ -4262,7 +4262,7 @@ func (s *Server) newMainSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.engine.IsDeleting(t.ID) {
-		writeErr(w, 409, "任务正在删除，无法新建会话")
+		writeErr(w, 409, "Task is being deleted, cannot create conversation")
 		return
 	}
 	m, err := t.Store.NewMainSession()
@@ -4280,7 +4280,7 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.engine.IsDeleting(t.ID) {
-		writeErr(w, 409, "任务正在删除，无法发送新消息")
+		writeErr(w, 409, "Task is being deleted, cannot send new message")
 		return
 	}
 	// 注意:任务暂停(paused)不拦截主 Agent 对话。主 Agent 编排会话独立于 planner/
@@ -4304,12 +4304,12 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	s.chatMu.Lock()
 	if s.engine.IsDeleting(t.ID) {
 		s.chatMu.Unlock()
-		writeErr(w, 409, "任务正在删除，无法发送新消息")
+		writeErr(w, 409, "Task is being deleted, cannot send new message")
 		return
 	}
 	if s.chatBusy[t.ID] {
 		s.chatMu.Unlock()
-		writeErr(w, 409, "主 Agent 正在处理上一条消息，请稍候")
+		writeErr(w, 409, "Main Agent is processing the previous message, please wait")
 		return
 	}
 	ctx, cancel := context.WithCancelCause(s.ctx)

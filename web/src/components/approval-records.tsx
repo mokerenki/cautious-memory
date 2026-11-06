@@ -51,7 +51,7 @@ function fmtTime(value?: string) {
 function source(row: InterceptApprovalRow) {
   if (row.decision_source) return row.decision_source;
   if (row.rule_id) return "rule";
-  return row.reason?.startsWith("[模型]") ? "model" : "unknown";
+  return row.reason?.startsWith("[model]") ? "model" : "unknown";
 }
 
 function originLabel(row: InterceptApprovalRow) {
@@ -117,7 +117,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function MatchCell({ row, showReason = true }: { row: InterceptApprovalRow; showReason?: boolean }) {
   const { t } = useTranslation();
-  const reason = row.reason?.replace(/^\[模型\]\s*/, "");
+  const reason = row.reason?.replace(/^\[model\]\s*/, "");
   return (
     <div className="flex min-w-0 flex-col gap-1">
       {source(row) === "model" ? (

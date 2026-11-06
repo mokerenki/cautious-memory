@@ -252,10 +252,10 @@ func (s *Server) admitTaskWhenScheduledWithGenerationChecked(t *Task, mode strin
 	}
 	if shouldQueue {
 		if !wasQueued {
-			summary := fmt.Sprintf("已排队：达到并发上限 %d，等待空位后自动开始", limit)
+			summary := fmt.Sprintf("Queued: reached concurrency limit %d, will automatically start when a slot opens", limit)
 			switch {
 			case !ready:
-				summary = "已排队：当前没有可运行的 LLM 配置，配置恢复后自动开始"
+				summary = "Queued: no runnable LLM configuration available, will automatically start when configuration recovers"
 			case readyBacklog:
 				summary = "已排队：已有更早的任务等待运行，将按 FIFO 顺序自动开始"
 			}

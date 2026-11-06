@@ -33,7 +33,7 @@ func dropReason(err error) string {
 	if errors.As(err, &pgErr) {
 		switch pgErr.Code {
 		case "23503":
-			return "fk_violation(23503,父exploration不存在)"
+			return "fk_violation(23503, parent exploration does not exist)"
 		case "23505":
 			return "unique_violation(23505)"
 		default:
@@ -578,8 +578,7 @@ const defaultEmptyTurnNudges = 2
 // 的 SEThinkingDelta)，所以 thinking-only 不算空。何况那层是原样重发整个 prompt，
 // 对这种由上下文形状决定的空转，重发只会让模型再想一遍。这里换成追加一条指令，让它
 // 带着已经产出的思考继续，输入变了才有理由给出不同的行为。
-const emptyTurnNudge = "【空转提醒】你上一轮只输出了思考过程，既没有给出正文回复，也没有调用任何工具，" +
-	"这一轮等于没有产出。请直接执行你刚才想好的下一步：要么调用工具，要么给出结论文字。不要重复思考。"
+const emptyTurnNudge = "[Empty turn reminder] Your last round only output thinking, with no text reply and no tool calls—this round produced nothing. Directly execute the next step you just thought of: either call a tool or give conclusion text. Do not repeat thinking."
 
 // isThinkingOnlyTurn reports whether the latest assistant turn produced neither
 // text nor a tool call — i.e. the model spent the whole round thinking.
@@ -596,8 +595,8 @@ func isThinkingOnlyTurn(messages []llm.Message) bool {
 
 func (h steerHooks) PreToolUse(ctx context.Context, name string, input []byte) (bool, string, []byte) {
 	if msg, ok := h.drain(); ok {
-		return true, "【规划者实时纠偏】" + msg +
-			"\n（这是规划者对本意图的即时指令；本次工具调用未执行，请据此调整下一步。若与你当前打算冲突，以此为准。）", nil
+		return true, "[Planner real-time correction] " + msg +
+			"\n(This is the planner's immediate instruction for this intent; this tool call was not executed, please adjust the next step accordingly. If it conflicts with your current plan, take this as authoritative.)", nil
 	}
 	if h.inner != nil {
 		return h.inner.PreToolUse(ctx, name, input)
@@ -672,9 +671,9 @@ func (e *Engine) emitActivity(t *Task, r db.Activity) db.Activity {
 		if isFKViolation(err) {
 			storeID := t.Store.ID()
 			if exists, refs, maxID, dErr := e.m.pg.ExplorationDiag(storeID); dErr != nil {
-				diag = fmt.Sprintf(" | FK诊断查询失败(store.expID=%d task.ExpID=%d): %v", storeID, t.ExpID, dErr)
+				diag = fmt.Sprintf(" | FK diagnosis query failed(store.expID=%d task.ExpID=%d): %v", storeID, t.ExpID, dErr)
 			} else {
-				diag = fmt.Sprintf(" | FK诊断: store.expID=%d task.ExpID=%d exploration存在=%v 引用它的task数=%d MAX(exploration.id)=%d",
+				diag = fmt.Sprintf(" | FK diagnosis: store.expID=%d task.ExpID=%d exploration exists=%v tasks referencing it=%d MAX(exploration.id)=%d",
 					storeID, t.ExpID, exists, refs, maxID)
 			}
 		}
@@ -1334,7 +1333,7 @@ func (e *Engine) runDetachedIntent(ctx context.Context, t *Task, intentID int64,
 		return err
 	}
 	if !changed {
-		return fmt.Errorf("%w: 意图不再是 paused 状态", db.ErrIntentStateConflict)
+		return fmt.Errorf("%w: Intent is no longer in paused state", db.ErrIntentStateConflict)
 	}
 	node.State, node.Owner = "running", "chat"
 	// Record the human turn as a visible activity BEFORE the run starts, so it is

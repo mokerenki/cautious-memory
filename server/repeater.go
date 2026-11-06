@@ -63,14 +63,14 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 	var in repeaterSendRequest
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, repeaterMaxBody))
 	if err := dec.Decode(&in); err != nil {
-		writeErr(w, http.StatusBadRequest, "请求体无效")
+		writeErr(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 	// Reject a second JSON value (or oversized trailing data) instead of silently
 	// accepting bytes beyond the documented 2 MiB request limit.
 	var extra any
 	if err := dec.Decode(&extra); err != io.EOF {
-		writeErr(w, http.StatusBadRequest, "请求体无效")
+		writeErr(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -79,33 +79,33 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 		method = strings.ToUpper(strings.TrimSpace(*in.Method))
 	}
 	if method == "" {
-		writeErr(w, http.StatusBadRequest, "HTTP 方法不能为空")
+		writeErr(w, http.StatusBadRequest, "HTTP method cannot be empty")
 		return
 	}
 	switch method {
 	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch,
 		http.MethodDelete, http.MethodHead, http.MethodOptions:
 	default:
-		writeErr(w, http.StatusBadRequest, "不支持的 HTTP 方法")
+		writeErr(w, http.StatusBadRequest, "Unsupported HTTP method")
 		return
 	}
 
 	switch in.HTTPVersion {
 	case "", "HTTP/1.1", "HTTP/2.0":
 	default:
-		writeErr(w, http.StatusBadRequest, "当前支持 HTTP/1.1 和 HTTP/2.0")
+		writeErr(w, http.StatusBadRequest, "Currently supports HTTP/1.1 and HTTP/2.0")
 		return
 	}
 
 	rawURL := strings.TrimSpace(in.URL)
 	if rawURL == "" {
-		writeErr(w, http.StatusBadRequest, "url 必填")
+		writeErr(w, http.StatusBadRequest, "url is required")
 		return
 	}
 	u, err := url.Parse(rawURL)
 	if err != nil || u.Host == "" || u.Hostname() == "" ||
 		!strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
-		writeErr(w, http.StatusBadRequest, "仅支持绝对 http/https URL")
+		writeErr(w, http.StatusBadRequest, "Only absolute http/https URLs are supported")
 		return
 	}
 	// This check is needed even when a proxy is used: the proxy must remain usable
@@ -138,7 +138,7 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), body)
 	if err != nil {
-		writeErr(w, http.StatusBadRequest, "构造请求失败")
+		writeErr(w, http.StatusBadRequest, "Failed to construct request")
 		return
 	}
 	for key, value := range in.Headers {
@@ -185,13 +185,13 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 		Transport: transport,
 		CheckRedirect: func(next *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
-				return errors.New("重定向次数过多")
+				return errors.New("Too many redirects")
 			}
 			if err := repeaterCheckURL(next.URL); err != nil {
 				return err
 			}
 			if len(via) > 0 && !strings.EqualFold(next.URL.Host, via[0].URL.Host) {
-				return fmt.Errorf("拒绝跨主机重定向（%s → %s）", via[0].URL.Host, next.URL.Host)
+				return fmt.Errorf("Rejected cross-host redirect (%s → %s)", via[0].URL.Host, next.URL.Host)
 			}
 			return nil
 		},
@@ -313,11 +313,11 @@ func repeaterCheckURL(u *url.URL) error {
 		var ok bool
 		ip, ok = repeaterParseLegacyIPv4(host)
 		if !ok {
-			return fmt.Errorf("拒绝无法解析的数字主机地址 %q", host)
+			return fmt.Errorf("Rejected unresolvable numeric host address %q", host)
 		}
 	}
 	if strings.EqualFold(host, "localhost") || (ip != nil && repeaterIsBlockedDialIP(ip)) {
-		return fmt.Errorf("拒绝访问本机/链路本地地址（如确需访问本机服务，设置 %s=1）", repeaterAllowLocalEnv)
+		return fmt.Errorf("Rejected access to local/link-local address (to access local services, set %s=1)", repeaterAllowLocalEnv)
 	}
 	return nil
 }
@@ -421,10 +421,10 @@ func repeaterBlockSensitiveDial(_, address string, _ syscall.RawConn) error {
 	}
 	ip := net.ParseIP(host)
 	if ip == nil {
-		return fmt.Errorf("无法解析目标地址 %q", host)
+		return fmt.Errorf("Unable to resolve target address %q", host)
 	}
 	if repeaterIsBlockedDialIP(ip) {
-		return fmt.Errorf("拒绝访问本机/链路本地地址 %s（如确需访问本机服务，设置 %s=1）", ip, repeaterAllowLocalEnv)
+		return fmt.Errorf("Rejected access to local/link-local address %s (to access local services, set %s=1)", ip, repeaterAllowLocalEnv)
 	}
 	return nil
 }

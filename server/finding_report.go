@@ -28,7 +28,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if f.NodeID == nil || *f.NodeID <= 0 {
-		writeErr(w, http.StatusConflict, "漏洞没有可用的探索节点，无法生成复现步骤")
+		writeErr(w, http.StatusConflict, "Finding has no available exploration node, cannot generate reproduction steps")
 		return
 	}
 	reporter, err := s.m.pg.GetAgentByKey("reporter")
@@ -37,7 +37,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if reporter == nil || !reporter.Enabled {
-		writeErr(w, http.StatusConflict, "报告 Agent 未启用，请在 Agent 管理中启用 reporter")
+		writeErr(w, http.StatusConflict, "Reporter Agent not enabled, please enable reporter in Agent Management")
 		return
 	}
 	if s.resolveChatAgent(&db.Conversation{AgentKey: reporter.Key}) == nil {
@@ -45,7 +45,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.ctx.Err() != nil {
-		writeErr(w, http.StatusServiceUnavailable, "服务正在停止")
+		writeErr(w, http.StatusServiceUnavailable, "Service is shutting down")
 		return
 	}
 
@@ -58,18 +58,18 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	message := manualFindingReportMessage(f, taskID)
-	conversation, err := s.m.pg.CreateConversation("reporter", fmt.Sprintf("漏洞报告 · finding#%d", f.ID), nil)
+	conversation, err := s.m.pg.CreateConversation("reporter", fmt.Sprintf("Vulnerability report · finding#%d", f.ID), nil)
 	if err != nil {
-		writeErr(w, http.StatusInternalServerError, "创建报告对话失败: "+err.Error())
+		writeErr(w, http.StatusInternalServerError, "Failed to create report conversation: "+err.Error())
 		return
 	}
 	if err := s.m.pg.SetFindingReportConversationID(f.ID, conversation.ID); err != nil {
-		writeErr(w, http.StatusInternalServerError, "关联报告对话失败: "+err.Error())
+		writeErr(w, http.StatusInternalServerError, "Failed to associate report conversation: "+err.Error())
 		return
 	}
 	s.StartTriggeredRunWithConversation(
 		"reporter",
-		fmt.Sprintf("人工生成步骤与报告 · finding#%d", f.ID),
+		fmt.Sprintf("Manually generate steps and report · finding#%d", f.ID),
 		message,
 		taskID,
 		false,
@@ -87,7 +87,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 
 func manualFindingReportMessage(f *db.DBFinding, taskID int64) string {
 	var b strings.Builder
-	b.WriteString("【人工重新生成步骤与报告】这是一个已经登记的漏洞，请补生成该漏洞的结构化复现步骤和完整详细报告；不要创建新的漏洞记录，也不要修改或删除原始证据。\n")
+	b.WriteString("[Manually regenerate steps and report] This is a registered vulnerability; please supplement structured reproduction steps and a complete detailed report for it; do not create new vulnerability records, nor modify or delete original evidence.\n")
 	fmt.Fprintf(&b, "独立漏洞记录 ID（finding_id）=%d；探索节点 ID（finding_node_id）=%d。\n", f.ID, *f.NodeID)
 	if taskID > 0 {
 		fmt.Fprintf(&b, "来源任务 ID=%d。\n", taskID)

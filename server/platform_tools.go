@@ -97,7 +97,7 @@ func (s *Server) toolCreateSkill() actool.CoreTool {
 			}
 			path := filepath.Join(s.skillDir, a.Name)
 			if _, err := os.Stat(path); err == nil {
-				return actool.Errorf("skill 已存在: " + a.Name), nil
+				return actool.Errorf("Skill already exists: " + a.Name), nil
 			}
 			if err := os.MkdirAll(path, 0o755); err != nil {
 				return actool.Errorf(err.Error()), nil
@@ -211,7 +211,7 @@ func (s *Server) toolCreateCustomTool() actool.CoreTool {
 				return actool.Errorf("http 工具必须提供参数 JSON Schema(不能留空)"), nil
 			}
 			if exist, _ := s.m.pg.GetTool(a.Key); exist != nil {
-				return actool.Errorf("该 key 已存在: " + a.Key), nil
+				return actool.Errorf("This key already exists: " + a.Key), nil
 			}
 			if err := s.m.pg.CreateCustomTool(toDBTool(a)); err != nil {
 				return actool.Errorf(err.Error()), nil

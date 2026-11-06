@@ -50,7 +50,7 @@ func (s *Server) toolCompleteFindingCaseReview() actool.CoreTool {
 
 func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a findingReviewConclusion) error {
 	if conv <= 0 {
-		return errors.New("仅用于有上下文的历史整理会话")
+		return errors.New("Only for historical organizing sessions with context")
 	}
 	return s.m.pg.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		var idsRaw, readsRaw json.RawMessage
@@ -59,7 +59,7 @@ func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a 
 			return err
 		}
 		if state != "running" {
-			return errors.New("整理会话未运行，不能提交验收")
+			return errors.New("Organizing session is not running, cannot submit acceptance")
 		}
 		var ids, reads []int64
 		if err := json.Unmarshal(idsRaw, &ids); err != nil {
@@ -75,20 +75,20 @@ func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a 
 		decisions := map[int64]findingReviewDecision{}
 		for _, d := range a.Decisions {
 			if _, ok := decisions[d.FindingID]; ok {
-				return errors.New("重复的判断编号")
+				return errors.New("Duplicate judgment number")
 			}
 			decisions[d.FindingID] = d
 		}
 		if strings.TrimSpace(a.Summary) == "" || len(ids) != len(decisions) {
-			return errors.New("须提供总结和覆盖全部所选记录的逐条判断")
+			return errors.New("Must provide a summary and per-record judgments covering all selected records")
 		}
 		for _, id := range ids {
 			d, ok := decisions[id]
 			if !ok || !read[id] {
-				return fmt.Errorf("请先 get_finding_record 读取并判断所选记录 #%d", id)
+				return fmt.Errorf("Please get_finding_record first to read and judge selected record #%d", id)
 			}
 			if strings.TrimSpace(d.Reason) == "" || strings.TrimSpace(d.RootCauseEvidence) == "" {
-				return fmt.Errorf("记录 #%d 缺少判断理由或根因证据", id)
+				return fmt.Errorf("Record #%d missing judgment reason or root cause evidence", id)
 			}
 			var cid sql.NullInt64
 			if err := tx.QueryRow(`SELECT m.case_id FROM findings f LEFT JOIN finding_case_members m ON m.finding_id=f.id WHERE f.id=$1`, id).Scan(&cid); err != nil {
@@ -97,7 +97,7 @@ func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a 
 			switch d.Verdict {
 			case "merged":
 				if !cid.Valid {
-					return fmt.Errorf("记录 #%d 尚未归并", id)
+					return fmt.Errorf("Record #%d not yet merged", id)
 				}
 			case "suggested":
 				var pending bool
@@ -107,14 +107,14 @@ func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a 
 					return err
 				}
 				if !pending {
-					return fmt.Errorf("记录 #%d 须先保存待确认建议", id)
+					return fmt.Errorf("Record #%d must first save pending confirmation suggestion", id)
 				}
 			case "independent":
 				if cid.Valid {
-					return fmt.Errorf("记录 #%d 已在文件夹中，不能声明为独立", id)
+					return fmt.Errorf("Record #%d already in folder, cannot declare as independent", id)
 				}
 			default:
-				return errors.New("无效判断类型")
+				return errors.New("Invalid judgment type")
 			}
 			if cid.Valid {
 				var active bool
@@ -122,7 +122,7 @@ func (s *Server) saveFindingReviewConclusion(ctx context.Context, conv int64, a 
 					return err
 				}
 				if !active {
-					return fmt.Errorf("文件夹 #%d 已关闭", cid.Int64)
+					return fmt.Errorf("Folder #%d already closed", cid.Int64)
 				}
 			}
 		}
@@ -214,7 +214,7 @@ func validateUnifiedFindingReport(report string) error {
 	}
 	finish()
 	if fence != "" {
-		return errors.New("统一报告代码块未闭合，可能截断；请补全后再保存")
+		return errors.New("Unified report code block not closed, may be truncated; please complete before saving")
 	}
 	missing := []string{}
 	for i, ok := range found {
@@ -223,7 +223,7 @@ func validateUnifiedFindingReport(report string) error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("统一报告缺少有内容的章节：%s；请补全后保存", strings.Join(missing, "、"))
+		return fmt.Errorf("Unified report missing content sections: %s; please complete and save", strings.Join(missing, "、"))
 	}
 	return nil
 }

@@ -202,7 +202,7 @@ func (d *DB) RenameConversation(id int64, title string) error {
 // from overwriting a concurrent manual rename.
 func (d *DB) RenameConversationIfTitle(id int64, title, initial string) error {
 	_, err := d.Exec(`UPDATE conversations SET title=$2
-WHERE id=$1 AND title IN ('', '新对话', $3)`, id, title, initial)
+WHERE id=$1 AND title IN ('', 'New conversation', '新对话', $3)`, id, title, initial)
 	return err
 }
 

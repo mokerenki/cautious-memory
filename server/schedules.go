@@ -77,12 +77,12 @@ func (s *Server) listSchedules(w http.ResponseWriter, r *http.Request) {
 func (s *Server) getSchedule(w http.ResponseWriter, r *http.Request) {
 	id, err := parseScheduleID(r)
 	if err != nil {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	item, err := s.m.pg.GetTaskSchedule(id)
 	if err != nil {
-		writeErr(w, 404, "计划不存在")
+		writeErr(w, 404, "Schedule not found")
 		return
 	}
 	history, err := s.m.pg.ListScheduleHistory(id)
@@ -127,12 +127,12 @@ func (s *Server) createSchedule(w http.ResponseWriter, r *http.Request) {
 func (s *Server) updateSchedule(w http.ResponseWriter, r *http.Request) {
 	id, err := parseScheduleID(r)
 	if err != nil {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	old, err := s.m.pg.GetTaskSchedule(id)
 	if err != nil {
-		writeErr(w, 404, "计划不存在")
+		writeErr(w, 404, "Schedule not found")
 		return
 	}
 	req, err := decodeSchedule(r)
@@ -151,7 +151,7 @@ func (s *Server) updateSchedule(w http.ResponseWriter, r *http.Request) {
 func (s *Server) deleteSchedule(w http.ResponseWriter, r *http.Request) {
 	id, err := parseScheduleID(r)
 	if err != nil {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	if err := s.m.pg.DeleteTaskSchedule(id); err != nil {
@@ -164,7 +164,7 @@ func (s *Server) deleteSchedule(w http.ResponseWriter, r *http.Request) {
 func (s *Server) setScheduleEnabled(w http.ResponseWriter, r *http.Request, enabled bool) {
 	id, err := parseScheduleID(r)
 	if err != nil {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	if err := s.m.pg.SetTaskScheduleEnabled(id, enabled); err != nil {
@@ -191,16 +191,16 @@ func (s *Server) resumeSchedule(w http.ResponseWriter, r *http.Request) {
 func (s *Server) runScheduleNow(w http.ResponseWriter, r *http.Request) {
 	id, err := parseScheduleID(r)
 	if err != nil {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	item, err := s.m.pg.GetTaskSchedule(id)
 	if err != nil {
-		writeErr(w, 404, "计划不存在")
+		writeErr(w, 404, "Schedule not found")
 		return
 	}
 	if err := s.m.pg.MarkTaskScheduleManual(id); err != nil {
-		writeErr(w, 500, "无法启动计划任务")
+		writeErr(w, 500, "Failed to start scheduled task")
 		return
 	}
 	_ = s.m.pg.RecordScheduleHistory(id, 0, "running", true, "手动立即运行")

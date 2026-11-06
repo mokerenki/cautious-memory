@@ -192,7 +192,7 @@ func (n *Notifier) stepRealtime(ctx context.Context, ch *db.NotificationChannel,
 	}
 	channel, cfg, ok := n.adapt(ch)
 	if !ok {
-		_ = n.pg.FailDeliveries(ctx, deliveryIDs(deliveries), fmt.Sprintf("渠道类型 %q 未注册", ch.Kind))
+		_ = n.pg.FailDeliveries(ctx, deliveryIDs(deliveries), fmt.Sprintf("channel type %q not registered", ch.Kind))
 		return
 	}
 	for _, dl := range deliveries {
@@ -227,7 +227,7 @@ func (n *Notifier) stepDigest(ctx context.Context, ch *db.NotificationChannel, a
 	}
 	channel, cfg, ok := n.adapt(ch)
 	if !ok {
-		_ = n.pg.FailDeliveries(ctx, deliveryIDs(deliveries), fmt.Sprintf("渠道类型 %q 未注册", ch.Kind))
+		_ = n.pg.FailDeliveries(ctx, deliveryIDs(deliveries), fmt.Sprintf("channel type %q not registered", ch.Kind))
 		return
 	}
 	msg, included, err := n.renderBatch(ctx, deliveries, baseURL, int(window.Minutes()))
@@ -280,7 +280,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 			// 用 DeferDeliveries 而非 RescheduleDeliveries —— 这不是失败，
 			// 不该消耗重试预算（领取时已经乐观 +1 了，那里会减回去）。
 			if err := n.pg.DeferDeliveries(ctx, deliveryIDs(rest),
-				fmt.Sprintf("本条消息已达渠道长度上限，仅送达前 %d 条，其余留待下一批", delivered)); err != nil {
+				fmt.Sprintf("This message has reached the channel length limit; only the first %d messages were delivered, the rest are left for the next batch", delivered)); err != nil {
 				log.Printf("[notify] 分段续发排队失败 channel=%s ids=%v: %v", channel.Kind(), deliveryIDs(rest), err)
 			}
 		}
@@ -289,7 +289,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 	if err == nil {
 		// 渠道既没报错也没说送达了多少条。按失败处理（走退避），
 		// 免得这条投递被反复领取却永远标记不掉。
-		err = fmt.Errorf("渠道未报告送达条数（delivered=%d）", delivered)
+		err = fmt.Errorf("Channel did not report delivered count (delivered=%d)", delivered)
 	}
 
 	// 失败处置**逐条**决定，而不是拿整批的最大尝试次数做判断。
@@ -319,7 +319,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 		}
 	}
 	if len(exhaustedIDs) > 0 {
-		reason := fmt.Sprintf("重试 %d 次后仍失败: %s", db.MaxNotifyAttempts, err)
+		reason := fmt.Sprintf("Still failed after %d retries: %s", db.MaxNotifyAttempts, err)
 		if fErr := n.pg.FailDeliveries(ctx, exhaustedIDs, reason); fErr != nil {
 			log.Printf("[notify] 标记失败状态出错 channel=%s ids=%v: %v", channel.Kind(), exhaustedIDs, fErr)
 		}
@@ -412,7 +412,7 @@ func (n *Notifier) renderBatch(ctx context.Context, deliveries []*db.Notificatio
 		included = append(included, dl)
 	}
 	if len(items) == 0 {
-		return notify.Message{}, nil, fmt.Errorf("汇总批次 %d 条投递全部无法解析", len(deliveries))
+		return notify.Message{}, nil, fmt.Errorf("Digest batch %d deliveries all failed to parse", len(deliveries))
 	}
 	return notify.Message{
 		Items:         items,
@@ -520,10 +520,10 @@ func (n *Notifier) digestInterval() time.Duration {
 func parseSnapshot(dl *db.NotificationDelivery) (notify.Snapshot, error) {
 	var snap notify.Snapshot
 	if len(dl.Snapshot) == 0 {
-		return snap, fmt.Errorf("投递 %d 的事件快照为空", dl.ID)
+		return snap, fmt.Errorf("Delivery %d event snapshot is empty", dl.ID)
 	}
 	if err := json.Unmarshal(dl.Snapshot, &snap); err != nil {
-		return snap, fmt.Errorf("解析投递 %d 的事件快照失败: %w", dl.ID, err)
+		return snap, fmt.Errorf("Failed to parse delivery %d event snapshot: %w", dl.ID, err)
 	}
 	if snap.Kind == "" {
 		// 事件类型以事件行为准，快照里那份可能由旧版本写过。

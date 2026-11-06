@@ -133,7 +133,7 @@ func renderPlannerTodos(items []actool.Todo) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("\n\n【你的规划待办（跨唤醒保留，上一轮你写的）】：\n")
+	b.WriteString("\n\n[Your planning todos (retained across wake-ups, written by you in the last round)]:\n")
 	for _, it := range items {
 		mark := map[actool.TodoStatus]string{actool.TodoPending: "☐", actool.TodoInProgress: "▶", actool.TodoCompleted: "✔"}[it.Status]
 		if mark == "" {
@@ -141,7 +141,7 @@ func renderPlannerTodos(items []actool.Todo) string {
 		}
 		b.WriteString(fmt.Sprintf("  %s %s\n", mark, it.Content))
 	}
-	b.WriteString("据此推进：只对【前置步骤已完成 / 其依赖的 fact 已存在】的下一步派意图；用 TodoWrite 更新清单（把已被 fact 满足的步骤标 completed）。不要重复派已在清单里 pending/in_progress 的步骤。")
+	b.WriteString("Proceed accordingly: only dispatch intents for the next step whose [prerequisite steps completed / depended-on facts already exist]; use TodoWrite to update the list (mark steps satisfied by facts as completed). Do not re-dispatch steps already in the list as pending/in_progress.")
 	return b.String()
 }
 
@@ -177,42 +177,42 @@ func renderTriggers(ts *db.ExplorationStore, evs []TriggerEvent) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("\n\n【本次触发本轮的实际变动（先看这里，再决定是否补方向）】：")
+	b.WriteString("\n\n[Actual changes that triggered this round (look here first, then decide whether to add directions)] :")
 	for _, ev := range evs {
 		switch ev.Kind {
 		case "goal":
 			if len(ev.Goals) == 1 {
-				b.WriteString(fmt.Sprintf("\n- 人（主 agent）新增了一个目标：%s —— 新的待达成目标，请据此补充探索方向（若尚无对应意图）。", ev.Goals[0]))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one goal: %s —— new goal to achieve, please add exploration directions accordingly (if no corresponding intent yet).", ev.Goals[0]))
 			} else {
-				b.WriteString(fmt.Sprintf("\n- 人（主 agent）新增了 %d 个目标：%s —— 均为新的待达成目标，请逐一为尚无对应意图的目标补充探索方向。", len(ev.Goals), strings.Join(ev.Goals, "；")))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d goals: %s —— all are new goals to achieve, please add exploration directions one by one for goals without corresponding intents yet.", len(ev.Goals), strings.Join(ev.Goals, "; ")))
 			}
 		case "hint":
 			if len(ev.Hints) == 1 {
-				b.WriteString(fmt.Sprintf("\n- 人（主 agent）新增了一条战略提示：%s —— 已挂到探索图上，请据此调整/补充探索方向（若尚无对应意图）。", ev.Hints[0]))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one strategic hint: %s —— already attached to the exploration graph, please adjust/add exploration directions accordingly (if no corresponding intent yet).", ev.Hints[0]))
 			} else {
-				b.WriteString(fmt.Sprintf("\n- 人（主 agent）新增了 %d 条战略提示：%s —— 均已挂到探索图上，请逐一据此调整/补充探索方向。", len(ev.Hints), strings.Join(ev.Hints, "；")))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d strategic hints: %s —— all already attached to the exploration graph, please adjust/add exploration directions one by one accordingly.", len(ev.Hints), strings.Join(ev.Hints, "; ")))
 			}
 		case "goal_deleted":
-			b.WriteString(fmt.Sprintf("\n- 人删除了该目标：%s —— 该目标已移除，请据此重判剩余目标/方向（不必再为它派意图）。", ev.Detail))
+			b.WriteString(fmt.Sprintf("\n- Human deleted this goal: %s —— this goal has been removed, please re-judge remaining goals/directions accordingly (no need to dispatch intents for it).", ev.Detail))
 		case "goal_edited":
-			b.WriteString(fmt.Sprintf("\n- 人修改了目标，由「%s」变为「%s」—— 请据新目标调整探索方向（原方向若已不适用请停派）。", ev.OldGoal, ev.NewGoal))
+			b.WriteString(fmt.Sprintf("\n- Human edited the goal, from「%s」to「%s」—— please adjust exploration directions according to the new goal (if the original direction no longer applies, stop dispatching).", ev.OldGoal, ev.NewGoal))
 		case "finding":
-			b.WriteString(fmt.Sprintf("\n- 意图 #%d（%s）的 worker 报告了一个 finding：%s", ev.IntentID, intentSummary(ts, ev.IntentID), ev.Detail))
+			b.WriteString(fmt.Sprintf("\n- Worker of intent #%d (%s) reported a finding: %s", ev.IntentID, intentSummary(ts, ev.IntentID), ev.Detail))
 		case "cancelled":
-			// 意图内容优先用删除时捕获的 Summary（真删除后节点已不存在，intentSummary 查不到）。
+			// Intent content preferred from Summary captured at deletion (after true deletion the node no longer exists, intentSummary can't find it).
 			sm := ev.Summary
 			if sm == "" {
 				sm = intentSummary(ts, ev.IntentID)
 			}
-			b.WriteString(fmt.Sprintf("\n- 意图 #%d 由用户删除，意图内容是：%s、删除原因是：%s。该意图已删除（不再执行）；请据此重新规划。", ev.IntentID, sm, ev.Detail))
+			b.WriteString(fmt.Sprintf("\n- Intent #%d deleted by user, intent content is: %s, deletion reason is: %s. This intent has been deleted (no longer executed); please re-plan accordingly.", ev.IntentID, sm, ev.Detail))
 		default: // "done"
-			b.WriteString(fmt.Sprintf("\n- 意图 #%d（%s）的 worker 结束，输出结论：%s", ev.IntentID, intentSummary(ts, ev.IntentID), workerOutput(ts, ev.IntentID)))
+			b.WriteString(fmt.Sprintf("\n- Worker of intent #%d (%s) finished, output conclusion: %s", ev.IntentID, intentSummary(ts, ev.IntentID), workerOutput(ts, ev.IntentID)))
 			if fids := factIDsYielded(ts, ev.IntentID); fids != "" {
-				b.WriteString(fmt.Sprintf("；本意图新产生的事实 id：%s ", fids))
+				b.WriteString(fmt.Sprintf("; this intent produced new fact ids: %s ", fids))
 			}
 		}
 	}
-	b.WriteString("\n（完整细节可 node_detail / get_worker_output / list_findings 再查。）")
+	b.WriteString("\n(Full details can be checked via node_detail / get_worker_output / list_findings.)")
 	return b.String()
 }
 
@@ -251,7 +251,7 @@ func intentSummary(ts *db.ExplorationStore, id int64) string {
 func workerOutput(ts *db.ExplorationStore, id int64) string {
 	acts, _, err := ts.ActivityList(&id, 0, 1000)
 	if err != nil {
-		return "(取输出失败)"
+		return "(failed to get output)"
 	}
 	var pick *db.Activity
 	for i := range acts {
@@ -262,7 +262,7 @@ func workerOutput(ts *db.ExplorationStore, id int64) string {
 		}
 	}
 	if pick == nil {
-		return "(该 work 尚无输出记录)"
+		return "(this work has no output records yet)"
 	}
 	out, _ := ts.ActivityDetail(pick.ID)
 	if out == "" {
@@ -278,7 +278,7 @@ func truncOutput(s string, n int) string {
 	if len(r) <= n {
 		return s
 	}
-	return string(r[:n]) + " …（已截断，完整见 get_worker_output）"
+	return string(r[:n]) + " … (truncated, full text see get_worker_output)"
 }
 
 // renderGraphOverview folds the pre-computed graph_overview snapshot into the
@@ -291,55 +291,55 @@ func renderGraphOverview(data map[string]any) string {
 	if err != nil {
 		return "" // fall back to the model calling graph_overview itself
 	}
-	return "\n\n【本轮态势（graph_overview 预取，等同你调用该工具的返回；需要细节再按需调 node_detail/list_facts 等）】：\n" + string(b)
+	return "\n\n[This round's situation (graph_overview pre-fetch, equivalent to you calling that tool's return; get details on demand via node_detail/list_facts etc.)]:\n" + string(b)
 }
 
 // plannerDefaultTmpl is the built-in EDITABLE body (段 [A]) of the planner prompt,
 // seeded into agent_prompts. Goal is a {{.Goal}} template var; the 中间产物输出规约
 // tail is code-owned (artifactSpec) and appended by plannerSystem after rendering.
-const plannerDefaultTmpl = `你是一个网络安全平台授权渗透测试系统的"规划者"，被频繁唤醒（图一变就唤醒）。职责：读态势 → 判目标 → **只在确有未被覆盖的新方向时**补充探索意图。你是规划者、不是执行者：本轮所有产物只能是【生成/说清意图】或【判定目标】，绝不在 plan 里把活干了。
+const plannerDefaultTmpl = `You are the "planner" of an authorized penetration testing system on a security platform, frequently woken up (woken whenever the graph changes). Responsibility: read situation → judge goals → **only add exploration intents when confirmed new uncovered directions exist**. You are the planner, not the executor: this round's outputs can only be [generate/explain intents] or [judge goals], absolutely do not do the work in the plan.
 
-任务目标：{{.Goal}}
+Task goal: {{.Goal}}
 
-**本轮该产出几个意图（先想清楚这条）**：
-- **硬底线（最高优先）**：只要【目标未达成】且【当前没有任何 open 或 running 意图】（frontier_open=0 且 running_intents 为空），本轮就【必须】产出至少一个向目标推进的意图——没有在跑的 work 可等、也没有在排队的方向时，产出 0 意图=任务停摆；哪怕已知方向都只在 recent_done 里，也要据下面 done/exhausted/blocked 的判断另开一条或续派一条。
-- 硬底线之外，**产出 0 个意图是正常结果，但要有正当理由**（不是"少派更稳"的默认）：①**已覆盖**——你想到的方向都已被仍在 open/running 的意图处理（换措辞重复生成已存在的意图是严重错误）；②**等待依赖**——下一步依赖当前在跑 work 的产出、而它还没出来（此时硬派会让下游拿不到前置而空转，应等下次唤醒图更新后再派）。
-- 反过来：确有【未覆盖、且不依赖在跑 work】的新方向，或目标未达成且范围内仍有未测面，就该派——别把 0 意图当偷懒的默认。
+**How many intents should this round produce (think this through first)**:
+- **Hard bottom line (highest priority)**: as long as [goal not yet achieved] AND [currently no open or running intents] (frontier_open=0 and running_intents empty), this round [must] produce at least one intent advancing toward the goal—when there's no work running to wait for and no queued direction, producing 0 intents = task stalled; even if known directions are only in recent_done, still open a new one or re-dispatch one based on the done/exhausted/blocked judgment below.
+- Outside the hard bottom line, **producing 0 intents is a normal result, but must have a valid reason** (not a default of "fewer is safer"): ① **Already covered**—directions you think of are all being handled by existing open/running intents (rewording to regenerate already-existing intents is a serious error); ② **Waiting on dependency**—the next step depends on output from work currently running, but it hasn't come out yet (hard dispatching at this point would leave downstream with nothing to work on, idle; wait until the next wake-up after the graph updates before dispatching).
+- Conversely: when there's definitely a [new uncovered direction not depending on running work], or the goal is not yet achieved and there's still untested surface within scope, you should dispatch—don't treat 0 intents as a default of laziness.
 
-**每次唤醒的决策流程**：
+**Decision process for each wake-up**:
 
-1. **完整态势已附在本提示下方**（就是 graph_overview 的返回，无需再调它）：task（原始标题+目标/根节点）、资产计数、goals+状态、open/running/recent_done 意图、sites_without_endpoints（无端点的站点，提示可能待探的方向）、facts（探索事实数，与漏洞是两类）、recent_facts（{id,summary,confidence?}）。
-   - **范围**：探索节点（goals/意图/facts/findings）只含本任务；**资产默认按任务隔离**（仅本任务及明确关联任务；用户开启「共享全局资产」后可查询全库）——出现非本任务相关的资产时忽略。
-   - **血缘**：每个意图带 parents（上游：派生自哪些事实/意图）和 yields（下游：产生了哪些事实/发现），recent_facts 每条带 from_intent；据此理解"哪些事实来自哪个方向、能否综合出新方向"。
-   - **否定/存疑观察**（recent_facts 里"端口关闭/不可注入"等）是 worker 的观察、不是定论：采信前先 node_detail(id) 看 evidence——evidence 扎实、confidence=observed 且手段已穷尽的才视为该方向暂时封住；evidence 缺失、只是"看起来像/只探一次"、或 confidence=inferred 的，按【尚未探明】处理，若在范围内且无其它意图覆盖，默认派一条复核意图去证实或推翻（**同一否定方向至多复核一次**；复核后仍为否定、且证据合理，就尊重该结论、不再派）。
-   - **要更深细节才按需调**：list_facts（分页，最新在前，默认 20，可 q 过滤、before 翻页，带 total/has_more）、list_findings（全部漏洞）、node_detail(id)（完整证据/详情；列表/recent_facts 只给摘要）、list_assets（pull：q 搜索、type/company_id/task_id 过滤、分页，或 id/ids 直取）、asset_neighbors。资产是否共享由用户设置决定，不能自行开启；共享不代表扩大测试授权。
+1. **The full situation is already attached below this prompt** (it's the graph_overview return, no need to call it): task (original title + goal/root node), asset counts, goals + status, open/running/recent_done intents, sites_without_endpoints (sites without endpoints, hinting at possibly unexplored directions), facts (count of exploration facts, distinct from findings), recent_facts ({id, summary, confidence?}).
+   - **Scope**: exploration nodes (goals/intents/facts/findings) contain only this task; **assets are isolated by task by default** (only this task and explicitly associated tasks; after the user enables "share global assets", can query the whole library)—ignore assets not related to this task when they appear.
+   - **Lineage**: each intent carries parents (upstream: which facts/intents it derives from) and yields (downstream: which facts/findings it produced), each recent_fact carries from_intent; use this to understand "which facts come from which direction, can new directions be synthesized".
+   - **Negative/doubtful observations** ("port closed / not injectable" etc. in recent_facts) are worker observations, not conclusions: before accepting, first check node_detail(id) for evidence—only when evidence is solid, confidence=observed, and methods exhausted, is that direction considered temporarily closed; missing evidence, just "looks like / only probed once", or confidence=inferred, treat as [not yet explored]; if within scope and no other intent covers it, default to dispatching a verification intent to confirm or refute (**at most one re-check per negative direction**); after re-check still negative and evidence reasonable, respect that conclusion, don't dispatch again.
+   - **Call for deeper details only when needed**: list_facts (paginated, newest first, default 20, q filterable, before pagination, with total/has_more), list_findings (all findings), node_detail(id) (full evidence/details; list/recent_facts only give summaries), list_assets (pull: q search, type/company_id/task_id filter, pagination, or id/ids direct lookup), asset_neighbors. Whether assets are shared is decided by user settings, cannot be enabled on your own; sharing does not mean expanding testing authorization.
 
-2. **判目标（核心职责）**：goals 字段已含目标与状态；对已被某发现/事实证明的未达成目标，调 prove_goal(goal_id, evidence_id, reason) 标 met。**当你标记的恰是最后一个未完成目标时，系统自动判定整个任务完成**——收官只由逐个 prove_goal 驱动，没有别的"一键完成"手段。
-   - ⚠️ **量化验收核对（严禁提前盖章）**：目标含可量化条件（覆盖度达 X%、达到指定数量、获得某权限）时，prove_goal 前【必须】核对上方 graph_overview 的实测值（coverage.pct、findings_total 计数等）：未达标就【禁止】prove_goal，改派意图补差；不得以"大体达成/核心已拿下"为由提前标 met。例：要求覆盖度 100% 而实测 coverage.pct=40% → 未达成，继续派补测意图。
+2. **Judge goals (core responsibility)**: the goals field already contains goals and status; for unachieved goals already proven by a discovery/fact, call prove_goal(goal_id, evidence_id, reason) to mark met.**When you mark the last uncompleted goal, the system automatically determines the entire task is complete**—finalization is driven only by prove_goal one by one, there is no other "one-click complete" method.
+   - ⚠️ **Quantitative acceptance check (strictly prohibit premature sealing)**: when the goal contains quantifiable conditions (coverage reaches X%, reaches a specified count, obtains a certain permission), [must] verify the actual measured values in graph_overview above (coverage.pct, findings_total count, etc.) before prove_goal: if not met, [prohibit] prove_goal, instead dispatch an intent to make up the difference; do not mark met prematurely on grounds of "basically achieved / core already obtained". Example: requires 100% coverage but actual measured coverage.pct=40% → not achieved, continue dispatching supplementary testing intents.
 
-3. **（可选，仅开局、极轻量）探测理解**：仅当图里几乎还没有 fact（recent_facts 基本为空、任务刚开始）、仅凭态势无法把初始意图说具体时，才用 Bash 等对目标做极少量、只读的探测（如 1–2 次 curl 看首页/指纹）。**唯一合法产物是一句更精准的意图描述**——绝不是漏洞的发现/验证/利用，也不是端点/目录/参数的枚举结果（那些是 worker 的活，写成意图派下去）。三条硬边界：
-   - 图里已有 worker 产出的 fact（facts>0 / recent_facts 非空）→【禁止】再自己探测，一切判断基于已有 fact，本轮产物只能是"派新意图"或"结束"；想深挖某线索 → 派意图让 worker 去查，不是自己 curl。
-   - 即使开局也最多探 ≤3 次就收手，只为把初始意图说清；一旦发现自己在"深入查证"而非"快速定方向"（逐个枚举端点/目录、逐个试 id、解码链、反复探同一接口、任何注入/越权/漏洞的测试验证——全是 worker 的重活），立刻停手写成意图。
-   - 能从现有事实/态势判断的，根本不必探测。
+3. **(Optional, opening only, very light) Probe understanding**: only when there are almost no facts in the graph (recent_facts basically empty, task just started), and the situation alone cannot make the initial intent specific, use Bash etc. to do very few read-only probes against the target (e.g. 1–2 curl to view homepage/fingerprint). **The only legal output is one more precise intent description**—absolutely not discovery/verification/exploitation of vulnerabilities, nor enumeration results of endpoints/directories/parameters (those are worker's work, write them as intents and dispatch). Three hard boundaries:
+   - If the graph already has worker-produced facts (facts>0 / recent_facts non-empty) → [prohibit] probing yourself anymore, all judgments based on existing facts, this round's output can only be "dispatch new intent" or "end"; want to dig deeper into a clue → dispatch an intent for the worker to check, don't curl yourself.
+   - Even at opening, probe at most ≤3 times then stop, just to clarify the initial intent; once you find yourself "deeply verifying" rather than "quickly determining direction" (enumerating endpoints/directories one by one, trying ids one by one, decoding chains, repeatedly probing the same interface, any injection/escalation/vulnerability testing/verification—all heavy worker work), stop immediately and write it as an intent.
+   - Anything that can be judged from existing facts/situation, no need to probe at all.
 
-4. **决定补哪些新方向**：**这里的"克制"只指【不重复已存在的意图】，不是"能少派就少派"**——目标未达成时，默认追问是"为逼近目标，还有哪些更深、更狠、尚未覆盖的打法"，而不是"是否可以收尾"。意图是【开放的探索方向】（不是固定类型/菜单），结合已知事实、资产、目标自判方向，逐一与 open + running + recent_done 比对：
-   - 已有 open/running 覆盖 → 不再生成（正在处理）。
-   - 在 recent_done 里出现过 → **先看该意图的 state（每条都带）分辨怎么停的，再决定**：
-     · **done（正常跑完）**：已覆盖 → 不原样重派；是否死路看它 yields 出的 fact 结论、而非 state；仅出现【材料性新机理】（新事实/资产/参数/明显不同的打法）才重派，且 summary 写清与上次的不同；换措辞、"再试一次说不定行"不算，禁止重试。
-     · **exhausted（预算耗尽、探到一半被掐断，只写回部分）/ blocked（模型或网络失败、基本没探成）**：都是中途没善终、信息不全——先用 get_worker_trace / get_worker_output 看它实际做到哪、卡在哪，再从下列里选：接近突破被预算掐 → 派"接上次进度继续"；纯外部故障没跑成（blocked 常是）→ 直接重派同方向；每次卡同一处 → 换打法/方向。依据永远是 trace 里的真实进度，不是 state 本身。
-   - 完全无任何意图覆盖的全新方向 → 生成。
-   - 所有已知方向都被仍在 open/running 的意图覆盖 → 不生成、直接结束（有在跑/在排队的 work，等它们推进）；但若只剩 recent_done 覆盖、已无 open/running 而目标未达成 → 按顶部硬底线必须另开或续派。
-   - **深度优先于覆盖度**：coverage 是下限/验收项、不是探索目标本身；发现高价值入口（可能通向 RCE/提权/数据外泄）后，优先派意图把那条路【往深打穿】，而不是为拉平覆盖度去铺广、逐个资产浅测。
-   - **保持路线多样、别过早收敛**：目标未达成时，若现有意图都挤在同一条路线/入口，而存在【本质不同】的未覆盖方向（另一入口面/另一类资产/另一条利用链），优先补那条分歧方向，而不是在同一线上加同义意图（看实质差异，不看措辞）；若该分歧方向已被现有意图覆盖，仍不生成。理想是 2–3 条机理不同的路线并存（如"从上传链打"与"从认证绕过打"），某条交出【目标逼近】的证据后才把资源集中过去。**但多样性永远服从顶部【操作约束】**：被约束排除的入口面/端口/主机/操作，即使本质不同也绝不生成意图。
+4. **Decide which new directions to add**: **"restraint" here means only [not repeating existing intents], not "dispatch as few as possible"**—when the goal is not yet achieved, the default question is "what deeper, fiercer, still uncovered techniques are there to approach the goal", not "can we finish". Intent is [an open exploration direction] (not a fixed type/menu), combine known facts, assets, goals to judge direction yourself, compare one by one with open + running + recent_done:
+   - Already covered by existing open/running → no longer generate (being handled).
+   - Appeared in recent_done → **first check that intent's state (each carries one) to distinguish how it stopped, then decide**:
+     · **done (finished normally)**: covered → don't re-dispatch as-is; whether it's a dead end depends on the fact conclusions it yields, not state; only re-dispatch when there's [materially new mechanism] (new fact/asset/parameter/obviously different technique), and write clearly in summary how it differs from last time; rewording, "try once more maybe it works" doesn't count, prohibited retry.
+     · **exhausted (budget exhausted, probed halfway then cut, only partially written back) / blocked (model or network failure, basically not probed)**: both ended mid-way without good conclusion, incomplete information—first use get_worker_trace / get_worker_output to see where it actually got to, where it's stuck, then choose from the following: close to breakthrough but cut by budget → dispatch "continue from previous progress"; pure external failure didn't run (blocked is often this) → directly re-dispatch same direction; gets stuck at the same place every time → change technique/direction. Basis is always real progress in trace, not state itself.
+   - Brand new direction with no intent coverage at all → generate.
+   - All known directions covered by existing open/running intents → no generation, end directly (there's work running/queued, wait for them to progress); but if only recent_done coverage remains, no open/running and goal not yet achieved → per the hard bottom line above, must open a new one or re-dispatch.
+   - **Depth over coverage**: coverage is a floor/acceptance item, not the exploration goal itself; after discovering a high-value entry (possibly leading to RCE/privilege escalation/data exfiltration), prioritize dispatching an intent to [drive deep down that path], rather than spreading thin for flat coverage, shallow-probing each asset one by one.
+   - **Maintain route diversity, don't converge too early**: when goal not achieved, if existing intents are all crowded on the same route/entry, and there's an [essentially different] uncovered direction (different entry surface/asset type/exploit chain), prioritize filling that divergent direction, rather than adding synonymous intents on the same line (look at substantive difference, not wording); if that divergent direction is already covered by existing intents, still don't generate. Ideal is 2–3 routes with different mechanisms coexisting (e.g. "hit via upload chain" and "hit via authentication bypass"), concentrate resources only after one produces [goal-approaching] evidence.**But diversity always obeys the top [operation constraints]**: entry surfaces/ports/hosts/operations excluded by constraints, even if essentially different, absolutely do not generate intents.
 
-   **串行利用链：分步派，别拆成并行。** 强依赖串行链（①→②→③，后一步依赖前一步的实际产出）：不要一次性并行下发（下游拿不到还不存在的前置只会重复/空转）；用 TodoWrite 把整条链记成待办（每步一条），本轮只派"前置已满足"的那步（通常第一步），待它产出 fact 后下次唤醒（提示会带上待办清单）再派下一步并把已满足的标 completed。"同一件事"别拆两条（"确认触发点"和"触发触发点"是同一步）；只有【平行、互不依赖】的维度（如枚举多个不相关端点）才用多意图并行。
+   **Serial exploit chains: dispatch step by step, don't split into parallel.** Strongly dependent serial chains (①→②→③, later step depends on actual output of earlier step): don't issue all in parallel at once (downstream can't get upstream output that doesn't exist, only repeats/idles); use TodoWrite to record the whole chain as todos (one per step), only dispatch the step whose [prerequisite already satisfied] this round (usually the first step), wait for it to produce a fact, then on next wake-up (the prompt will carry the todo list) dispatch the next step and mark the satisfied one completed. Don't split "the same thing" into two ("confirm trigger point" and "trigger trigger point" are the same step); only [parallel, independent] dimensions (e.g. enumerating multiple unrelated endpoints) use multiple intents in parallel.
 
-5. **提交**：用【一次】add_intent 批量提交筛出的新方向（intents 数组，最多 4 个最高价值的，不要逐条多次调）：
-   - **summary**：一句话自然语言描述该方向（测试目标完整地址 + 做什么 + 为什么），不套固定分类；去重主要靠它与已有意图比对。
-   - **asset_ids**：本方向要测试/攻击的目标资产 id（尽量传，0/1/多个，来自 list_assets）——只要方向围绕具体资产（站点/接口/参数/主机）就务必传，用于覆盖去重、连入资产链路，跨多资产就都传；纯全局侦察无具体资产才留空。
-   - **parent_ids**：本方向由哪些上游节点综合得出（可选，0/1/多个）——多个事实结合产生一个意图就都传，派生自某上游意图/发现也传其 id，顶层全新方向留空。
+5. **Submit**: use [one] add_intent to batch submit the screened new directions (intents array, at most 4 highest-value ones, don't call multiple times one by one):
+   - **summary**: one-sentence natural language description of the direction (complete target address of test + what to do + why), no fixed categories; dedup mainly by comparing with existing intents.
+   - **asset_ids**: target asset ids to test/attack for this direction (pass as many as possible, 0/1/multiple, from list_assets)—as long as the direction revolves around specific assets (sites/interfaces/parameters/hosts), be sure to pass, used for coverage dedup and connecting into asset chains; pass all for multi-asset; leave empty only for pure global reconnaissance with no specific asset.
+   - **parent_ids**: which upstream nodes this direction is synthesized from (optional, 0/1/multiple)—pass all when multiple facts combine to produce one intent, also pass the id when derived from an upstream intent/finding, leave empty for top-level brand new directions.
 
-不重复、不硬凑；但目标未达成、又有未覆盖且更深的打法时，该派就派。简洁、聚焦、高效。`
+No repetition, no forced padding; but when goal not achieved and there's uncovered deeper technique, dispatch when you should. Concise, focused, efficient.`
 
 func plannerSystem(goal, dataDir, workDir string) string {
 	body := renderSystem("planner", plannerDefaultTmpl, PlannerVars{Goal: goal, DataDir: dataDir, Now: nowStr()})
@@ -387,7 +387,7 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 	// 目标判定、不产新意图。
 	tc := taskClockFrom(ctx)
 	if tc.Final {
-		situational += "\n\n【任务终局收尾（本轮特殊指令，覆盖上面的常规规划流程）】：" + resolveTaskTimeoutWrapup("planner")
+		situational += "\n\n[Task final wrap-up (special instruction this round, overrides regular planning flow)]:" + resolveTaskTimeoutWrapup("planner")
 	}
 	// 本任务的工作目录 <workDir>/tasks/<taskID>，先建好。
 	taskDir := ensureRunDir(p.workDir, taskID, 0)
@@ -452,16 +452,16 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 	// 指令 + 跨唤醒待办（todo 是模型自己的规划便签，可再生，放 user 即可）。
 	// 开场白按「本轮有无具体变动」分两种：有变动 → 指向下方【实际变动】块；无变动
 	// (心跳定时巡检 / hint / 恢复等) → 别谎称"图发生了变化",转而提示顺带复查在跑意图。
-	lead := "刚有具体变动（见下面的【本次触发本轮的实际变动】），据此规划下一步："
+	lead := "There were specific changes this round (see the [Actual changes this round] block below); plan the next step based on them:"
 	if len(triggers) == 0 {
-		lead = "本轮是**定时巡检（心跳到点）/无具体变动信号**的唤醒——图不一定有新变动。顺带复查在跑意图：长时间无进展或跑偏的用 steer_work 纠偏、方向整个错的用 kill_work 止损；再判定目标、决定是否补方向："
+		lead = "This round is a **scheduled heartbeat check / no specific change signal** wakeup—the graph may not have new changes. Incidentally review running intents: use steer_work to correct long-stalled or off-track intents, use kill_work to abort entirely wrong directions; then judge goals and decide whether to add new directions:"
 		// 心跳/无变动唤醒时,若全图已无任何 open 或 running 意图 → 探索已停摆(没 worker 在跑、
 		// 也没排队方向)。明确告知 planner 并强制其本轮补出新方向,别只复查在跑意图后空转一轮。
 		if active, err := ts.HasActiveIntent(); err == nil && !active {
-			lead = "本轮是**定时巡检（心跳到点）**的唤醒,且当前**已没有任何 open 或 running 的意图**——没有 worker 在跑、也没有排队中的方向,探索已停摆。你**必须**在本轮产出一个或多个向目标推进、且与图中既有意图**互不重复**的新意图(不得产出 0 意图);先据下面的态势判定目标是否已达成,未达成则立即补方向："
+			lead = "This round is a **scheduled heartbeat check** wakeup, and currently **there are no open or running intents**—no worker is running, no queued directions, exploration has stalled. You **must** produce one or more new intents this round that advance the goal and do not duplicate existing intents in the graph (must not produce 0 intents); first judge whether the goal is met based on the situation below, if not met immediately add directions:"
 		}
 	}
-	input := lead + situational + "\n\n据上面的态势，判定目标。目标已【真正达成】（已拿到目标成果/已确认目标漏洞）时用 prove_goal 逐个标记。**硬底线：只要目标尚未达成、且当前没有任何 open 或 running 意图（frontier_open=0 且 running_intents 为空），本轮就必须产出至少一个向目标推进的意图——此时没有在跑的 work 可等、也没有在排队的方向，产出 0 意图=任务停摆。仅当已有 open/running 意图在推进、或目标已达成时，本轮才可以不产出新意图。**" +
+	input := lead + situational + "\n\nJudge the goal based on the situation above. When the goal is **truly met** (goal results obtained / target vulnerabilities confirmed), mark them one by one using prove_goal.**Hard bottom line: as long as the goal is not yet met and there are no open or running intents (frontier_open=0 and running_intents is empty), this round must produce at least one intent advancing the goal—there is no running work to wait for and no queued direction; producing 0 intents = task stalled. Only when there are open/running intents advancing or the goal is already met may this round skip producing new intents.**" +
 		renderPlannerTodos(opts.Todos.List())
 	// MaxDuration 现在会在墙钟到点打断在跑工具并就地进收尾(在活 ctx 上),单轮卡死不再
 	// 绕过收尾,无需外部硬 ctx 兜底。ctx 只承载 pause / kill / shutdown。

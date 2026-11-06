@@ -154,8 +154,8 @@ func TestProbeEgressThroughProxy(t *testing.T) {
 	if res.ExitIP != "198.51.100.9" {
 		t.Fatalf("出口 IP = %q，期望代理返回的 198.51.100.9", res.ExitIP)
 	}
-	if res.Via != "http" || res.ViaLabel != "HTTP 代理" {
-		t.Fatalf("via/via_label 不正确：%q / %q", res.Via, res.ViaLabel)
+	if res.Via != "http" || res.ViaLabel != "HTTP proxy" {
+		t.Fatalf("via/via_label incorrect: %q / %q", res.Via, res.ViaLabel)
 	}
 }
 
@@ -276,31 +276,31 @@ func TestEgressWarnings(t *testing.T) {
 		{"W2 ② 没通时不提", egressReport{Capture: false, Configured: "socks5://1.2.3.4:1080", Checks: proxyDown},
 			false, "socks5://1.2.3.4:1080", "", "python urllib"},
 		{"W3 两行 IP 相同", egressReport{Configured: "http://1.2.3.4:8080", Checks: sameIP},
-			false, "", "出口 IP 相同", ""},
+			false, "", "Direct and proxy egress IP are the same", ""},
 		{"W3 不误报：IP 不同", egressReport{Configured: "http://1.2.3.4:8080", Checks: okChecks},
-			false, "", "", "出口 IP 相同"},
+			false, "", "", "Direct and proxy egress IP are the same"},
 		{"W4 捕获开 + 无代理", egressReport{Capture: true, Configured: ""},
-			false, "", "直连", ""},
+			false, "", "egress is still direct", ""},
 		{"W4 不误报：已保存还有代理", egressReport{Capture: true, Configured: ""},
-			true, "http://1.2.3.4:8080", "", "全局代理为空"},
+			true, "http://1.2.3.4:8080", "", "global proxy is empty"},
 		{"W1 表单值未保存", egressReport{Capture: false, Configured: "socks5://1.2.3.4:1080"},
-			true, "", "尚未保存", ""},
+			true, "", "not yet saved", ""},
 		{"W5 回环 127.0.0.1", egressReport{Configured: "http://127.0.0.1:7897"},
-			false, "", "回环地址", ""},
+			false, "", "loopback address", ""},
 		{"W5 回环 localhost", egressReport{Configured: "socks5://localhost:1080"},
-			false, "", "回环地址", ""},
+			false, "", "loopback address", ""},
 		{"W5 不误报：局域网地址", egressReport{Configured: "http://192.168.1.5:8080"},
-			false, "", "", "回环地址"},
+			false, "", "", "loopback address"},
 	}
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			w := egressWarnings(c.rep, c.pending, c.saved)
 			if c.want != "" && !hasSubstr(w, c.want) {
-				t.Fatalf("应包含 %q，实际 %v", c.want, w)
+				t.Fatalf("should contain %q, actual %v", c.want, w)
 			}
 			if c.wantNot != "" && hasSubstr(w, c.wantNot) {
-				t.Fatalf("不该包含 %q，实际 %v", c.wantNot, w)
+				t.Fatalf("should not contain %q, actual %v", c.wantNot, w)
 			}
 		})
 	}
@@ -309,11 +309,11 @@ func TestEgressWarnings(t *testing.T) {
 // TestSchemeLabel 保证界面不会出现"经 http"这种看不懂的片段。
 func TestSchemeLabel(t *testing.T) {
 	cases := map[string]string{
-		"http":    "HTTP 代理",
-		"HTTPS":   "HTTPS 代理", // 大小写不敏感
-		"socks5":  "SOCKS5 代理",
-		"socks5h": "SOCKS5 代理",
-		"socks4":  "SOCKS4 代理", // 未知协议兜底：至少可读
+		"http":    "HTTP proxy",
+		"HTTPS":   "HTTPS proxy",
+		"socks5":  "SOCKS5 proxy",
+		"socks5h": "SOCKS5 proxy",
+		"socks4":  "SOCKS4 proxy",
 	}
 	for in, want := range cases {
 		if got := schemeLabel(in); got != want {

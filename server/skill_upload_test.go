@@ -253,8 +253,8 @@ func TestUploadSkillRejectsTraversal(t *testing.T) {
 	if rr.Code != 400 {
 		t.Fatalf("status = %d, want 400 (body %s)", rr.Code, rr.Body)
 	}
-	if msg, _ := out["error"].(string); !strings.Contains(msg, "非法路径") {
-		t.Fatalf("error = %q, want 非法路径", msg)
+	if msg, _ := out["error"].(string); !strings.Contains(msg, "invalid path") {
+		t.Fatalf("error = %q, want invalid path", msg)
 	}
 	if entries, _ := os.ReadDir(dir); len(entries) != 0 {
 		t.Fatalf("upload left files behind: %v", entries)

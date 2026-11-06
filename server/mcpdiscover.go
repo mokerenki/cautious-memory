@@ -25,22 +25,22 @@ func connectMCP(ctx context.Context, m *db.MCPServer) (mcpClient, error) {
 	switch m.Transport {
 	case "stdio":
 		if m.Command == "" {
-			return nil, fmt.Errorf("stdio 传输缺少命令")
+			return nil, fmt.Errorf("stdio transport missing command")
 		}
 		return mcp.NewStdioClient(ctx, m.Name, m.Command, jsonStrMap(m.Env), jsonStrSlice(m.Args)...)
 	case "http":
 		if m.URL == "" {
-			return nil, fmt.Errorf("http 传输缺少 URL")
+			return nil, fmt.Errorf("http transport missing URL")
 		}
 		// env map doubles as HTTP headers (e.g. Authorization).
 		return mcphttp.New(ctx, m.Name, m.URL, jsonStrMap(m.Env), m.Insecure)
 	case "sse":
 		if m.URL == "" {
-			return nil, fmt.Errorf("sse 传输缺少 URL")
+			return nil, fmt.Errorf("sse transport missing URL")
 		}
 		return mcphttp.NewSSE(ctx, m.Name, m.URL, jsonStrMap(m.Env), m.Insecure)
 	default:
-		return nil, fmt.Errorf("未知传输方式 %q", m.Transport)
+		return nil, fmt.Errorf("unknown transport method %q", m.Transport)
 	}
 }
 

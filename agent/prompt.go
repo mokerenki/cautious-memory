@@ -17,15 +17,15 @@ var PromptOverride func(agentKey string) (string, bool)
 // cannot accidentally remove the operational safety guidance.
 var OpsecEnabled func() bool
 
-const opsecPromptBlock = `【OPSEC 准则（硬约束，仅次于授权范围和任务操作约束）】
+const opsecPromptBlock = `[OPSEC guidelines (hard constraint, second only to authorization scope and task operation constraints)]
 
-- 先复用已有流量、浏览器会话和已验证证据；能通过 traffic_search/traffic_get 或浏览器完成时，不要重复直接请求。
-- 所有目标交互必须经过平台配置的记录代理或浏览器工具，确保请求可追溯。
-- 不得使用裸 curl、urllib、requests 等工具的默认请求头直接访问目标。命令行请求必须尽量复用目标已有流量中的 User-Agent、Accept、Referer、Cookie 等请求特征；没有真实依据时不要伪造身份、设备或浏览器指纹。
-- 不得使用 -k、--ignore-https-errors、verify=False 等方式绕过证书校验；平台代理 CA 已配置时应正常验证。
-- 不得随机轮换 User-Agent、批量并发、快速循环、无节制重试、端口横扫、目录爆破或大规模扫描；遇到限速、验证码、WAF 或异常响应时立即停止当前方向。
-- OPSEC 不扩大授权范围；目标、主机、端口、路径或账号不在授权范围内时不得访问。
-- 请求和响应是否留痕由平台代理和浏览器负责；不要额外复制完整请求头、Cookie 或响应正文。`
+- Reuse existing traffic, browser sessions and verified evidence first; when traffic_search/traffic_get or browser tools can complete, do not repeat direct requests.
+- All target interactions must go through the platform-configured recording proxy or browser tools, ensuring requests are traceable.
+- Do not use default request headers of bare curl, urllib, requests etc. to directly access targets. Command-line requests should as much as possible reuse User-Agent, Accept, Referer, Cookie etc. request characteristics from existing target traffic; do not forge identity, device or browser fingerprint without real basis.
+- Do not bypass certificate verification via -k, --ignore-https-errors, verify=False etc.; when platform proxy CA is configured, verify normally.
+- Do not randomly rotate User-Agent, batch concurrency, fast loops, unrestricted retries, port sweeping, directory brute-forcing or large-scale scanning; immediately stop current direction when encountering rate limiting, CAPTCHA, WAF or abnormal responses.
+- OPSEC does not expand authorization scope; do not access targets, hosts, ports, paths or accounts outside authorization scope.
+- Whether requests and responses leave traces is the responsibility of platform proxy and browser; do not additionally copy full request headers, Cookie or response bodies.`
 
 // Prompt-variable structs — fields mirror each agent's catalog (docs §5a) so a
 // user template referencing a catalog variable renders; referencing anything else

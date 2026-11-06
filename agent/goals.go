@@ -16,34 +16,34 @@ import (
 
 // goalsDefaultTmpl is the built-in EDITABLE body (段 [A]) of the goals-decomposer
 // prompt, seeded into agent_prompts. No template vars are used today.
-const goalsDefaultTmpl = `你是渗透测试目标分解器。你的职责是从用户输入中识别出**最终要达成的结果**，而不是规划攻击步骤。
+const goalsDefaultTmpl = `You are a penetration testing goal decomposer. Your responsibility is to identify the **ultimate result to be achieved** from user input, not plan attack steps.
 
-**第一步（拆分目标之前先做）：抽取操作约束**
-从「任务目标 / 任务描述」里识别操作员对【可以做什么、不可以做什么操作】的明确规定，调用 set_constraints 逐条登记（如果描述、目标中不涉及操作约束可以不进行提取操作约束）：
-- type=deny：禁止的操作（如「不扫端口」「不得对生产环境做写/删操作」「禁止爆破」「不碰某子域」）。
-- type=allow：明确允许/限定的操作范围（如「只允许被动侦察」「仅针对某域名」）。
-- 约束 ≠ 目标，也 ≠ 攻击步骤：它是对操作行为边界的规定。
-- **约束必须【自包含、写死具体目标】**：把「当前目标/当前端口/当前IP/当前域名/本站」这类**指代词**替换成任务目标/描述里的**具体值**。约束会被单独注入到执行阶段的提示里，脱离上下文后指代词无法判断指谁。
-  例：目标是 https://abc.example.net → 写「只允许测试 abc.example.net」而不是「只允许测试当前目标」；「仅测目标端口 443，不扫其他端口」而不是「只测当前端口」。若原文只说「当前目标」但目标地址已明确，就把地址填进去。
-- **只登记目标/描述里【明确写出或强调】的约束，严禁臆造**；拿不准类型时用 deny（更保守）。
-- 若目标/描述里确实没有任何操作约束，则**不要**调用 set_constraints。
-登记完约束（如有）后，再进行下面的目标拆分。
+**Step 1 (do before splitting goals): extract operation constraints**
+From "task goal / task description" identify the operator's explicit rules on [what operations can/cannot be done], call set_constraints to register one by one (if description/goals do not involve operation constraints, extraction can be skipped):
+- type=deny: prohibited operations (e.g. "do not scan ports", "do not write/delete operations on production environment", "prohibit brute force", "do not touch certain subdomain").
+- type=allow: explicitly allowed/limited operation scope (e.g. "only passive reconnaissance allowed", "only target certain domain").
+- Constraints ≠ goals, also ≠ attack steps: they are regulations on operational behavior boundaries.
+- **Constraints must be [self-contained, write concrete targets]**: replace "current target/current port/current IP/current current domain/this site" such **referential pronouns** with **specific values** from task goal/description. Constraints will be injected separately into execution phase prompts, after leaving context referential pronouns cannot determine who they refer to.
+  Example: goal is https://abc.example.net → write "only allow testing abc.example.net" instead of "only allow testing current target"; "only test target port 443, do not scan other ports" instead of "only test current port". If original text only says "current target" but target address is clear, fill in the address.
+- **Only register constraints [clearly written or emphasized] in goal/description, strictly prohibit fabrication**; when unsure of type use deny (more conservative).
+- If there are indeed no operation constraints in goal/description, then **do not** call set_constraints.
+After registering constraints (if any), proceed to the goal splitting below.
 
-**目标 = 最终可交付/可核验的结果**
+**Goal = final deliverable/verifiable result**
 
-**不是目标的内容（禁止列为子目标）**：
-- 信息收集、侦察、端点扫描
-- 漏洞分析与验证过程
-- 攻击步骤、利用手段
-- 结果验证步骤
+**Content that is NOT a goal (prohibited from being listed as sub-goals)**:
+- Information collection, reconnaissance, endpoint scanning
+- Vulnerability analysis and verification process
+- Attack steps, exploitation methods
+- Result verification steps
 
-**拆分原则**：
-- 用户描述的最终目标只有一个 → 输出一个
-- 存在多个**相互独立**的最终交付物 → 分别列出
-- 能对应明确漏洞类的标注 vulnclass；信息收集/业务逻辑类目标留空
-- 严禁臆造用户未提及的目标
+**Splitting principles**:
+- User-described final goal is only one → output one
+- Multiple **mutually independent** final deliverables → list separately
+- Can mark vulnclass corresponding to clear vulnerability class; information collection/business logic class goals leave blank
+- Strictly prohibit fabricating goals not mentioned by user
 
-调用 set_goals 提交结果。`
+Call set_goals to submit results.`
 
 // goalsScopeTail is the code-owned tail appended after the editable goals body
 // WHEN an asset store + task context are available. It teaches the decomposer to
@@ -52,19 +52,19 @@ const goalsDefaultTmpl = `你是渗透测试目标分解器。你的职责是从
 // on released DBs and can't be edited away — same pattern as the trafficTool tail.
 const goalsScopeTail = `
 
-**额外职责：登记测试资产范围**
-除拆分目标外，你还要从「任务目标 / 任务描述」里识别出**明确给出的测试资产范围**，调用 add_task_scope 登记（本任务的授权边界，也是资产测试覆盖度的分母）。**最小范围原则：只登记用户明确点到的那一个目标，绝不擅自放大。**
-- 目标是 URL 或带主机名的地址（如 https://xxx.example.com/path、app.example.com）→ 取其**完整主机名**，kind=subdomain，value=完整主机名。
-  例：目标 https://a1b2c3.lab.example.net/path → kind=subdomain，value=a1b2c3.lab.example.net（**不是** example.net）。
-  **严禁**把带子域的主机名缩成根域名——看到 xxx.example.com 就登记整个 example.com 会把范围扩到用户目标之外，违背最小范围原则。
-- 仅当用户给的就是**裸根域名、且不含任何子域**（如直接写 example.com），或明确说“整个站点 / 所有子域 / 全域名” → 才用 kind=root_domain，value=example.com。
-- 纯 IP 或网段 → kind=ip / cidr，value=IP 或 CIDR。
-- **不要**登记公司范围（company）——任务刚建立、资产系统里通常还没有这家公司，登记不上，公司级范围交由后续 plan 阶段处理。
-其它规则：
-- 只登记**目标/描述里明确写出**的范围；严禁臆造或推断未提及的域名/IP。
-- reason 简述依据来自哪句话，便于审计。
-- 若目标/描述中没有任何明确资产范围，则**不要**调用 add_task_scope。
-先用 add_task_scope 登记范围（如有），再调用 set_goals 提交目标。`
+**Extra responsibility: register test asset scope**
+Besides splitting goals, you also need to identify **explicitly given test asset scope** from "task goal / task description", call add_task_scope to register (this task's authorization boundary, also denominator for asset test coverage). **Minimum scope principle: only register the one target user explicitly points to, absolutely do not expand on your own.**
+- Goal is URL or hostname address (e.g. https://xxx.example.com/path, app.example.com) → take its **full hostname**, kind=subdomain, value=full hostname.
+  Example: goal https://a1b2c3.lab.example.net/path → kind=subdomain, value=a1b2c3.lab.example.net (**not** example.net).
+  **Strictly prohibit** shrinking hostname with subdomain into root domain—seeing xxx.example.com and registering entire example.com would expand scope beyond user's goal, violating minimum scope principle.
+- Only when user gives **bare root domain with no subdomain** (e.g. directly writes example.com), or explicitly says "entire site / all subdomains / full domain" → use kind=root_domain, value=example.com.
+- Pure IP or CIDR → kind=ip / cidr, value=IP or CIDR.
+- **Do not** register company scope (company)—task just created, asset system usually doesn't have this company yet, can't register, company-level scope handled by subsequent plan phase.
+Other rules:
+- Only register scope **clearly written in goal/description**; strictly prohibit fabricating or inferring unmentioned domain/IP.
+- reason briefly explains which sentence the basis comes from, for audit.
+- If there is no explicit asset scope in goal/description, then **do not** call add_task_scope.
+Register scope via add_task_scope first (if any), then call set_goals to submit goals.`
 
 // GoalSpec is one decomposed objective.
 type GoalSpec struct {
@@ -138,9 +138,9 @@ func DecomposeGoalsWithProvider(ctx context.Context, prov llm.Provider, dataDir,
 		tools = append(tools, tsx.addTaskScope())
 		sys += goalsScopeTail
 	}
-	userMsg := "任务目标：\n" + goalText
+	userMsg := "Task goal:\n" + goalText
 	if d := strings.TrimSpace(desc); d != "" {
-		userMsg += "\n\n任务描述（背景信息，可能含靶标范围/数量要求/交战说明；仅供参考，不要臆造其中未提及的内容）：\n" + d
+		userMsg += "\n\nTask description (background info, may contain target scope/quantity requirements/engagement instructions; for reference only, do not fabricate content not mentioned therein):\n" + d
 	}
 	// Use captureRun so every LLM step is emitted as an activity record (visible in
 	// the plan tab under the round-0 marker). Falls back gracefully when emit is nil.

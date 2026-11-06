@@ -15,7 +15,7 @@ const maxRemarkRunes = db.MaxTaskRemarkRunes
 func normalizeRemark(value string) (string, error) {
 	value = strings.TrimSpace(value)
 	if utf8.RuneCountInString(value) > maxRemarkRunes {
-		return "", fmt.Errorf("备注最多 %d 个字符", maxRemarkRunes)
+		return "", fmt.Errorf("Remark max %d characters", maxRemarkRunes)
 	}
 	return value, nil
 }
@@ -23,7 +23,7 @@ func normalizeRemark(value string) (string, error) {
 func (s *Server) updateScheduleMetadata(w http.ResponseWriter, r *http.Request) {
 	id, err := parseScheduleID(r)
 	if err != nil || id <= 0 {
-		writeErr(w, 400, "计划编号无效")
+		writeErr(w, 400, "Schedule ID invalid")
 		return
 	}
 	r.Body = http.MaxBytesReader(w, r.Body, maxTaskMetadataRequestSize)
@@ -34,20 +34,20 @@ func (s *Server) updateScheduleMetadata(w http.ResponseWriter, r *http.Request) 
 	if err := decode(r, &request); err != nil {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
-			writeErr(w, 413, "请求正文过大")
+			writeErr(w, 413, "Request body too large")
 		} else {
 			writeErr(w, 400, err.Error())
 		}
 		return
 	}
 	if request.Name == nil && request.Remark == nil {
-		writeErr(w, 400, "需要提供 name 或 remark")
+		writeErr(w, 400, "Need to provide name or remark")
 		return
 	}
 	if request.Name != nil {
 		name := strings.TrimSpace(*request.Name)
 		if name == "" || utf8.RuneCountInString(name) > maxTaskNameRunes {
-			writeErr(w, 400, fmt.Sprintf("计划名称须为 1 至 %d 个字符", maxTaskNameRunes))
+			writeErr(w, 400, fmt.Sprintf("Plan name must be 1 to %d characters", maxTaskNameRunes))
 			return
 		}
 		request.Name = &name
@@ -66,7 +66,7 @@ func (s *Server) updateScheduleMetadata(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	if item == nil {
-		writeErr(w, 404, "计划不存在")
+		writeErr(w, 404, "Schedule not found")
 		return
 	}
 	writeJSON(w, 200, item)

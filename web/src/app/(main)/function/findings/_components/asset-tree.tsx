@@ -34,14 +34,14 @@ const KIND_ICON: Record<FindingAssetKind, LucideIcon> = {
 };
 
 const KIND_LABEL: Record<FindingAssetKind, string> = {
-  company: "企业",
-  root_domain: "根域名",
-  subdomain: "子域名",
+  company: "Company",
+  root_domain: "Root domain",
+  subdomain: "Subdomain",
   ip: "IP",
   app: "Application",
-  service: "服务",
-  endpoint: "接口",
-  none: "未关联",
+  service: "Service",
+  endpoint: "Endpoint",
+  none: "Unlinked",
 };
 
 // TreeNode 是节点数组组装出来的树。后端已按「同父下发现多的在前」排好序,

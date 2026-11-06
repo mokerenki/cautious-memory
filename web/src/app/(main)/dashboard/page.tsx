@@ -640,7 +640,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* LLM 用量 */}
+        {/* LLM usage */}
         <Card className="gap-1">
           <CardHeader className="pb-0">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">

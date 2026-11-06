@@ -59,13 +59,13 @@ func validateProbeURL(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	u, err := url.Parse(raw)
 	if err != nil {
-		return "", errors.New("probe_url 不是合法 URL")
+		return "", errors.New("probe_url is not a valid URL")
 	}
 	if !strings.EqualFold(u.Scheme, "http") && !strings.EqualFold(u.Scheme, "https") {
-		return "", errors.New("probe_url 只支持 http / https")
+		return "", errors.New("probe_url only supports http / https")
 	}
 	if u.Host == "" || u.Hostname() == "" {
-		return "", errors.New("probe_url 缺少主机名")
+		return "", errors.New("probe_url missing hostname")
 	}
 	if err := probeCheckURL(u); err != nil {
 		return "", err
@@ -76,7 +76,7 @@ func validateProbeURL(raw string) (string, error) {
 // probeCheckRedirect 逐跳校验，挡住"公网地址 302 到 127.0.0.1"这种绕法。
 func probeCheckRedirect(next *http.Request, via []*http.Request) error {
 	if len(via) >= 3 {
-		return errors.New("重定向次数过多")
+		return errors.New("too many redirects")
 	}
 	if len(via) > 0 && next.URL.Host != via[0].URL.Host {
 		return fmt.Errorf("Rejected cross-host redirect (%s → %s)", via[0].URL.Host, next.URL.Host)
@@ -222,7 +222,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 			// 只在证书类错误上补一句，否则连不上代理也会挂上不相干的 CA 说明。
 			// 必须写进 probes[].error——界面渲染的是它，不是 result.error。
 			if caErr != nil && strings.Contains(a.Error, "certificate") {
-				a.Error = "流量捕获的 CA 不可用（" + caErr.Error() + "）：证书错误可能由此而来。" + a.Error
+				a.Error = "Traffic capture CA unavailable (" + caErr.Error() + "): certificate errors may result from this." + a.Error
 			}
 		} else {
 			a.OK, a.IP = true, ip
@@ -231,7 +231,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 
 		if a.OK {
 			// via 说的是代理协议，不是出口的网络类型。
-			via, viaLabel := "direct", "直连"
+			via, viaLabel := "direct", "Direct"
 			if proxyURL != nil {
 				via, viaLabel = proxyURL.Scheme, schemeLabel(proxyURL.Scheme)
 			}
@@ -248,7 +248,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 
 	return egressProbeResult{
 		OK:        false,
-		Error:     "全部探测地址均失败",
+		Error:     "All probe targets failed",
 		LatencyMS: time.Since(start).Milliseconds(),
 		Probes:    attempts,
 	}
@@ -258,13 +258,13 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 func schemeLabel(scheme string) string {
 	switch strings.ToLower(scheme) {
 	case "http":
-		return "HTTP 代理"
+		return "HTTP proxy"
 	case "https":
-		return "HTTPS 代理"
+		return "HTTPS proxy"
 	case "socks5", "socks5h":
-		return "SOCKS5 代理"
+		return "SOCKS5 proxy"
 	default:
-		return strings.ToUpper(scheme) + " 代理"
+		return strings.ToUpper(scheme) + " proxy"
 	}
 }
 
@@ -325,7 +325,7 @@ func probeOne(ctx context.Context, client *http.Client, target string) (string, 
 	}
 	if json.Unmarshal(body, &v) == nil && v.IP != "" {
 		if net.ParseIP(strings.TrimSpace(v.IP)) == nil {
-			return "", errors.New("响应里的 ip 字段不是合法 IP")
+			return "", errors.New("ip field in response is not a valid IP")
 		}
 		return strings.TrimSpace(v.IP), nil
 	}
@@ -411,7 +411,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 
 	rep.Checks = append(rep.Checks, egressCheck{
 		Key:    "direct",
-		Label:  "① 直连 IP（不经过代理）",
+		Label:  "① Direct IP (not via proxy)",
 		Result: s.runProxyProbe(ctx, "", "", probes, 10*time.Second),
 	})
 
@@ -423,20 +423,20 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 		}
 		rep.Checks = append(rep.Checks, egressCheck{
 			Key:   "global",
-			Label: "② 经全局代理的出口 IP",
-			// Path 是实际探测地址（经 MITM 时是 8788），排查时看这个。
+			Label: "② Exit IP via global proxy",
+			// Path is the actual probe address (8788 when via MITM), shown for troubleshooting.
 			Path:   maskSecrets(probeAddr),
 			Result: s.runProxyProbe(ctx, probeAddr, probeCA, probes, timeout),
 		})
 	} else {
-		skipReason := "输入框为空，未配置代理"
+		skipReason := "Input box is empty, no proxy configured"
 		if savedProxy != "" {
-			// 说"未配置代理"会和 W1（"Agent 仍使用 xxx"）互相否定。
-			skipReason = "输入框为空；已保存的代理仍在生效"
+			// Saying "no proxy configured" would contradict W1 ("Agent still uses xxx").
+			skipReason = "Input box is empty; saved proxy is still in effect"
 		}
 		rep.Checks = append(rep.Checks, egressCheck{
 			Key:        "global",
-			Label:      "② 经全局代理的出口 IP",
+			Label:      "② Exit IP via global proxy",
 			Skipped:    true,
 			SkipReason: skipReason,
 			Result:     egressProbeResult{Probes: []egressAttempt{}},
@@ -483,13 +483,13 @@ func egressWarnings(rep egressReport, pending bool, savedProxy string) []string 
 	if pending {
 		switch {
 		case rep.Configured == "":
-			out = append(out, "此地址尚未保存，Agent 当前仍使用 "+safeSavedProxy+"。保存后即改为直连。")
+			out = append(out, "This address is not yet saved; Agent still uses "+safeSavedProxy+". After saving it will switch to direct connection.")
 		case savedProxy == "":
-			out = append(out, "此地址尚未保存，Agent 当前仍为直连。"+
-				"上方结果对应输入框中的值，保存后生效。")
+			out = append(out, "This address is not yet saved; Agent is still using direct connection."+
+				" The above results correspond to the input box value; takes effect after saving.")
 		default:
-			out = append(out, "此地址尚未保存，Agent 当前仍使用 "+safeSavedProxy+
-				"。上方结果对应输入框中的值，保存后生效。")
+			out = append(out, "This address is not yet saved; Agent still uses "+safeSavedProxy+
+				". The above results correspond to the input box value; takes effect after saving.")
 		}
 	}
 
@@ -509,28 +509,28 @@ func egressWarnings(rep egressReport, pending bool, savedProxy string) []string 
 
 	// W2 看已保存值；只在 ② 通过时提示——没通的话"这里通不代表"本身就不成立。
 	if !rep.Capture && proxyOK && strings.HasPrefix(strings.ToLower(savedProxy), "socks5") {
-		out = append(out, "当前是「关闭捕获 + socks5」：本测试用的是 Go 客户端（一定遵守代理），"+
-			"但 agent 的工具不一定——curl 能走，python urllib 会直接报错。"+
-			"所以这里通不代表工具都能走；要稳定生效请开启流量捕获（由 MITM 亲自拨号）。")
+		out = append(out, "Currently \"capture off + socks5\": this test uses a Go client (always respects proxy),"+
+			" but agent tools may not—curl works, python urllib will error directly."+
+			" So this passing does not mean all tools work; enable traffic capture (MITM dials directly) for stable effect.")
 	}
 
 	// W3 两行相同 → 代理可能没生效，或对端只是透明转发。
 	if directIP != "" && proxyIP != "" && directIP == proxyIP {
-		out = append(out, fmt.Sprintf("直连与代理的出口 IP 相同（%s）：可能代理未生效、只是透明转发，"+
-			"也可能跳板机与本机在同一 NAT 后面（出口本来就相同）。"+
-			"要区分：在「自定义 IP 探测服务」里填一台内网回显服务，看它看到的源 IP 是否变成了跳板机。", directIP))
+		out = append(out, fmt.Sprintf("Direct and proxy egress IP are the same (%s): proxy may not be effective, or just transparent forwarding, "+
+			"or the jump host and local machine are behind the same NAT (egress IP is naturally the same). "+
+			"To distinguish: fill in an internal echo service in \"Custom IP Probe Service\" and check if the source IP it sees becomes the jump host.", directIP))
 	}
 
 	// W4 同样看已保存值，否则会和 W1 自相矛盾。
 	if rep.Capture && savedProxy == "" {
-		out = append(out, "已开启流量捕获，但全局代理为空：捕获只负责记录，出口仍是直连。")
+		out = append(out, "Traffic capture is enabled but global proxy is empty: capture only records, egress is still direct.")
 	}
 
 	// W5 容器里的 127.0.0.1 指容器自己，连不到宿主机上的代理。
 	if isLoopbackProxy(rep.Configured) {
-		out = append(out, "代理地址是回环地址（127.0.0.1 / localhost）。"+
-			"如果 ARTEX 跑在容器里，这里的 127.0.0.1 指容器自身，连不到宿主机上的代理；"+
-			"请改用宿主机的可达 IP（如 http://192.168.x.x:端口）。")
+		out = append(out, "Proxy address is a loopback address (127.0.0.1 / localhost)."+
+			" If ARTEX runs in a container, this 127.0.0.1 refers to the container itself, cannot reach the host proxy;"+
+			" please use a reachable host IP (e.g. http://192.168.x.x:port).")
 	}
 
 	return out

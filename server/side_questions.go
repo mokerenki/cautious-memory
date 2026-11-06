@@ -163,7 +163,7 @@ func (s *Server) buildApprovalSideSnapshot(ctx context.Context, p sidequestion.P
 		return nil, err
 	}
 	if detail == nil || detail.Audit == nil {
-		return nil, errors.New("审批记录没有可用的审查快照")
+		return nil, errors.New("Approval record has no available review snapshot")
 	}
 	profileID := detail.Audit.ProfileID
 	if profileID == 0 {
@@ -176,7 +176,7 @@ func (s *Server) buildApprovalSideSnapshot(ctx context.Context, p sidequestion.P
 	}
 	prov, cfg, ok := s.providerForProfile(profileID)
 	if !ok || prov == nil {
-		return nil, errors.New("审查模型配置不可用")
+		return nil, errors.New("Review model configuration not available")
 	}
 	name := "审查模型"
 	if profile, err := s.m.pg.ProfileByID(profileID); err == nil && profile != nil {
@@ -243,7 +243,7 @@ func (s *Server) drainTaskSideQuestions(ctx context.Context, taskID string) erro
 	defer s.side.mu.Unlock()
 	for _, snap := range s.side.pending {
 		if snap.Parent.TaskID == id {
-			return errors.New("旁路上下文尚未保存，请重试")
+			return errors.New("Sidecar context not saved yet, please retry")
 		}
 	}
 	return nil
@@ -268,7 +268,7 @@ func (s *Server) sideProvider(model sidequestion.Model) (llm.Provider, error) {
 		// Validate the persisted reference even if a previous provider is cached.
 		current, exists := s.loadProfileConfig(model.ProfileID)
 		if !exists || sideModel(current, model.ProfileID, model.Name).Identity != model.Identity {
-			return nil, errors.New("模型配置已删除或变化，请先运行主 Agent 更新上下文")
+			return nil, errors.New("Model configuration deleted or changed, please run the main Agent first to update context")
 		}
 		p, cfg, ok = s.providerForProfile(model.ProfileID)
 	} else {
@@ -277,7 +277,7 @@ func (s *Server) sideProvider(model sidequestion.Model) (llm.Provider, error) {
 		s.cfgMu.Unlock()
 	}
 	if !ok || p == nil || sideModel(cfg, model.ProfileID, model.Name).Identity != model.Identity {
-		return nil, errors.New("模型配置已删除或变化，请先运行主 Agent 更新上下文")
+		return nil, errors.New("Model configuration deleted or changed, please run the main Agent first to update context")
 	}
 	return p, nil
 }
@@ -532,7 +532,7 @@ func (s *Server) buildTaskContextSideSnapshot(ctx context.Context, p sidequestio
 	}
 	model, ok := s.sideModelForTask(t)
 	if !ok {
-		return nil, &sideTaskModelError{err: errors.New("未找到可用的模型配置")}
+		return nil, &sideTaskModelError{err: errors.New("No available model configuration found")}
 	}
 	return &sidequestion.Snapshot{
 		Parent: p, RunID: 0, Version: 0, CapturedAt: time.Now().UTC(), Model: model,
@@ -594,7 +594,7 @@ func sideMissingSnapshotMessage(p sidequestion.Parent, agentKey string) string {
 func (s *Server) sideParent(w http.ResponseWriter, r *http.Request, kind string) (sidequestion.Parent, bool) {
 	p := sidequestion.Parent{}
 	if s.side == nil || s.m.pg == nil {
-		writeErr(w, 503, "旁路服务不可用")
+		writeErr(w, 503, "Sidecar service unavailable")
 		return p, false
 	}
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
@@ -639,7 +639,7 @@ func (s *Server) sideParent(w http.ResponseWriter, r *http.Request, kind string)
 		return p, false
 	}
 	if pt == nil || s.engine.IsDeleting(t.ID) {
-		writeErr(w, 409, "任务已归档或正在删除")
+		writeErr(w, 409, "Task is archived or being deleted")
 		return p, false
 	}
 	p.TaskID, p.ExplorationID = id, t.ExpID
@@ -659,7 +659,7 @@ func (s *Server) sideParent(w http.ResponseWriter, r *http.Request, kind string)
 			return p, false
 		}
 		if n.State == "stopped" {
-			writeErr(w, 409, "Worker 已删除")
+			writeErr(w, 409, "Worker has been deleted")
 			return p, false
 		}
 		p.IntentID = iid
@@ -765,13 +765,13 @@ func (s *Server) handleSideQuestions(w http.ResponseWriter, r *http.Request, p s
 	}
 	in.Question = strings.TrimSpace(in.Question)
 	if in.Question == "" || len([]rune(in.Question)) > 4000 || !validWorkerMessageRequestID(in.ClientID) {
-		writeErr(w, 400, "问题须为 1–4000 字符，并提供有效请求 ID")
+		writeErr(w, 400, "Question must be 1-4000 characters and provide a valid request ID")
 		return
 	}
 	s.side.commands.Lock()
 	defer s.side.commands.Unlock()
 	if p.TaskID > 0 && s.engine.IsDeleting(strconv.FormatInt(p.TaskID, 10)) {
-		writeErr(w, 409, "任务正在归档或删除")
+		writeErr(w, 409, "Task is being archived or deleted")
 		return
 	}
 	if existing, err := s.m.pg.ExistingSideRequest(r.Context(), key, in.ClientID); err != nil {
@@ -779,7 +779,7 @@ func (s *Server) handleSideQuestions(w http.ResponseWriter, r *http.Request, p s
 		return
 	} else if existing != nil {
 		if existing.Question != in.Question {
-			writeErr(w, 409, "同一请求 ID 不能用于不同问题")
+			writeErr(w, 409, "The same request ID cannot be used for different questions")
 			return
 		}
 		writeJSON(w, 200, existing)
@@ -808,7 +808,7 @@ func (s *Server) handleSideQuestions(w http.ResponseWriter, r *http.Request, p s
 		return
 	}
 	if full {
-		writeErr(w, 429, "旁路请求已达并发上限，请稍后重试")
+		writeErr(w, 429, "Sidecar request has reached concurrency limit, please try again later")
 		return
 	}
 	agentQuestion, ok := s.prepareChatMentionMessage(w, in.Question)

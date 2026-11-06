@@ -375,12 +375,12 @@ func interceptFilterParams(q url.Values) (db.InterceptApprovalFilter, error) {
 		CreatedTo:      q.Get("to"),
 	}
 	if utf8.RuneCountInString(filter.Search) > 200 {
-		return filter, fmt.Errorf("q 不能超过 200 个字符")
+		return filter, fmt.Errorf("q cannot exceed 200 characters")
 	}
 	if strings.HasPrefix(filter.Search, "#") {
 		id, err := strconv.ParseInt(strings.TrimPrefix(filter.Search, "#"), 10, 64)
 		if err != nil || id <= 0 {
-			return filter, fmt.Errorf("审批编号必须为 # 后接正整数")
+			return filter, fmt.Errorf("approval number must be # followed by a positive integer")
 		}
 	}
 	for name, value := range map[string]string{"from": filter.CreatedFrom, "to": filter.CreatedTo} {
@@ -388,21 +388,21 @@ func interceptFilterParams(q url.Values) (db.InterceptApprovalFilter, error) {
 			continue
 		}
 		if _, err := time.Parse("2006-01-02", value); err != nil {
-			return filter, fmt.Errorf("%s 必须是 YYYY-MM-DD 日期", name)
+			return filter, fmt.Errorf("%s must be YYYY-MM-DD date", name)
 		}
 	}
 	if filter.CreatedFrom != "" && filter.CreatedTo != "" && filter.CreatedFrom > filter.CreatedTo {
-		return filter, fmt.Errorf("from 不能晚于 to")
+		return filter, fmt.Errorf("from cannot be later than to")
 	}
 	switch filter.Status {
 	case "", "pending", "allowed", "denied", "timeout":
 	default:
-		return filter, fmt.Errorf("status 必须是 pending、allowed、denied 或 timeout")
+		return filter, fmt.Errorf("status must be pending, allowed, denied or timeout")
 	}
 	switch filter.DecisionSource {
 	case "", "model", "rule", "manual", "unknown":
 	default:
-		return filter, fmt.Errorf("decision_source 必须是 model、rule、manual 或 unknown")
+		return filter, fmt.Errorf("decision_source must be model, rule, manual or unknown")
 	}
 	return filter, nil
 }
@@ -436,7 +436,7 @@ func (s *Server) interceptDecide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if req.Decision != "allowed" && req.Decision != "denied" {
-		writeErr(w, 400, "decision 必须是 allowed 或 denied")
+		writeErr(w, 400, "decision must be allowed or denied")
 		return
 	}
 	if err := s.m.interceptor.Decide(id, req.Decision == "allowed"); err != nil {
@@ -511,19 +511,19 @@ func (s *Server) interceptSetJudgeConfig(w http.ResponseWriter, r *http.Request)
 	if _, present := fields["confidence_threshold"]; !present {
 		req.ConfidenceThreshold = 0.55
 	} else if req.ConfidenceThreshold < 0 || req.ConfidenceThreshold > 1 {
-		writeErr(w, 400, "confidence_threshold 必须在 0 到 1 之间")
+		writeErr(w, 400, "confidence_threshold must be between 0 and 1")
 		return
 	}
 	switch req.FailAction {
 	case "allow", "ask", "deny":
 	default:
-		writeErr(w, 400, "fail_action 必须是 allow、ask 或 deny")
+		writeErr(w, 400, "fail_action must be allow, ask or deny")
 		return
 	}
 	switch req.AskTimeoutAction {
 	case "allow", "deny":
 	default:
-		writeErr(w, 400, "ask_timeout_action 必须是 allow 或 deny")
+		writeErr(w, 400, "ask_timeout_action must be allow or deny")
 		return
 	}
 	switch req.IncompleteScriptAction {
@@ -531,7 +531,7 @@ func (s *Server) interceptSetJudgeConfig(w http.ResponseWriter, r *http.Request)
 		req.IncompleteScriptAction = intercept.DefaultIncompleteScriptAction
 	case "ask", "model":
 	default:
-		writeErr(w, 400, "incomplete_script_action 必须是 ask 或 model")
+		writeErr(w, 400, "incomplete_script_action must be ask or model")
 		return
 	}
 	if err := req.ValidateRetry(); err != nil {
@@ -584,25 +584,25 @@ type interceptRuleReq struct {
 
 func validateInterceptRuleReq(req interceptRuleReq) error {
 	if req.Name == "" {
-		return fmt.Errorf("name 不能为空")
+		return fmt.Errorf("name cannot be empty")
 	}
 	switch req.MatchTarget {
 	case "tool_name", "tool_input":
 	default:
-		return fmt.Errorf("match_target 必须是 tool_name 或 tool_input")
+		return fmt.Errorf("match_target must be tool_name or tool_input")
 	}
 	switch req.MatchType {
 	case "string", "regex":
 	default:
-		return fmt.Errorf("match_type 必须是 string 或 regex")
+		return fmt.Errorf("match_type must be string or regex")
 	}
 	if req.Pattern == "" {
-		return fmt.Errorf("pattern 不能为空")
+		return fmt.Errorf("pattern cannot be empty")
 	}
 	switch req.Action {
 	case "allow", "deny", "ask":
 	default:
-		return fmt.Errorf("action 必须是 allow、deny 或 ask")
+		return fmt.Errorf("action must be allow, deny or ask")
 	}
 	if req.MatchType == "regex" {
 		if _, err := regexp.Compile(req.Pattern); err != nil {
@@ -669,11 +669,11 @@ func (s *Server) interceptExecution(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if conv == nil {
-				writeErr(w, http.StatusGone, "对话已被删除")
+				writeErr(w, http.StatusGone, "Conversation has been deleted")
 				return
 			}
 		}
-		writeErr(w, 404, "审批记录已被删除或不存在")
+		writeErr(w, 404, "Approval record has been deleted or does not exist")
 		return
 	}
 	writeJSON(w, 200, map[string]any{"conversation_id": target.ConversationID, "task_id": target.TaskID, "session": target.Session, "seq": target.Seq, "items": activityDTOs(target.Items)})

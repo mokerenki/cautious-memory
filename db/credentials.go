@@ -107,17 +107,17 @@ func (d *DB) SetIntelligenceSettings(ctx context.Context, recording, enabled, bi
 	}
 	if !record {
 		if enabled != nil && *enabled {
-			return fmt.Errorf("%w: 请先开启 Agent 自动记录，再开启 Agent 开关", ErrIntelligenceInvalid)
+			return fmt.Errorf("%w: please enable Agent auto-recording first, then enable Agent switch", ErrIntelligenceInvalid)
 		}
 		if binding != nil && *binding {
-			return fmt.Errorf("%w: 请依次开启 Agent 自动记录和 Agent 开关", ErrIntelligenceInvalid)
+			return fmt.Errorf("%w: please enable Agent auto-recording and Agent switch in order", ErrIntelligenceInvalid)
 		}
 		on = false
 		bind = false
 	}
 	if !on {
 		if binding != nil && *binding {
-			return fmt.Errorf("%w: 请先开启 Agent 开关，再启用绑定流量", ErrIntelligenceInvalid)
+			return fmt.Errorf("%w: please enable Agent switch first, then enable traffic binding", ErrIntelligenceInvalid)
 		}
 		bind = false
 	}
