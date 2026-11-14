@@ -13,8 +13,8 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-// assetInterceptCandidates 提取一条待插入资产输入项的 域名/IP/URL 候选串，用于资产拦截匹配。
-// URL 的 host 会拆出归类，使「只带 URL」的服务/端点资产也能被 域名/IP 规则命中。
+// assetInterceptCandidates extracts domain/IP/URL candidate strings from an asset input item for intercept matching.
+// URL host is split out so "URL-only" service/endpoint assets can also be matched by domain/IP rules.
 func assetInterceptCandidates(item assetInputItem) (domains, ips, urls []string) {
 	add := func(dst *[]string, s string) {
 		if s = strings.TrimSpace(s); s != "" {
@@ -42,7 +42,7 @@ func assetInterceptCandidates(item assetInputItem) (domains, ips, urls []string)
 	return domains, ips, urls
 }
 
-// assetInputLabel 返回一条待插入资产的简短标识，用于拦截说明消息。
+// assetInputLabel returns a short label for an asset input item, used in intercept messages.
 func assetInputLabel(item assetInputItem) string {
 	typ := strings.TrimSpace(item.Type)
 	var target string
@@ -55,8 +55,8 @@ func assetInputLabel(item assetInputItem) string {
 		target = strings.TrimSpace(item.IP)
 	case strings.TrimSpace(item.ServiceIP) != "":
 		target = strings.TrimSpace(item.ServiceIP)
-	default:
-		target = "(未知)"
+default:
+			target = "(unknown)"
 	}
 	if typ != "" {
 		return fmt.Sprintf("[%s] %s", typ, target)
@@ -122,76 +122,76 @@ type assetInputItem struct {
 func (t *ToolSet) insertAssets() actool.CoreTool {
 	return writeTool(
 		"insert_assets",
-		"批量登记新发现的资产，一次可混合多种类型（type 见枚举）。\n"+
-			"各类型必填字段：root_domain→domain；ip→ip（须为 IPv4/IPv6，非主机名）；subdomain→domain；app→app_name；service(HTTP)→url；service(非HTTP)→service_name+port（ip/domain 至少填一个）；endpoint→url+method。其余字段含义见各自说明。\n"+
-			"auth/technologies/params 为追加合并(append)，不覆盖原值。\n"+
-			"返回：{results:[{index,id,type}], errors:[{index,error}]}",
+		"bulk register newly discovered assets, multiple types allowed in one call (see type enum).\n"+
+			"required fields per type: root_domain→domain; ip→ip (must be IPv4/IPv6, not hostname); subdomain→domain; app→app_name; service(HTTP)→url; service(non-HTTP)→service_name+port (ip/domain at least one); endpoint→url+method. other fields per their descriptions.\n"+
+			"auth/technologies/params are append-merge, don't overwrite existing.\n"+
+			"returns: {results:[{index,id,type}], errors:[{index,error}]}",
 		obj(map[string]any{
-			// task_id 不暴露给模型：worker 归属哪个 task 由程序经 SetTaskID 权威赋值(见 handler)。
+			// task_id not exposed to model: worker's task ownership assigned by program via SetTaskID (see handler).
 			"assets": map[string]any{
 				"type":        "array",
-				"description": "资产数组，每个元素对应一条资产记录",
+				"description": "asset array, each element is one asset record",
 				"items": obj(map[string]any{
 					"type": map[string]any{
 						"type":        "string",
 						"enum":        []string{"root_domain", "ip", "subdomain", "app", "service", "endpoint"},
-						"description": "资产类型",
+						"description": "asset type",
 					},
 					// root_domain / subdomain
-					"domain":      str("根域名或子域名（root_domain/subdomain 必填）"),
-					"icp":         str("ICP 备案号（可选）"),
-					"record_type": str("DNS 解析类型：A/AAAA/CNAME/MX 等（subdomain 可选）"),
+					"domain":      str("root domain or subdomain (required for root_domain/subdomain)"),
+					"icp":         str("ICP record number (optional)"),
+					"record_type": str("DNS record type: A/AAAA/CNAME/MX etc. (subdomain optional)"),
 					"record_value": map[string]any{
 						"type":        "array",
 						"items":       map[string]any{"type": "string"},
-						"description": "DNS 解析值列表（subdomain 可选，如 [\"1.2.3.4\",\"2.3.4.5\"]）",
+						"description": "DNS record value list (subdomain optional, e.g. [\"1.2.3.4\",\"2.3.4.5\"])",
 					},
 					// ip
-					"ip": str("IP 地址，必须是 IPv4/IPv6 地址，不能填主机名（主机名请用 type=subdomain 的 domain 字段）；ip 类型必填；service/endpoint 类型可填，用于关联 IP"),
+					"ip": str("IP address, must be IPv4/IPv6, not hostname (use type=subdomain domain for hostname); required for ip type; service/endpoint types optional, for IP association"),
 					"bound_domains": map[string]any{
 						"type":        "array",
 						"items":       map[string]any{"type": "string"},
-						"description": "该 IP 绑定的域名列表（ip 类型可选）",
+						"description": "domains bound to this IP (ip type optional)",
 					},
 					"open_ports": map[string]any{
 						"type":        "array",
-						"description": "开放端口列表（ip 类型可选）",
+						"description": "open port list (ip type optional)",
 						"items": obj(map[string]any{
-							"port":    intp("端口号"),
-							"service": str("服务名称，如 http/ssh/mysql 等（可选）"),
+							"port":    intp("port number"),
+							"service": str("service name, e.g. http/ssh/mysql etc. (optional)"),
 						}, "port"),
 					},
 					// app
-					"app_name":    str("应用名称（app 类型必填）"),
-					"bundle_id":   str("Bundle ID（app 类型可选）"),
-					"category":    str("应用分类（可选）"),
-					"description": str("应用描述（可选）"),
-					"app_icp":     str("应用 ICP 备案（可选）"),
-					"company_id":  intp("归属企业 id（app 类型可选；app 无法靠 scope 自动归因，需显式指定。id 由 add_company_scope 返回）"),
+					"app_name":    str("app name (required for app type)"),
+					"bundle_id":   str("bundle ID (app type optional)"),
+					"category":    str("app category (optional)"),
+					"description": str("app description (optional)"),
+					"app_icp":     str("app ICP record (optional)"),
+					"company_id":  intp("owning company id (app type optional; app can't auto-attribute via scope, must specify explicitly. id from add_company_scope)"),
 					// service (http)
-					"url":         str("完整 URL，含协议和端口（HTTP 服务必填；service_type 自动设为 http）"),
-					"status_code": intp("HTTP 响应状态码，如 200/301/403/404（可选）"),
+					"url":         str("full URL with protocol and port (HTTP service required; service_type auto-set to http)"),
+					"status_code": intp("HTTP response status code, e.g. 200/301/403/404 (optional)"),
 					"content_length": map[string]any{
 						"type":        "integer",
-						"description": "HTTP 响应体字节数（可选）",
+						"description": "HTTP response body byte count (optional)",
 					},
-					"page_title":   str("页面 <title> 内容（可选）"),
-					"favicon_mmh3": str("favicon MMH3 哈希（可选）"),
+					"page_title":   str("page <title> content (optional)"),
+					"favicon_mmh3": str("favicon MMH3 hash (optional)"),
 					"technologies": map[string]any{
 						"type":        "array",
 						"items":       map[string]any{"type": "string"},
-						"description": "指纹/技术栈列表，如 [\"Nginx\",\"Vue\",\"Bootstrap\"]（可选）",
+						"description": "fingerprint/tech stack list, e.g. [\"Nginx\",\"Vue\",\"Bootstrap\"] (optional)",
 					},
 					"auth": map[string]any{
 						"type":        "array",
-						"description": "发现的认证信息列表，每条含 type/username/password 等字段（可选，追加不覆盖）",
+						"description": "discovered auth info list, each with type/username/password etc. (optional, append not overwrite)",
 						"items":       map[string]any{"type": "object"},
 					},
-					// service (other，非 HTTP)
-					"service_name": str("服务名称，如 ssh/mysql/redis（service 非 HTTP 时必填）"),
-					"port":         intp("端口号（service 非 HTTP 时必填）"),
+					// service (other, non-HTTP)
+					"service_name": str("service name, e.g. ssh/mysql/redis (required for non-HTTP service)"),
+					"port":         intp("port number (required for non-HTTP service)"),
 					// endpoint
-					"method": str("HTTP 方法：GET/POST/PUT/PATCH/DELETE 等（endpoint 必填）"),
+					"method": str("HTTP method: GET/POST/PUT/PATCH/DELETE etc. (endpoint required)"),
 					"params": map[string]any{
 						"type":        "array",
 						"description": "请求参数列表，每条含 location(query/body/header/path)/name/value/type（可选，追加不覆盖）",

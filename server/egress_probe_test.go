@@ -423,10 +423,10 @@ func TestValidateProbeURL(t *testing.T) {
 	}
 
 	bad := map[string]string{
-		"ftp://example.com/":             "只支持 http / https",
-		"file:///etc/passwd":             "只支持 http / https",
-		"/relative/path":                 "只支持 http / https",
-		"http:///nohost":                 "缺少主机名",
+		"ftp://example.com/":             "probe_url only supports http / https",
+		"file:///etc/passwd":             "probe_url only supports http / https",
+		"/relative/path":                 "probe_url only supports http / https",
+		"http:///nohost":                 "probe_url missing hostname",
 		"http://127.0.0.1:8080/":         "Rejected access to local/link-local address",
 		"http://localhost:8080/":         "Rejected access to local/link-local address",
 		"http://169.254.169.254/latest/": "Rejected access to local/link-local address",

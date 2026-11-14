@@ -22,19 +22,20 @@ const (
 	jwtTTL         = 7 * 24 * time.Hour
 	keyChars       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	// 下限与 setup 页的前端校验一致——校验只放在前端等于没放，直接打 API 就能
-	// 绕过。上限是 bcrypt 的硬限制：超过 72 字节 GenerateFromPassword 会返回
-	// ErrPasswordTooLong，提前挡掉好过让用户收到一句含义不明的「密码加密失败」。
+	// Lower bound matches setup page frontend validation — validation only in frontend
+	// equals no validation, API can bypass directly. Upper bound is bcrypt's hard limit:
+	// exceeding 72 bytes makes GenerateFromPassword return ErrPasswordTooLong; blocking
+	// early is better than giving users an opaque "password encryption failed".
 	minPasswordRunes = 8
 	maxPasswordBytes = 72
 )
 
-// errDataSourceUnavailable 是密码相关读操作失败时统一的回复。这些 handler 绝不能
-// 把"读不到"当成"没有设置"：authInit 曾因此在数据库报错时放行，让未认证请求覆盖
-// 掉已有的管理员密码。
+// errDataSourceUnavailable is the unified response for password-related read failures.
+// These handlers must NEVER treat "cannot read" as "not set": authInit once allowed
+// unauthenticated requests to overwrite existing admin passwords due to this mistake.
 const errDataSourceUnavailable = "The data source is temporarily unavailable. Please try again later."
 
-// validatePassword 返回空串表示通过，否则返回可直接展示给用户的中文原因。
+// validatePassword returns empty string on pass, otherwise returns a user-displayable reason.
 func validatePassword(pw string) string {
 	if utf8.RuneCountInString(pw) < minPasswordRunes {
 		return fmt.Sprintf("Password must be at least %d characters long", minPasswordRunes)
@@ -60,7 +61,7 @@ func loadOrCreateJWTKey(keyDir, dataDir string) ([]byte, error) {
 			if data, rerr := os.ReadFile(legacy); rerr == nil {
 				if werr := os.WriteFile(path, data, 0o600); werr == nil {
 					_ = os.Remove(legacy)
-					log.Printf("[auth] JWT key 已从 %s 迁移到 %s（移出可浏览工作区）", legacy, path)
+					log.Printf("[auth] JWT key migrated from %s to %s (moved out of browsable workspace)", legacy, path)
 				}
 			}
 		}
@@ -79,7 +80,7 @@ func loadOrCreateJWTKey(keyDir, dataDir string) ([]byte, error) {
 	if err := os.WriteFile(path, buf, 0600); err != nil {
 		return nil, fmt.Errorf("write jwt key: %w", err)
 	}
-	log.Printf("[auth] 新 JWT key 已写入 %s", path)
+	log.Printf("[auth] New JWT key written to %s", path)
 	return buf, nil
 }
 
@@ -138,9 +139,9 @@ func (s *Server) requireAuth(h http.Handler) http.Handler {
 }
 
 // GET /api/auth/status — reports whether the admin password has been initialised.
-// 读失败必须回 503 而不是 initialized:false：前端在 initialized:false 时会把用户
-// 送到 /setup 去设置密码（login/page.tsx），把数据库故障包装成 200 等于把用户往
-// 覆盖已有密码的路上推。
+// Read failure must return 503, not initialized:false: frontend sends user to /setup
+// to set password when initialized:false (login/page.tsx); wrapping DB failure as 200
+// would push user toward overwriting existing password.
 func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -185,9 +186,10 @@ func (s *Server) authInit(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, "Failed to hash password")
 		return
 	}
-	// 用 INSERT ... ON CONFLICT DO NOTHING 而不是 upsert：上面那次 GetSetting 只是
-	// 快速失败路径，真正"仅首次可设"的保证落在主键约束上。bcrypt 要跑几十毫秒，
-	// 这期间别的请求完全可能先把密码设好，而读检查本身也可能因故障而失效。
+	// Use INSERT ... ON CONFLICT DO NOTHING instead of upsert: the GetSetting above
+	// is just a fast-fail path; the real "set only once" guarantee is the primary key
+	// constraint. bcrypt takes tens of ms; other requests may set the password first,
+	// and the read check itself may fail due to faults.
 	inserted, err := pg.InsertSettingIfAbsent(authPassKey, string(hash))
 	if err != nil {
 		writeErr(w, 500, "Failed to save: "+err.Error())

@@ -28,17 +28,17 @@ func TestMarkdownBodyPacksWholeItemsWithinByteLimit(t *testing.T) {
 	}
 	// 头部必须如实说明本条只包含多少条、其余有多少条——否则读者会把头部
 	// 那个数字当成全部。
-	if !strings.Contains(body, "其余") || !strings.Contains(body, "下一条消息继续") {
-		t.Fatalf("头部应说明还有多少条未包含在本条里:\n%s", body[:minInt(400, len(body))])
+	if !strings.Contains(body, "more will follow") || !strings.Contains(body, "next message") {
+		t.Fatalf("header should state how many items are omitted from this message:\n%s", body[:minInt(400, len(body))])
 	}
 	// 只应包含前 kept 条。
 	for i := 0; i < kept; i++ {
-		if !strings.Contains(body, "漏洞"+itoa(i+1)) {
-			t.Fatalf("第 %d 条应在本条消息里:\n%s", i+1, body)
+		if !strings.Contains(body, "Finding "+itoa(i+1)) {
+			t.Fatalf("item %d should be included in this message:\n%s", i+1, body)
 		}
 	}
-	if strings.Contains(body, "漏洞"+itoa(kept+1)) {
-		t.Fatalf("第 %d 条不该出现（它属于下一批）", kept+1)
+	if strings.Contains(body, "Finding "+itoa(kept+1)) {
+		t.Fatalf("item %d should not appear (it belongs to the next batch)", kept+1)
 	}
 }
 
@@ -48,8 +48,8 @@ func TestMarkdownBodyKeepsEverythingWhenUnderLimit(t *testing.T) {
 	if kept != len(m.Items) {
 		t.Fatalf("不限制长度时应全部保留，得到 kept=%d", kept)
 	}
-	if strings.Contains(body, "其余") {
-		t.Fatalf("没有截断时不该出现截断提示:\n%s", body)
+	if strings.Contains(body, "more will follow") {
+		t.Fatalf("truncation note should not appear when nothing is truncated:\n%s", body)
 	}
 }
 
@@ -84,8 +84,8 @@ func TestTelegramPackingUsesRuneBudget(t *testing.T) {
 	if kept <= 0 || kept >= len(m.Items) {
 		t.Fatalf("应只装下一部分，得到 %d", kept)
 	}
-	if !strings.Contains(text, "下一条继续") {
-		t.Fatalf("应说明还有余量未包含:\n%.300s", text)
+	if !strings.Contains(text, "next message") && !strings.Contains(text, "more will follow") {
+		t.Fatalf("should indicate remaining items are not included:\n%.300s", text)
 	}
 }
 

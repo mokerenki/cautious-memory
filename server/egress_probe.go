@@ -1,10 +1,11 @@
 package server
 
-// egress_probe.go —— 全局出口代理的连通性探测。
+// egress_probe.go — global egress proxy connectivity probe.
 //
-// settings.global_proxy 保存时只做格式校验、一个字节都不发，所以死代理也能保存成功。
-// 这里真发探测请求：① 直连的出口 IP，② 经这个代理的出口 IP。
-// ② 发往哪个地址由 egressTarget 决定——那是本文件唯一需要判断的地方。
+// settings.global_proxy only validates format on save, sends zero bytes, so a dead
+// proxy can still be saved. Here we actually send probe requests: ① direct egress IP,
+// ② egress IP via this proxy. ②'s target is decided by egressTarget — the only
+// place in this file that needs judgment.
 
 import (
 	"context"
@@ -28,10 +29,10 @@ import (
 
 const settingEgressProbeURL = "egress_probe_url"
 
-// defaultEgressProbes 按顺序尝试，第一个成功即停；自定义地址为空时使用。
+// defaultEgressProbes tries in order, stops at first success; used when custom address is empty.
 var defaultEgressProbes = []string{
-	"https://api.ipify.org?format=json", // 返回 {"ip":"1.2.3.4"}
-	"https://ifconfig.me/ip",            // 返回纯文本 1.2.3.4
+	"https://api.ipify.org?format=json", // returns {"ip":"1.2.3.4"}
+	"https://ifconfig.me/ip",            // returns plain text 1.2.3.4
 }
 
 func (m *Manager) EgressProbeURL() string {
@@ -50,11 +51,12 @@ func (m *Manager) egressProbes() []string {
 	return defaultEgressProbes
 }
 
-// validateProbeURL 只放行指向"非本机、非链路本地"的绝对 http(s) 地址。
+// validateProbeURL only allows absolute http(s) URLs targeting "non-localhost, non-link-local" addresses.
 //
-// 这个接口要登录，但仍要挡：agent 可能被目标页面诱导去调它，而"本机"在容器里就是 ARTEX
-// 自己（管理端口、云元数据 169.254.169.254）。**私网地址是刻意放行的**——自定义探测服务
-// 的主用途就是内网回显，挡掉 192.168/10/172.16 等于废掉这个功能。
+// This endpoint requires auth but still blocks: agents could be tricked by a target page into
+// calling it, and "localhost" in a container IS ARTEX itself (admin port, cloud metadata
+// 169.254.169.254). **RFC1918 addresses are deliberately allowed** — custom probe services'
+// main use case is intranet echo; blocking 192.168/10/172.16 would break that function.
 func validateProbeURL(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
 	u, err := url.Parse(raw)
@@ -73,7 +75,7 @@ func validateProbeURL(raw string) (string, error) {
 	return raw, nil
 }
 
-// probeCheckRedirect 逐跳校验，挡住"公网地址 302 到 127.0.0.1"这种绕法。
+// probeCheckRedirect validates hop-by-hop, blocking "public address 302 to 127.0.0.1" bypasses.
 func probeCheckRedirect(next *http.Request, via []*http.Request) error {
 	if len(via) >= 3 {
 		return errors.New("too many redirects")
@@ -133,14 +135,14 @@ func probeBlockSensitiveDial(_, address string, _ syscall.RawConn) error {
 	return nil
 }
 
-// userinfoRe 匹配 URL 里的 user:pass@。
+// userinfoRe matches user:pass@ in URLs.
 var userinfoRe = regexp.MustCompile(`://[^/@\s]+@`)
 
-// maskSecrets 去掉 URL 里的用户名密码。它们会进 Configured / Path / probes[].error，
-// 而这三处都会被界面渲染或写进日志。
+// maskSecrets strips username:password from URLs. They appear in Configured / Path / probes[].error,
+// all three of which are rendered in UI or logged.
 func maskSecrets(s string) string { return userinfoRe.ReplaceAllString(s, "://***@") }
 
-// egressAttempt 保留每个地址的失败原因，才能区分"连不上代理"和"代理通但出不了网"。
+// egressAttempt keeps each URL's failure reason to distinguish "can't reach proxy" from "proxy works but no egress".
 type egressAttempt struct {
 	URL       string `json:"url"`
 	OK        bool   `json:"ok"`
@@ -149,42 +151,42 @@ type egressAttempt struct {
 	Error     string `json:"error,omitempty"`
 }
 
-// egressProbeResult 是一个链路形态的探测汇总。
+// egressProbeResult is a probe summary for one path topology.
 type egressProbeResult struct {
 	OK        bool            `json:"ok"`
-	ExitIP    string          `json:"exit_ip,omitempty"` // 外界看到的出口 IP
+	ExitIP    string          `json:"exit_ip,omitempty"` // external egress IP
 	Via       string          `json:"via,omitempty"`     // direct / http / https / socks5
 	ViaLabel  string          `json:"via_label,omitempty"`
 	LatencyMS int64           `json:"latency_ms"`
 	Error     string          `json:"error,omitempty"`
-	Probes    []egressAttempt `json:"probes"` // 每个地址的明细，便于排查
+	Probes    []egressAttempt `json:"probes"` // per-URL detail for troubleshooting
 }
 
-// egressCheck 是报告里的一行，对应一个链路形态。
+// egressCheck is one row in the report, corresponding to one path topology.
 type egressCheck struct {
 	Key        string            `json:"key"`   // direct | global
-	Label      string            `json:"label"` // 中文说明，前端直接显示
-	Path       string            `json:"path"`  // 实际使用的代理地址（空 = 直连）
+	Label      string            `json:"label"` // Chinese label, displayed directly in frontend
+	Path       string            `json:"path"`  // actual proxy address used (empty = direct)
 	Skipped    bool              `json:"skipped,omitempty"`
 	SkipReason string            `json:"skip_reason,omitempty"`
 	Result     egressProbeResult `json:"result"`
 }
 
-// egressReport 是 POST /api/settings/proxy/test 的返回体。
+// egressReport is the response body for POST /api/settings/proxy/test.
 type egressReport struct {
-	OK         bool          `json:"ok"`          // 以"② 经全局代理"为准；未配代理时看"① 直连"
-	Capture    bool          `json:"capture"`     // 当前是否开启流量捕获
-	Configured string        `json:"configured"`  // 表单传上来的 global_proxy
-	AgentProxy string        `json:"agent_proxy"` // ProxyAddr() 的实际返回值
+	OK         bool          `json:"ok"`          // based on "② via global proxy"; if no proxy, use "① direct"
+	Capture    bool          `json:"capture"`     // whether traffic capture is currently enabled
+	Configured string        `json:"configured"`  // global_proxy from form
+	AgentProxy string        `json:"agent_proxy"` // actual ProxyAddr() return value
 	Checks     []egressCheck `json:"checks"`
 	Warnings   []string      `json:"warnings,omitempty"`
 }
 
-// probeEgress 不碰数据库、不碰 Server，所以测试里可以直接调、完全离线。
+// probeEgress touches no DB, no Server, so tests can call it directly, fully offline.
 func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []string, timeout time.Duration) egressProbeResult {
 	start := time.Now()
 
-	// 复用 traffic 包的校验，保证"什么算合法代理"全项目只有一处定义。
+	// Reuse traffic package validation so "what counts as a valid proxy" is defined in one place.
 	var proxyURL *url.URL
 	if strings.TrimSpace(proxyRaw) != "" {
 		u, err := traffic.ValidateProxyURL(proxyRaw)
@@ -193,7 +195,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 				OK:        false,
 				Error:     maskSecrets(err.Error()),
 				LatencyMS: time.Since(start).Milliseconds(),
-				// 空数组不是 nil：nil 会序列化成 JSON null，前端按数组处理会炸。
+				// Empty slice not nil: nil serializes to JSON null, frontend expects array.
 				Probes: []egressAttempt{},
 			}
 		}
@@ -204,7 +206,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 
 	client := &http.Client{
 		Transport: tr,
-		// 比 ctx 宽 2 秒，让 ctx 先到期，错误里才是 "context deadline exceeded"。
+		// 2s wider than ctx so ctx expires first, error shows "context deadline exceeded".
 		Timeout:       timeout + 2*time.Second,
 		CheckRedirect: probeCheckRedirect,
 	}
@@ -219,8 +221,8 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 		a := egressAttempt{URL: maskSecrets(target), LatencyMS: time.Since(t0).Milliseconds()}
 		if err != nil {
 			a.Error = maskSecrets(err.Error())
-			// 只在证书类错误上补一句，否则连不上代理也会挂上不相干的 CA 说明。
-			// 必须写进 probes[].error——界面渲染的是它，不是 result.error。
+			// Only annotate cert errors; otherwise "can't reach proxy" gets irrelevant CA note.
+			// Must go in probes[].error — UI renders that, not result.error.
 			if caErr != nil && strings.Contains(a.Error, "certificate") {
 				a.Error = "Traffic capture CA unavailable (" + caErr.Error() + "): certificate errors may result from this." + a.Error
 			}
@@ -230,7 +232,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 		attempts = append(attempts, a)
 
 		if a.OK {
-			// via 说的是代理协议，不是出口的网络类型。
+			// via describes the proxy protocol, not the egress network type.
 			via, viaLabel := "direct", "Direct"
 			if proxyURL != nil {
 				via, viaLabel = proxyURL.Scheme, schemeLabel(proxyURL.Scheme)
@@ -254,7 +256,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 	}
 }
 
-// schemeLabel 把协议名翻译成人话（"http" → "HTTP 代理"）。
+// schemeLabel translates protocol to human label ("http" → "HTTP proxy").
 func schemeLabel(scheme string) string {
 	switch strings.ToLower(scheme) {
 	case "http":
@@ -268,8 +270,8 @@ func schemeLabel(scheme string) string {
 	}
 }
 
-// buildProbeTransport 不能用 http.DefaultTransport：它的 Proxy 会读容器里的 HTTP_PROXY，
-// 那样"测直连"其实走了代理。这里 Proxy 留 nil 才是真直连。
+// buildProbeTransport can't use http.DefaultTransport: its Proxy reads container's HTTP_PROXY,
+// so "test direct" would actually go through proxy. Proxy=nil here is true direct.
 func buildProbeTransport(proxyURL *url.URL, caPEMPath string) (*http.Transport, error) {
 	tr := &http.Transport{
 		DisableKeepAlives:   true,
@@ -278,11 +280,11 @@ func buildProbeTransport(proxyURL *url.URL, caPEMPath string) (*http.Transport, 
 	if proxyURL != nil {
 		tr.Proxy = http.ProxyURL(proxyURL)
 	} else {
-		// 直连时在拨号阶段再查一次：挡住"域名解析后才变成 127.0.0.1"（DNS rebinding）。
-		// 走代理时不装——那时拨的是代理地址，用户配 127.0.0.1 的本地代理是允许的。
+		// For direct, re-validate at dial: block "domain resolves to 127.0.0.1" (DNS rebinding).
+		// For proxy, skip it — we dial the proxy address, and user configuring localhost proxy is allowed.
 		tr.DialContext = (&net.Dialer{Timeout: 10 * time.Second, Control: probeBlockSensitiveDial}).DialContext
 	}
-	// CA 不可用不 panic，把原因带回去拼进失败原因——否则只会看到 x509，看不出真实原因。
+	// If CA unavailable, don't panic; propagate reason so failure shows real cause, not just x509.
 	if path := strings.TrimSpace(caPEMPath); path != "" {
 		pemBytes, err := os.ReadFile(path)
 		if err != nil {
@@ -297,7 +299,7 @@ func buildProbeTransport(proxyURL *url.URL, caPEMPath string) (*http.Transport, 
 	return tr, nil
 }
 
-// probeOne 支持 JSON（{"ip":"..."}）和纯文本；认不出就报错，绝不猜一个 IP。
+// probeOne accepts JSON ({"ip":"..."}) and plain text; errors if unrecognizable, never guesses an IP.
 func probeOne(ctx context.Context, client *http.Client, target string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	if err != nil {
@@ -307,12 +309,12 @@ func probeOne(ctx context.Context, client *http.Client, target string) (string, 
 
 	resp, err := client.Do(req)
 	if err != nil {
-		// 原样返回：dial refused / deadline exceeded / x509 各自对应不同故障。
+		// Return as-is: dial refused / deadline exceeded / x509 each map to different failures.
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
 	if err != nil {
 		return "", err
 	}
@@ -330,19 +332,19 @@ func probeOne(ctx context.Context, client *http.Client, target string) (string, 
 		return strings.TrimSpace(v.IP), nil
 	}
 
-	// net.ParseIP 顺便挡掉 HTML（反爬页、代理错误页）。
+	// net.ParseIP also rejects HTML (anti-scrape pages, proxy error pages).
 	if s := strings.TrimSpace(string(body)); net.ParseIP(s) != nil {
 		return s, nil
 	}
 	return "", fmt.Errorf("Unable to parse IP from response (received %d bytes, possibly an anti-scrape page or proxy error page)", len(body))
 }
 
-// egressTarget 决定 ② 把请求发到哪：
+// egressTarget decides where ② sends the request:
 //
-//	捕获关 → 表单值；捕获开+已保存 → MITM；捕获开+未保存 → 表单值（跳过 MITM）
+//	capture off → form value; capture on + saved → MITM; capture on + unsaved → form value (skip MITM)
 //
-// 第三种不能走 MITM：MITM 的上游只由 SetGlobalProxy 更新，读不到请求体里的新值，
-// 走它只会测出旧代理。viaMITM 供调用方放宽超时。
+// Third case can't use MITM: MITM upstream only updated by SetGlobalProxy, can't read request body's
+// new value; using it would only test old proxy. viaMITM lets caller relax timeout.
 func egressTarget(cfg string, capture, pending bool, agentProxy, agentCA string) (addr, ca string, viaMITM bool) {
 	if cfg == "" {
 		return "", "", false
@@ -353,17 +355,17 @@ func egressTarget(cfg string, capture, pending bool, agentProxy, agentCA string)
 	return cfg, "", false
 }
 
-// testEgressProxy 的语义对齐 testWebSearch：地址取自请求体（未保存也能测）、
-// 空 = 测直连、永远返回 200 用 ok 表达结果。
+// testEgressProxy semantics align with testWebSearch: address from request body (unsaved works),
+// empty = test direct, always returns 200 with ok expressing result.
 func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		GlobalProxy string  `json:"global_proxy"`
-		ProbeURL    *string `json:"probe_url"` // 省略=已保存地址；空串=默认；非空=临时覆盖
+		ProbeURL    *string `json:"probe_url"` // omitted = saved address; empty string = default; non-empty = temporary override
 		Resume      bool    `json:"resume"`    // manual settings probe may release paused_by_proxy tasks
 	}
-	// 请求体只有一个地址，给个上限，免得被塞大 payload。
+	// Request body has only one address; cap it to prevent large payload.
 	r.Body = http.MaxBytesReader(w, r.Body, 64<<10)
-	// 空 body 等价于测直连。
+	// Empty body equals test direct.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && !errors.Is(err, io.EOF) {
 		writeErr(w, 400, err.Error())
 		return
@@ -382,13 +384,13 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 这三个调用决定 agent 到底会走哪条路。
-	capture := s.m.TrafficEnabled() // 流量捕获开关
-	agentProxy := s.m.ProxyAddr()   // agent 实际使用的代理地址
-	agentCA := s.m.ProxyCACert()    // 捕获开时是 MITM 的 CA 路径；关时为空
-	savedProxy := s.m.GlobalProxy() // 已保存的 global_proxy
+	// These three calls determine which path the agent actually takes.
+	capture := s.m.TrafficEnabled() // traffic capture switch
+	agentProxy := s.m.ProxyAddr()   // agent's actual proxy address
+	agentCA := s.m.ProxyCACert()    // MITM CA path when capture on; empty when off
+	savedProxy := s.m.GlobalProxy() // saved global_proxy
 
-	// 整体上限 40s：单次 Timeout 只兜一次，不兜总量；前端 fetch 没有超时。
+	// Overall cap 40s: single Timeout only covers one attempt, not total; frontend fetch has no timeout.
 	ctx, cancel := context.WithTimeout(r.Context(), 40*time.Second)
 	defer cancel()
 	var proxyGuards map[string]proxyReconnectGuard
@@ -400,8 +402,8 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(configuredProxy, "***") || strings.Contains(configuredProxy, "******") {
 		configuredProxy = s.m.GlobalProxy()
 	}
-	// 表单值 ≠ 已保存值时，② 仍按表单值测，但 agent 走的是已保存值——必须提示。
-	// 归一化再比：尾斜杠不算"未保存"。
+// When form value != saved value, ② still tests form value but agent uses saved — must warn.
+// Normalize before compare: trailing slash doesn't count as "unsaved".
 	pending := normalizeProxy(configuredProxy) != normalizeProxy(savedProxy)
 	rep := egressReport{
 		Capture:    capture,
@@ -419,7 +421,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 		probeAddr, probeCA, viaMITM := egressTarget(configuredProxy, capture, pending, agentProxy, agentCA)
 		timeout := 10 * time.Second
 		if viaMITM {
-			timeout = 15 * time.Second // 多了一跳 TLS 解密 + 重签
+			timeout = 15 * time.Second // extra TLS decrypt + re-sign hop
 		}
 		rep.Checks = append(rep.Checks, egressCheck{
 			Key:   "global",
@@ -454,12 +456,12 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, rep)
 }
 
-// normalizeProxy 只归一写法，不做校验；空串和解析失败原样返回。
+// normalizeProxy only normalizes format, no validation; empty string and parse failures returned as-is.
 func normalizeProxy(raw string) string {
 	return strings.TrimRight(strings.TrimSpace(raw), "/")
 }
 
-// judgeEgress 以 ② 为准；② 被跳过才看 ①。不能"任一行成功就算成功"。
+// judgeEgress uses ② as primary; falls back to ① only if ② skipped. Not "any row passes = success".
 func judgeEgress(rep egressReport) bool {
 	for _, c := range rep.Checks {
 		if c.Key == "global" && !c.Skipped {
@@ -474,12 +476,12 @@ func judgeEgress(rep egressReport) bool {
 	return false
 }
 
-// egressWarnings 生成"看数字容易忽略"的提醒。
+// egressWarnings generates reminders that "numbers are easy to miss".
 func egressWarnings(rep egressReport, pending bool, savedProxy string) []string {
 	var out []string
 	safeSavedProxy := maskSecrets(savedProxy)
 
-	// W1 agent 走的是已保存配置，不说清会被当成"测通了=配好了"。
+	// W1: agent runs saved config; without warning "test passed = config done" is misleading.
 	if pending {
 		switch {
 		case rep.Configured == "":
@@ -507,26 +509,26 @@ func egressWarnings(rep egressReport, pending bool, savedProxy string) []string 
 		}
 	}
 
-	// W2 看已保存值；只在 ② 通过时提示——没通的话"这里通不代表"本身就不成立。
+	// W2: check saved value; only warn when ② passes — if it fails, "works here ≠ works there" is moot.
 	if !rep.Capture && proxyOK && strings.HasPrefix(strings.ToLower(savedProxy), "socks5") {
 		out = append(out, "Currently \"capture off + socks5\": this test uses a Go client (always respects proxy),"+
 			" but agent tools may not—curl works, python urllib will error directly."+
 			" So this passing does not mean all tools work; enable traffic capture (MITM dials directly) for stable effect.")
 	}
 
-	// W3 两行相同 → 代理可能没生效，或对端只是透明转发。
+	// W3: both rows same IP → proxy may be ineffective, or just transparent forwarding.
 	if directIP != "" && proxyIP != "" && directIP == proxyIP {
 		out = append(out, fmt.Sprintf("Direct and proxy egress IP are the same (%s): proxy may not be effective, or just transparent forwarding, "+
 			"or the jump host and local machine are behind the same NAT (egress IP is naturally the same). "+
 			"To distinguish: fill in an internal echo service in \"Custom IP Probe Service\" and check if the source IP it sees becomes the jump host.", directIP))
 	}
 
-	// W4 同样看已保存值，否则会和 W1 自相矛盾。
+	// W4: same, check saved value to avoid contradicting W1.
 	if rep.Capture && savedProxy == "" {
 		out = append(out, "Traffic capture is enabled but global proxy is empty: capture only records, egress is still direct.")
 	}
 
-	// W5 容器里的 127.0.0.1 指容器自己，连不到宿主机上的代理。
+	// W5: 127.0.0.1 in container = container itself, can't reach host proxy.
 	if isLoopbackProxy(rep.Configured) {
 		out = append(out, "Proxy address is a loopback address (127.0.0.1 / localhost)."+
 			" If ARTEX runs in a container, this 127.0.0.1 refers to the container itself, cannot reach the host proxy;"+

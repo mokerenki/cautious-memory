@@ -425,7 +425,7 @@ func (i *Interceptor) SetJudgeConfig(c JudgeConfig) error {
 		return err
 	}
 	if c.ConfidenceThreshold < 0 || c.ConfidenceThreshold > 1 {
-		return fmt.Errorf("confidence_threshold 必须在 0 到 1 之间")
+		return fmt.Errorf("confidence_threshold must be between 0 and 1")
 	}
 	if err := i.db.SetBool(settingJudgeEnabled, c.Enabled); err != nil {
 		return err
@@ -500,13 +500,13 @@ func (i *Interceptor) Judge(ctx context.Context, tool string, arguments json.Raw
 	if contextErr != nil {
 		// Invalid current arguments cannot be reviewed faithfully, regardless of
 		// the configured model-failure strategy. A human must resolve the input.
-		out = Decision{Action: "ask", ModelFallback: true, Message: "审查上下文不完整，需要人工确认：" + contextErr.Error()}
+		out = Decision{Action: "ask", ModelFallback: true, Message: "review context incomplete, human confirmation required: " + contextErr.Error()}
 	} else {
 		modelInput, _ = json.Marshal(input)
 		out, err = reviewWithRetry(ctx, cfg, rv, input)
 	}
 	if err != nil {
-		out = Decision{ProfileID: out.ProfileID, ModelFallback: true, Action: cfg.FailAction, Message: "模型审批失败,按失败策略处理: " + err.Error()}
+		out = Decision{ProfileID: out.ProfileID, ModelFallback: true, Action: cfg.FailAction, Message: "model approval failed, applying fail strategy: " + err.Error()}
 	}
 	// By default the model receives snapshot read errors and its verdict is
 	// honored. Operators may explicitly require human review when an incomplete
@@ -516,9 +516,9 @@ func (i *Interceptor) Judge(ctx context.Context, tool string, arguments json.Raw
 	case "allow", "ask", "deny":
 		// valid verdict
 	default:
-		out = Decision{ProfileID: out.ProfileID, ModelFallback: true, Action: cfg.FailAction, Message: "模型输出无法解析,按失败策略处理"}
+		out = Decision{ProfileID: out.ProfileID, ModelFallback: true, Action: cfg.FailAction, Message: "model output unparseable, applying fail strategy"}
 	}
-	// A model verdict never carries a rule; keep RuleID 0 (→ NULL) for history.
+	// A model verdict never carries a rule; keep RuleID 0 (-> NULL) for history.
 	out.RuleID = 0
 	if len(modelInput) > 0 {
 		out.ModelInput = modelInput
@@ -531,9 +531,9 @@ func (i *Interceptor) Judge(ctx context.Context, tool string, arguments json.Raw
 	configJSON, _ := json.Marshal(cfg)
 	out.ConfigDigest = digestInput(configJSON)
 	if out.Message == "" {
-		out.Message = "[模型] " + judgeActionLabel(out.Action)
-	} else if !strings.HasPrefix(out.Message, "[模型]") {
-		out.Message = "[模型] " + out.Message
+		out.Message = "[model] " + judgeActionLabel(out.Action)
+	} else if !strings.HasPrefix(out.Message, "[model]") {
+		out.Message = "[model] " + out.Message
 	}
 	if out.Action == "ask" {
 		out.TimeoutEnabled = true
@@ -546,7 +546,7 @@ func (i *Interceptor) Judge(ctx context.Context, tool string, arguments json.Raw
 func applyIncompleteScriptPolicy(input ReviewInput, out Decision, policy string) Decision {
 	if input.ScriptCaptureStatus == "incomplete" && policy != "model" && out.Action == "allow" {
 		out.Action = "ask"
-		out.Message = "脚本未能完整附加，无法排除隐藏副作用，需要人工确认"
+		out.Message = "script snapshot incomplete, cannot rule out hidden side effects, human confirmation required"
 	}
 	return out
 }
@@ -554,11 +554,11 @@ func applyIncompleteScriptPolicy(input ReviewInput, out Decision, policy string)
 func judgeActionLabel(action string) string {
 	switch action {
 	case "allow":
-		return "放行"
+		return "allow"
 	case "deny":
-		return "拦截"
+		return "deny"
 	case "ask":
-		return "转人工审批"
+		return "needs-human-review"
 	default:
 		return action
 	}
@@ -612,9 +612,9 @@ func ruleMatches(r compiledRule, toolName string, input []byte) bool {
 func defaultMessage(action, name string) string {
 	switch action {
 	case "deny":
-		return "拦截规则 [" + name + "] 禁止执行此工具"
+		return "intercept rule [" + name + "] forbids this tool"
 	case "ask":
-		return "拦截规则 [" + name + "] 要求用户审批，请等待"
+		return "intercept rule [" + name + "] requires user approval, please wait"
 	default:
 		return ""
 	}
@@ -671,7 +671,7 @@ func (i *Interceptor) HandleAsk(ctx context.Context, convID int64, dec Decision,
 	})
 	activity := db.Activity{
 		Kind:    "intercept_request",
-		Summary: fmt.Sprintf("工具 %s 请求审批 (#%d)", toolName, pendingID),
+		Summary: fmt.Sprintf("tool %s requested approval (#%d)", toolName, pendingID),
 		Detail:  string(detail),
 	}
 
@@ -690,8 +690,8 @@ func (i *Interceptor) HandleAsk(ctx context.Context, convID int64, dec Decision,
 		case allowed := <-ch:
 			return allowed
 		case <-ctx.Done():
-			_, _ = i.db.ResolveIntercept(pendingID, "denied", "deny", "工作已取消")
-			_ = i.db.CompleteIntercept(pendingID, audit.RunID, audit.ToolUseID, "not_executed", "执行前工作已取消", false)
+			_, _ = i.db.ResolveIntercept(pendingID, "denied", "deny", "task cancelled")
+			_ = i.db.CompleteIntercept(pendingID, audit.RunID, audit.ToolUseID, "not_executed", "cancelled before execution", false)
 			return false
 		}
 	}
@@ -711,7 +711,7 @@ func (i *Interceptor) HandleAsk(ctx context.Context, convID int64, dec Decision,
 		if allowed {
 			action = "allow"
 		}
-		resolved, err := i.db.ResolveIntercept(pendingID, "timeout", action, "审批超时，按超时策略处理")
+		resolved, err := i.db.ResolveIntercept(pendingID, "timeout", action, "approval timed out, applying timeout strategy")
 		if err != nil {
 			return false
 		}
@@ -721,13 +721,13 @@ func (i *Interceptor) HandleAsk(ctx context.Context, convID int64, dec Decision,
 		}
 		return allowed
 	case <-ctx.Done():
-		_, _ = i.db.ResolveIntercept(pendingID, "denied", "deny", "工作已取消")
-		_ = i.db.CompleteIntercept(pendingID, audit.RunID, audit.ToolUseID, "not_executed", "执行前工作已取消", false)
+		_, _ = i.db.ResolveIntercept(pendingID, "denied", "deny", "task cancelled")
+		_ = i.db.CompleteIntercept(pendingID, audit.RunID, audit.ToolUseID, "not_executed", "cancelled before execution", false)
 		return false
 	}
 }
 
-var ErrAlreadyDecided = errors.New("审批已处理或不存在，请刷新记录")
+var ErrAlreadyDecided = errors.New("approval already decided or not found, please refresh")
 
 // Decide resolves a pending request. Called by the HTTP decide endpoint.
 func (i *Interceptor) Decide(pendingID int64, allowed bool) error {
@@ -735,9 +735,9 @@ func (i *Interceptor) Decide(pendingID int64, allowed bool) error {
 	if allowed {
 		status = "allowed"
 	}
-	action, reason := "deny", "人工拒绝执行"
+	action, reason := "deny", "human denied execution"
 	if allowed {
-		action, reason = "allow", "人工允许执行"
+		action, reason = "allow", "human allowed execution"
 	}
 	resolved, err := i.db.ResolveIntercept(pendingID, status, action, reason, "manual")
 	if err != nil {

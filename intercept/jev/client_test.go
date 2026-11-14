@@ -42,7 +42,7 @@ func TestBuildRequestUsesCompactPolicyForDefaultPrompts(t *testing.T) {
 			t.Fatal(err)
 		}
 		instructions := req.Questions["decision"].Instructions
-		if !strings.Contains(instructions, "漏洞利用 payload") || !strings.Contains(instructions, "其余默认 allow") {
+		if !strings.Contains(instructions, "exploit payload") || !strings.Contains(instructions, "otherwise default allow") {
 			t.Fatalf("default policy lost authorized-pentest semantics: %s", instructions)
 		}
 		if strings.Contains(instructions, intercept.JudgeContextBoundary) || strings.Contains(instructions, intercept.JudgeOutputContract) {
@@ -70,7 +70,7 @@ func TestBuildRequestBoundsLargeEvidence(t *testing.T) {
 }
 
 func TestTruncateUTF8KeepsBoundary(t *testing.T) {
-	got, truncated := truncateUTF8(strings.Repeat("审查", 20), 20)
+	got, truncated := truncateUTF8(strings.Repeat("review", 20), 20)
 	if !truncated || !utf8.ValidString(got) || len(got) > 20 {
 		t.Fatalf("truncateUTF8 result=%q truncated=%v len=%d", got, truncated, len(got))
 	}
@@ -83,7 +83,7 @@ func TestDecisionFromResponseLowConfidenceForcesAsk(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if d.Action != "ask" || d.ProfileID != 42 || !strings.Contains(d.Message, "置信度") {
+	if d.Action != "ask" || d.ProfileID != 42 || !strings.Contains(d.Message, "confidence") {
 		t.Fatalf("unexpected decision: %#v", d)
 	}
 }
@@ -117,7 +117,7 @@ func TestReviewForcesAskWhenEvidenceWasTruncated(t *testing.T) {
 	args := json.RawMessage(`{"payload":"` + strings.Repeat("x", 50000) + `"}`)
 	d, _, err := (Config{BaseURL: srv.URL, APIKey: "secret", Client: srv.Client()}).ReviewWithUsage(
 		context.Background(), intercept.ReviewInput{Version: 5, Tool: "Bash", Arguments: args}, "", 0, 8)
-	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "证据已截断") {
+	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "evidence truncated") {
 		t.Fatalf("decision=%#v err=%v", d, err)
 	}
 }
@@ -131,7 +131,7 @@ func TestReviewLowConfidenceTruncatedEvidenceKeepsBothReasons(t *testing.T) {
 	args := json.RawMessage(`{"payload":"` + strings.Repeat("x", 50000) + `"}`)
 	d, _, err := (Config{BaseURL: srv.URL, APIKey: "secret", Client: srv.Client()}).ReviewWithUsage(
 		context.Background(), intercept.ReviewInput{Version: 5, Tool: "Bash", Arguments: args}, "", 0.55, 8)
-	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "置信度") || !strings.Contains(d.Message, "证据已截断") {
+	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "confidence") || !strings.Contains(d.Message, "evidence truncated") {
 		t.Fatalf("decision=%#v err=%v", d, err)
 	}
 }
@@ -144,7 +144,7 @@ func TestReviewForcesAskForIncompleteScriptEvidence(t *testing.T) {
 	defer srv.Close()
 	d, _, err := (Config{BaseURL: srv.URL, APIKey: "secret", Client: srv.Client()}).ReviewWithUsage(
 		context.Background(), intercept.ReviewInput{Version: 5, Tool: "Bash", ScriptCaptureStatus: "incomplete", Arguments: json.RawMessage(`{"cmd":"run"}`)}, "", 0, 8)
-	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "证据已截断") {
+	if err != nil || d.Action != "ask" || !strings.Contains(d.Message, "evidence truncated") {
 		t.Fatalf("decision=%#v err=%v", d, err)
 	}
 }
@@ -318,7 +318,7 @@ func TestDecisionRejectsMalformedChoiceAnswer(t *testing.T) {
 
 func TestTruncateUTF8AlwaysHonorsByteLimit(t *testing.T) {
 	for limit := 0; limit < 80; limit++ {
-		got, _ := truncateUTF8(strings.Repeat("审查", 30), limit)
+		got, _ := truncateUTF8(strings.Repeat("review", 30), limit)
 		if len(got) > limit || !utf8.ValidString(got) {
 			t.Fatalf("limit=%d bytes=%d", limit, len(got))
 		}

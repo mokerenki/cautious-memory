@@ -14,32 +14,33 @@ import (
 	"unicode/utf8"
 )
 
-// singleMsg 构造一条带引号与换行的单发消息。刻意用含 `"` 与 `\n` 的标题/摘要：
-// 这正是模板插值最容易产出的非法 JSON 的输入。
+// singleMsg constructs a single finding message with quotes and newlines.
+// Intentionally includes `"` and `\n` in title/summary: this is exactly the
+// input most likely to produce invalid JSON from naive template interpolation.
 func singleMsg() Message {
 	return Message{
 		Items: []Item{{
 			FindingID: 42,
-			Name:      `登录处 "SQL注入" 风险`,
-			VulnClass: "SQL注入",
+			Name:      `Login "SQL injection" risk`,
+			VulnClass: "SQL injection",
 			Severity:  "high",
-			Summary:   "参数 id\n未过滤 导致注入",
+			Summary:   "parameter id\nis not filtered, leading to injection",
 			Assets:    []string{"a.example.com", "b.example.com"},
 			DetailURL: "https://artex.local/function/findings/detail?id=42",
 		}},
 	}
 }
 
-// batchMsg 构造一批汇总消息。
+// batchMsg constructs a batch digest message.
 func batchMsg(n int) Message {
 	m := Message{Batch: true, WindowMinutes: 30, HomeURL: "https://artex.local/function/findings"}
 	for i := 0; i < n; i++ {
 		m.Items = append(m.Items, Item{
 			FindingID: int64(i + 1),
-			Name:      "漏洞" + itoa(i+1),
+			Name:      "Finding " + itoa(i+1),
 			VulnClass: "XSS",
 			Severity:  "medium",
-			Summary:   "反射型跨站脚本",
+			Summary:   "reflected cross-site scripting",
 			Assets:    []string{"target.example.com"},
 		})
 	}
@@ -70,30 +71,30 @@ func capturePost(t *testing.T, respBody string, assert func(t *testing.T, body m
 func TestDingTalkSendsActionCardWhenLinkPresent(t *testing.T) {
 	srv := capturePost(t, `{"errcode":0,"errmsg":"ok"}`, func(t *testing.T, body map[string]any, _ *http.Request) {
 		if body["msgtype"] != "actionCard" {
-			t.Fatalf("有回链时应发 actionCard，得到 %v", body["msgtype"])
+			t.Fatalf("expected actionCard when detail link is present, got %v", body["msgtype"])
 		}
 		card, _ := body["actionCard"].(map[string]any)
 		if card["singleURL"] != "https://artex.local/function/findings/detail?id=42" {
-			t.Errorf("回链丢失: %v", card["singleURL"])
+			t.Errorf("detail link missing: %v", card["singleURL"])
 		}
 	})
 	if _, err := (dingTalkChannel{}).Send(context.Background(), map[string]any{"webhook": srv.URL}, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
 func TestDingTalkFallsBackToMarkdownForBatch(t *testing.T) {
 	srv := capturePost(t, `{"errcode":0,"errmsg":"ok"}`, func(t *testing.T, body map[string]any, _ *http.Request) {
 		if body["msgtype"] != "markdown" {
-			t.Fatalf("汇总消息应发 markdown，得到 %v", body["msgtype"])
+			t.Fatalf("expected markdown for batch message, got %v", body["msgtype"])
 		}
 		md, _ := body["markdown"].(map[string]any)
-		if !strings.Contains(md["text"].(string), "近 30 分钟") {
-			t.Errorf("汇总正文缺少时间窗: %v", md["text"])
+		if !strings.Contains(md["text"].(string), "last 30 minutes") {
+			t.Errorf("batch body missing time window: %v", md["text"])
 		}
 	})
 	if _, err := (dingTalkChannel{}).Send(context.Background(), map[string]any{"webhook": srv.URL}, batchMsg(3)); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
@@ -126,7 +127,7 @@ func TestWeComTruncatesCJKWithinByteLimit(t *testing.T) {
 	// 造一批足够长的中文汇总，必然超过 4096 字节。
 	m := batchMsg(200)
 	if _, err := (weComChannel{}).Send(context.Background(), map[string]any{"webhook": srv.URL}, m); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 	if contentLen > weComMarkdownLimit {
 		t.Fatalf("正文 %d 字节超出企微上限 %d", contentLen, weComMarkdownLimit)
@@ -187,7 +188,7 @@ func TestFeishuCardStructureAndSign(t *testing.T) {
 	})
 	cfg := map[string]any{"webhook": srv.URL, "secret": secret}
 	if _, err := (feishuChannel{}).Send(context.Background(), cfg, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
@@ -198,7 +199,7 @@ func TestFeishuWithoutSecretOmitsSign(t *testing.T) {
 		}
 	})
 	if _, err := (feishuChannel{}).Send(context.Background(), map[string]any{"webhook": srv.URL}, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
@@ -218,7 +219,7 @@ func TestTelegramEscapesHTMLInUntrustedContent(t *testing.T) {
 	}}}
 	if _, err := (telegramChannel{}).Send(context.Background(),
 		map[string]any{"bot_token": "tok", "chat_id": "1", "base_url": srv.URL}, m); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 	if strings.Contains(text, "<script>") {
 		t.Fatalf("未转义 HTML，存在注入: %q", text)
@@ -251,46 +252,46 @@ func TestWebhookDefaultTemplateProducesValidJSON(t *testing.T) {
 	// 这条是默认模板存在的意义：标题里带引号与换行时，任何朴素的
 	// `"title": "{{.Title}}"` 写法都会产出非法 JSON。{{json .}} 才不会。
 	srv := capturePost(t, `{"ok":true}`, func(t *testing.T, body map[string]any, _ *http.Request) {
-		if body["title"] != `[🟠 高危] 登录处 "SQL注入" 风险` {
-			t.Errorf("标题未正确还原: %v", body["title"])
+		if body["title"] != `[🟠 High] Login "SQL injection" risk` {
+			t.Errorf("title was not restored correctly: %v", body["title"])
 		}
 		items, _ := body["items"].([]any)
 		if len(items) != 1 {
-			t.Fatalf("items 数量应为 1，得到 %d", len(items))
+			t.Fatalf("expected 1 item, got %d", len(items))
 		}
 		it, _ := items[0].(map[string]any)
-		if it["summary"] != "参数 id\n未过滤 导致注入" {
-			t.Errorf("摘要未正确还原: %v", it["summary"])
+		if it["summary"] != "parameter id\nis not filtered, leading to injection" {
+			t.Errorf("summary was not restored correctly: %v", it["summary"])
 		}
 		// 数值必须是 JSON 数字而不是字符串（json:"...,string" 之类的写法会踩这坑）。
 		if _, ok := it["finding_id"].(float64); !ok {
-			t.Errorf("finding_id 应为数字，得到 %T", it["finding_id"])
+			t.Errorf("finding_id should be a number, got %T", it["finding_id"])
 		}
 	})
 	if _, err := (webhookChannel{}).Send(context.Background(), map[string]any{"url": srv.URL}, singleMsg()); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
 func TestWebhookCustomTemplateAndHeaders(t *testing.T) {
 	srv := capturePost(t, `{"ok":true}`, func(t *testing.T, body map[string]any, r *http.Request) {
 		if r.Header.Get("X-Token") != "s3cret" {
-			t.Errorf("自定义头丢失: %v", r.Header)
+			t.Errorf("custom header missing: %v", r.Header)
 		}
-		if body["msg"] != "3 条" {
-			t.Errorf("自定义模板渲染有误: %v", body["msg"])
+		if body["msg"] != "3 items" {
+			t.Errorf("custom template rendered incorrectly: %v", body["msg"])
 		}
-		if body["first"] != "漏洞1" {
-			t.Errorf("range 提取有误: %v", body["first"])
+		if body["first"] != "Finding 1" {
+			t.Errorf("range extraction incorrect: %v", body["first"])
 		}
 	})
 	cfg := map[string]any{
 		"url":           srv.URL,
 		"headers":       map[string]any{"X-Token": "s3cret"},
-		"body_template": `{"msg": {{json (printf "%d 条" .Count)}}, "first": {{json (index .Items 0).Name}}}`,
+		"body_template": `{"msg": {{json (printf "%d items" .Count)}}, "first": {{json (index .Items 0).Name}}}`,
 	}
 	if _, err := (webhookChannel{}).Send(context.Background(), cfg, batchMsg(3)); err != nil {
-		t.Fatalf("投递失败: %v", err)
+		t.Fatalf("delivery failed: %v", err)
 	}
 }
 
@@ -333,7 +334,7 @@ func TestEmailMessageIsWellFormed(t *testing.T) {
 	}
 	if dec, err := new(mime.WordDecoder).DecodeHeader(mustExtractHeader(t, msg, "Subject")); err != nil {
 		t.Fatalf("主题无法解码: %v", err)
-	} else if !strings.Contains(dec, "SQL注入") {
+	} else if !strings.Contains(dec, "SQL injection") {
 		t.Fatalf("主题解码后内容有误: %q", dec)
 	}
 
@@ -353,7 +354,7 @@ func TestEmailMessageIsWellFormed(t *testing.T) {
 	// 标题原样出现在文本位置：HTML 文本内容里的双引号是合法字符，无需转义。
 	// 这里断言「原样保留」是为了防止将来有人误加一层引号转义，让中文引号
 	// 显示成 &quot;。
-	if !strings.Contains(html, `"SQL注入"`) {
+	if !strings.Contains(html, `"SQL injection"`) {
 		t.Fatalf("标题中的引号在文本位置应原样保留: %.200s", html)
 	}
 }
@@ -414,8 +415,8 @@ func TestChannelValidateReportsMissingFields(t *testing.T) {
 		{KindTelegram, map[string]any{}, "Bot Token"},
 		{KindTelegram, map[string]any{"bot_token": "t"}, "Chat ID"},
 		{KindEmail, map[string]any{}, "SMTP"},
-		{KindEmail, map[string]any{"host": "h"}, "端口"},
-		{KindEmail, map[string]any{"host": "h", "port": 587, "from": "f"}, "收件人"},
+		{KindEmail, map[string]any{"host": "h"}, "port"},
+		{KindEmail, map[string]any{"host": "h", "port": 587, "from": "f"}, "recipient"},
 	}
 	for _, tc := range cases {
 		ch, ok := Get(tc.kind)
@@ -453,7 +454,7 @@ func TestEmailSMTPErrorClassification(t *testing.T) {
 		{"", false},
 	}
 	for _, tc := range cases {
-		err := smtpStageError("收件人被拒", errors.New(tc.reply))
+		err := smtpStageError("recipient rejected", errors.New(tc.reply))
 		if got := IsPermanent(err); got != tc.permanent {
 			t.Errorf("应答 %q: 期望 permanent=%v 得到 %v", tc.reply, tc.permanent, got)
 		}

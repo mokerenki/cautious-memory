@@ -15,10 +15,10 @@ const (
 // ValidateRetry rejects invalid settings before any judge configuration is saved.
 func (c JudgeConfig) ValidateRetry() error {
 	if c.RetryCount < 0 || c.RetryCount > MaxJudgeRetryCount {
-		return fmt.Errorf("retry_count 必须在 0 到 %d 之间", MaxJudgeRetryCount)
+		return fmt.Errorf("retry_count must be between 0 and %d", MaxJudgeRetryCount)
 	}
 	if c.RetryIntervalMS < 0 || c.RetryIntervalMS > MaxJudgeRetryIntervalMS {
-		return fmt.Errorf("retry_interval_ms 必须在 0 到 %d 之间", MaxJudgeRetryIntervalMS)
+		return fmt.Errorf("retry_interval_ms must be between 0 and %d", MaxJudgeRetryIntervalMS)
 	}
 	return nil
 }
@@ -59,7 +59,7 @@ func reviewWithRetry(ctx context.Context, cfg JudgeConfig, rv Reviewer, input Re
 			case "allow", "ask", "deny":
 				return out, nil
 			default:
-				err = fmt.Errorf("模型输出无法解析")
+				err = fmt.Errorf("model output unparseable")
 			}
 		}
 	}

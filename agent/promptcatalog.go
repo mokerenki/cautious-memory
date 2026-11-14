@@ -1,11 +1,11 @@
 package agent
 
-// 本文件把内置 agent 的「默认提示词正文」(段 [A]) 变成可枚举、可被服务端幂等
-// 播种进 agent_prompts 表的目录 —— 镜像 toolcatalog.go 的 BuiltinToolSeeds()。
+// this file makes built-in agents' "default prompt bodies" (section [A]) enumerable and idempotently
+// seedable into the agent_prompts table — mirroring toolcatalog.go's BuiltinToolSeeds().
 //
-// 只包含【可编辑正文】：段 [B] trafficTool 与段 [C] 中间产物输出规约 是代码固定
-// 注入(见 worker.go 的 workerTrafficBlock/artifactSpec)，不入库、不可编辑，因此
-// 不在种子里。种子文本用 Go 模板占位({{.Goal}} 等)，渲染时按运行期变量填充。
+// only includes [editable bodies]: section [B] trafficTool and section [C] artifact output spec are
+// code-injected (see worker.go's workerTrafficBlock/artifactSpec), not stored, not editable, so
+// not in seeds. seed text uses Go template placeholders ({{.Goal}} etc.), filled at render time with runtime vars.
 
 // autoDefaultTmpl is the built-in "Auto" platform-operator agent's prompt. Auto
 // runs via the chat page and drives the platform through tools: task ops
@@ -37,7 +37,7 @@ Working rules:
 - Output in concise English, prioritize asset list, relationship chain, credibility and next-step verification suggestions.
 - Read-only analysis, do not actively modify asset library, do not execute probes.`
 
-// pentestDefaultTmpl is the built-in "渗透测试" (solo pentest) agent's prompt. Unlike
+// pentestDefaultTmpl is the built-in "pentest" (solo pentest) agent's prompt. Unlike
 // the orchestration roles (goals/planner/worker), it runs standalone via the chat page
 // and is its own planner + executor + auditor. Default tools: list_assets / insert_assets
 // / report_finding / list_findings (bound in toolcatalog + seedPentestDefaultBindings).
@@ -81,7 +81,7 @@ Pragmatic, restrained, thorough. Better to drive one route deep and verify than 
 // render fallback in RunChat when the DB prompt is somehow missing.
 const DefaultAssistantPrompt = `You are a helpful AI assistant. Please answer user questions concisely and accurately in English; use available tools to complete tasks when needed. Only do what the user asks, do not fabricate information.`
 
-// ReporterDefaultPrompt is the seeded prompt for the "报告撰写"(reporter) custom
+// ReporterDefaultPrompt is the seeded prompt for the "reporter" custom
 // agent — triggered when report_finding fires. It gathers the finding's full
 // evidence + how it was found, writes a Markdown vulnerability report, and saves
 // it via update_finding_report.
@@ -97,7 +97,7 @@ First **accurately extract task_id, exploration node node_id, and independent vu
 
 ━━ Work steps ━━
 1. **Get all evidence**: use get_task_node_detail(task_id, id=<node_id>) to read the **full evidence/PoC** of the vulnerability node (evidence in trigger context may be truncated).
-2. **Traffic evidence**: if return JSON contains independent finding_id, use get_finding_traffic to first read ordered list and version; when bound, read request/response by binding_id in segments. Binding optional, empty list doesn't block report writing: for TCP etc. non-HTTP vulnerabilities or uncollected situations, explain reproduction and impact based on node evidence, command output and logs, honestly explain reason for not binding, do not fabricate requests/responses, do not re-probe target just to补 packets. Report references stable evidence numbers and purposes; describe only based on real content. When saving report, pass actually read version as evidence_version; on version conflict, re-read and regenerate, do not just change version and retry.
+2. **Traffic evidence**: if return JSON contains independent finding_id, use get_finding_traffic to first read ordered list and version; when bound, read request/response by binding_id in segments. Binding optional, empty list doesn't block report writing: for TCP etc. non-HTTP vulnerabilities or uncollected situations, explain reproduction and impact based on node evidence, command output and logs, honestly explain reason for not binding, do not fabricate requests/responses, do not re-probe target just to supplement packets. Report references stable evidence numbers and purposes; describe only based on real content. When saving report, pass actually read version as evidence_version; on version conflict, re-read and regenerate, do not just change version and retry.
 3. **Restore process**: use list_task_worker_traces(task_id) to find related work, then use get_task_worker_trace(task_id, intent_id[, step_ids]) or search_task_worker_traces(task_id, q) to see **how this vulnerability was discovered and verified** (what requests/commands used, how target responded). If necessary use get_task_graph(task_id) for overall situation, list_task_findings(task_id) to see if there are related vulnerabilities.
 4. **Write report**: synthesize above, write a structured Markdown report (see template below).
 5. **Save**: call **update_finding_report(finding_id=<node_id>, report=<Markdown full text>, evidence_version=<actual version read>)** to save; omit evidence_version when version not read, do not guess. This is your final product—not writing it equals not done.

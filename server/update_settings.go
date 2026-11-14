@@ -27,11 +27,11 @@ func (s *Server) loadUpdateSettings() (updateSettings, error) {
 	cfg := updateSettings{}
 	raw, ok, err := s.m.pg.GetSetting(updateSettingsKey)
 	if err != nil {
-		return cfg, fmt.Errorf("读取更新网络设置失败: %w", err)
+		return cfg, fmt.Errorf("failed to read update network settings: %w", err)
 	}
 	if ok {
 		if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
-			return cfg, fmt.Errorf("更新网络设置格式无效")
+			return cfg, fmt.Errorf("invalid update network settings format")
 		}
 	}
 	if err := cfg.validate(); err != nil {
