@@ -222,12 +222,12 @@ func (s *Server) startScheduleTasks(item *db.TaskSchedule, forceManualPause bool
 	for _, taskID := range item.TaskIDs {
 		t, ok := s.m.Task(strconv.FormatInt(taskID, 10))
 		if !ok {
-			errors = append(errors, fmt.Sprintf("任务 #%d 未找到", taskID))
+			errors = append(errors, fmt.Sprintf("Task #%d not found", taskID))
 			continue
 		}
 		state := t.lifecycleSnapshot()
 		if db.IsTerminal(state.Status) {
-			errors = append(errors, fmt.Sprintf("任务 #%d 已结束，无法立即运行", taskID))
+			errors = append(errors, fmt.Sprintf("Task #%d has ended and cannot be run immediately", taskID))
 			continue
 		}
 		if !state.Paused {
@@ -236,24 +236,24 @@ func (s *Server) startScheduleTasks(item *db.TaskSchedule, forceManualPause bool
 		}
 		managed, err := s.m.pg.TaskPausedBySchedule(taskID)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("任务 #%d 状态读取失败", taskID))
+			errors = append(errors, fmt.Sprintf("Failed to read status for task #%d", taskID))
 			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "状态读取失败")
 			continue
 		}
 		if !managed && !forceManualPause {
-			errors = append(errors, fmt.Sprintf("任务 #%d 由人工暂停，计划不能强制恢复", taskID))
+			errors = append(errors, fmt.Sprintf("Task #%d was paused manually; the schedule cannot force it to resume", taskID))
 			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "人工暂停优先")
 			continue
 		}
 		_, err = s.applyTaskControlWithCause(t, "resume", agent.AbortPausedByOrchestrator)
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("任务 #%d：%s", taskID, err.Error()))
+			errors = append(errors, fmt.Sprintf("Task #%d: %s", taskID, err.Error()))
 			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, err.Error())
 			continue
 		}
 		started++
 		_ = s.m.pg.SetSchedulePaused(item.ID, taskID, false)
-		message := "立即运行"
+		message := "手动立即运行"
 		if !managed && forceManualPause {
 			message = "立即运行（显式恢复人工暂停）"
 		}

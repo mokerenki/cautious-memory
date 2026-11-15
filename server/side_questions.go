@@ -433,9 +433,9 @@ type sideTaskModelError struct {
 
 func (e *sideTaskModelError) Error() string {
 	if e == nil || e.err == nil {
-		return "旁路问答模型配置不可用，请检查任务/主 Agent 的 LLM 配置"
+		return "Side-question model configuration is unavailable; check the task/Main Agent LLM configuration"
 	}
-	return "旁路问答模型配置不可用：" + e.err.Error() + "，请检查任务/主 Agent 的 LLM 配置"
+	return "Side-question model configuration is unavailable: " + e.err.Error() + " — check the task/Main Agent LLM configuration"
 }
 
 func (e *sideTaskModelError) Unwrap() error { return e.err }
@@ -583,12 +583,12 @@ func (s *Server) sideSnapshotForAgent(ctx context.Context, p sidequestion.Parent
 
 func sideMissingSnapshotMessage(p sidequestion.Parent, agentKey string) string {
 	if p.TaskID > 0 && p.IntentID == 0 && p.ApprovalID == 0 && (agentKey == "" || agentKey == "mainagent") {
-		return "暂无可用的任务上下文，请先补充任务描述或运行一些 Planner/Worker"
+		return "No task context is available yet; add a task description or run some Planner/Worker tasks first"
 	}
 	if p.ApprovalID > 0 {
-		return "暂无可用的审批材料，请检查当前审批记录"
+		return "No approval material is available yet; check the current approval record"
 	}
-	return "尚无上下文快照，请先运行对应 Agent"
+	return "No context snapshot is available yet; run the corresponding Agent first"
 }
 
 func (s *Server) sideParent(w http.ResponseWriter, r *http.Request, kind string) (sidequestion.Parent, bool) {
@@ -904,10 +904,10 @@ func (s *Server) runSide(ctx context.Context, cancel context.CancelFunc, e sideq
 	e.Status = "completed"
 	if ctx.Err() != nil {
 		e.Status = "cancelled"
-		e.Error = "回答已停止"
+		e.Error = "Answer stopped"
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			e.Status = "failed"
-			e.Error = "旁路回答超过 120 秒，已停止"
+			e.Error = "Side-question answer exceeded 120 seconds and was stopped"
 		}
 	} else if runErr != nil {
 		e.Status = "failed"

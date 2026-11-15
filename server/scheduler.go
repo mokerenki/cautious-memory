@@ -51,7 +51,7 @@ func (sc *Scheduler) Run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-t.C:
-			sc.s.reconcileConcurrency() // 并发上限:有空位就把排队任务补位启动
+			sc.s.reconcileConcurrency() // Concurrency limit: start queued tasks to fill available slots
 			sc.step()
 		}
 	}

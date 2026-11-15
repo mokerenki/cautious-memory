@@ -221,13 +221,13 @@ func (s *Server) archiveTask(job *pgdb.TaskArchive) (runErr error) {
 	if trafficStage != nil {
 		if err := trafficStage.Commit(); err != nil {
 			warning := "归档已完成，但独占流量热存储清理失败（归档包仍可恢复）：" + err.Error()
-			log.Printf("[task-archive] task %s: %s", taskID, warning)
+			log.Printf("[task-archive] task %s: archive cleanup warning: %s", taskID, warning)
 			_ = s.m.pg.AppendTaskArchiveWarning(job.ID, warning)
 		}
 	}
 	if err := fileStage.commit(); err != nil {
 		warning := "归档已完成，但暂存目录清理失败：" + err.Error()
-		log.Printf("[task-archive] task %s: %s", taskID, warning)
+		log.Printf("[task-archive] task %s: archive cleanup warning: %s", taskID, warning)
 		_ = s.m.pg.AppendTaskArchiveWarning(job.ID, warning)
 	}
 	s.engine.StopTask(taskID)
@@ -529,7 +529,7 @@ func (s *Server) queueTaskArchivesBatch(w http.ResponseWriter, r *http.Request) 
 	items := make([]archiveBatchItem, 0, len(parsed))
 	for _, item := range parsed {
 		if !item.valid {
-			items = append(items, archiveBatchItem{ID: item.id, Error: "任务 id 无效"})
+			items = append(items, archiveBatchItem{ID: item.id, Error: "Invalid task ID"})
 			continue
 		}
 		ids = append(ids, item.id)
@@ -601,7 +601,7 @@ func normalizeArchiveIDs(ids []int64) ([]int64, error) {
 	out := make([]int64, 0, len(ids))
 	for _, id := range ids {
 		if id <= 0 {
-			return nil, fmt.Errorf("归档 id %d 无效", id)
+			return nil, fmt.Errorf("Archive ID %d is invalid", id)
 		}
 		if !seen[id] {
 			seen[id] = true

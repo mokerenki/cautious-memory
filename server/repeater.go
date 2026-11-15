@@ -226,7 +226,7 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 		out.Body = repeaterBodyText(data)
 		out.BodyBytes = len(data)
 		if readErr != nil && !errors.Is(readErr, io.EOF) {
-			out.Error = "读取响应失败: " + readErr.Error()
+			out.Error = "Failed to read response: " + readErr.Error()
 		}
 	}
 	out.ElapsedMs = time.Since(started).Milliseconds()
@@ -439,7 +439,7 @@ func repeaterRedactError(err error) string {
 		if urlErr.Err != nil {
 			return fmt.Sprintf("%s %s: %s", urlErr.Op, host, urlErr.Err)
 		}
-		return fmt.Sprintf("%s %s: 未知错误", urlErr.Op, host)
+		return fmt.Sprintf("%s %s: unknown error", urlErr.Op, host)
 	}
 	return err.Error()
 }

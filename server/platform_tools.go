@@ -12,8 +12,8 @@ import (
 	actool "github.com/Autumn-27/norma/tool"
 )
 
-// 平台操作工具(给内置 Auto agent 用):建/改 skill、自定义工具、MCP。都是 host 工具,
-// seed 进 tools 表、默认绑定 auto,经 hostTools 注入。复用现有 db/文件系统逻辑。
+// Platform operation tools (for the built-in Auto agent): create/edit skills, custom tools, and MCP. All are host tools,
+// seeded into the tools table, bound to auto by default, and injected via hostTools. Reuse existing db/filesystem logic.
 
 func (s *Server) platformTools() []actool.CoreTool {
 	return []actool.CoreTool{
@@ -38,7 +38,7 @@ var platformToolKeys = []string{
 // ---- assets ----
 
 // toolDeleteAssetsByHost hard-deletes every asset tied to one host (exact match).
-// Platform-level (not a per-task tool): operates on the global, cross-task asset库.
+// Platform-level (not a per-task tool): operates on the global, cross-task asset library.
 func (s *Server) toolDeleteAssetsByHost() actool.CoreTool {
 	return wrTool("delete_assets_by_host",
 		"按 host 精确删除资产：删掉该 host 的域名/子域名，以及其下的服务(service)、接口(endpoint)。\n"+
@@ -51,18 +51,18 @@ func (s *Server) toolDeleteAssetsByHost() actool.CoreTool {
 		func(_ context.Context, in json.RawMessage) (actool.Result, error) {
 			as := s.assetStore()
 			if as == nil {
-				return actool.Errorf("资产库未初始化"), nil
+				return actool.Errorf("Asset library is not initialized"), nil
 			}
 			var a struct {
 				Host string `json:"host"`
 			}
 			_ = json.Unmarshal(in, &a)
 			if strings.TrimSpace(a.Host) == "" {
-				return actool.Errorf("host 不能为空"), nil
+				return actool.Errorf("host cannot be empty"), nil
 			}
 			counts, err := as.DeleteByHost(a.Host)
 			if err != nil {
-				return actool.Errorf("删除失败: " + err.Error()), nil
+				return actool.Errorf("Deletion failed: " + err.Error()), nil
 			}
 			var total int64
 			for _, n := range counts {
@@ -90,10 +90,10 @@ func (s *Server) toolCreateSkill() actool.CoreTool {
 			var a struct{ Name, Description, Instructions string }
 			_ = json.Unmarshal(in, &a)
 			if !validSkillName(a.Name) {
-				return actool.Errorf("skill 名不合法(小写字母开头，仅字母/数字/连字符，≤64)"), nil
+				return actool.Errorf("Invalid skill name (must start with a lowercase letter and contain only letters, digits, or hyphens; max 64 characters)"), nil
 			}
 			if strings.TrimSpace(a.Description) == "" {
-				return actool.Errorf("description 必填"), nil
+				return actool.Errorf("description is required"), nil
 			}
 			path := filepath.Join(s.skillDir, a.Name)
 			if _, err := os.Stat(path); err == nil {
@@ -132,11 +132,11 @@ func (s *Server) toolUpdateSkillFile() actool.CoreTool {
 			var a struct{ Name, File, Content string }
 			_ = json.Unmarshal(in, &a)
 			if !validSkillName(a.Name) {
-				return actool.Errorf("skill 名不合法"), nil
+				return actool.Errorf("Invalid skill name"), nil
 			}
 			skillPath := filepath.Join(s.skillDir, a.Name)
 			if _, err := os.Stat(skillPath); os.IsNotExist(err) {
-				return actool.Errorf("skill 不存在: " + a.Name), nil
+				return actool.Errorf("Skill not found: " + a.Name), nil
 			}
 			rel := strings.TrimSpace(a.File)
 			if rel == "" {
@@ -144,7 +144,7 @@ func (s *Server) toolUpdateSkillFile() actool.CoreTool {
 			}
 			clean, msg := skillRelPath(rel)
 			if msg != "" {
-				return actool.Errorf("非法路径: " + msg), nil
+				return actool.Errorf("Invalid path: " + msg), nil
 			}
 			full := filepath.Join(skillPath, clean)
 			if err := os.MkdirAll(filepath.Dir(full), 0o755); err != nil {
@@ -202,13 +202,13 @@ func (s *Server) toolCreateCustomTool() actool.CoreTool {
 			_ = json.Unmarshal(in, &a)
 			a.Key = strings.TrimSpace(a.Key)
 			if !reToolKey.MatchString(a.Key) {
-				return actool.Errorf("key 需小写字母开头，仅含小写字母/数字/下划线"), nil
+				return actool.Errorf("key must start with a lowercase letter and contain only lowercase letters, digits, or underscores"), nil
 			}
 			if a.Kind != "shell" && a.Kind != "command" && a.Kind != "script" && a.Kind != "http" {
-				return actool.Errorf("kind 需为 shell / command / script / http"), nil
+				return actool.Errorf("kind must be shell, command, script, or http"), nil
 			}
 			if a.Kind == "http" && !hasSchemaProps(a.Schema) {
-				return actool.Errorf("http 工具必须提供参数 JSON Schema(不能留空)"), nil
+				return actool.Errorf("HTTP tools must provide a non-empty parameter JSON Schema"), nil
 			}
 			if exist, _ := s.m.pg.GetTool(a.Key); exist != nil {
 				return actool.Errorf("This key already exists: " + a.Key), nil
@@ -228,13 +228,13 @@ func (s *Server) toolUpdateCustomTool() actool.CoreTool {
 			_ = json.Unmarshal(in, &a)
 			existing, _ := s.m.pg.GetTool(a.Key)
 			if existing == nil || existing.System {
-				return actool.Errorf("只能修改自定义工具: " + a.Key), nil
+				return actool.Errorf("Only custom tools can be modified: " + a.Key), nil
 			}
 			if a.Kind != "shell" && a.Kind != "command" && a.Kind != "script" && a.Kind != "http" {
-				return actool.Errorf("kind 需为 shell / command / script / http"), nil
+				return actool.Errorf("kind must be shell, command, script, or http"), nil
 			}
 			if a.Kind == "http" && !hasSchemaProps(a.Schema) {
-				return actool.Errorf("http 工具必须提供参数 JSON Schema(不能留空)"), nil
+				return actool.Errorf("HTTP tools must provide a non-empty parameter JSON Schema"), nil
 			}
 			if err := s.m.pg.UpdateCustomTool(toDBTool(a)); err != nil {
 				return actool.Errorf(err.Error()), nil
@@ -299,7 +299,7 @@ func (s *Server) toolCreateMCP() actool.CoreTool {
 			_ = json.Unmarshal(in, &a)
 			a.ID = 0
 			if strings.TrimSpace(a.Name) == "" || strings.TrimSpace(a.Transport) == "" {
-				return actool.Errorf("name / transport 必填"), nil
+				return actool.Errorf("name and transport are required"), nil
 			}
 			id, err := s.m.pg.SaveMCP(a.toDB())
 			if err != nil {
@@ -316,7 +316,7 @@ func (s *Server) toolUpdateMCP() actool.CoreTool {
 			var a mcpToolInput
 			_ = json.Unmarshal(in, &a)
 			if a.ID == 0 {
-				return actool.Errorf("id 必填"), nil
+				return actool.Errorf("id is required"), nil
 			}
 			if _, err := s.m.pg.SaveMCP(a.toDB()); err != nil {
 				return actool.Errorf(err.Error()), nil

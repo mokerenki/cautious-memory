@@ -19,13 +19,13 @@ type goalSpec struct {
 }
 
 // launchTask runs the shared post-creation sequence for a task created via ANY
-// path (HTTP createTask 或 orchestration spawn_task),避免两处复制粘贴:
-//  1. seed 根资产,喂给事件驱动 loop;
-//  2. 可选种子意图,worker 免等首轮 planner 直接开跑;
-//  3. 后台异步做目标分解(发「第 0 轮目标拆解」round + LLM 分解步骤 + 逐条 goal,页面可见),
-//     分解完再 engine.Run —— 引擎在 goal 节点就绪后才启动,避免 planner 抢在 goal 之前跑的竞态。
+// path (HTTP createTask or orchestration spawn_task), to avoid copy-pasting in two places:
+//  1. Seed the root asset and feed it to the event-driven loop;
+//  2. Optionally seed an intent so the worker can start immediately without waiting for the first planner run;
+//  3. Decompose goals asynchronously in the background (emit the "round 0 goal decomposition" round + LLM decomposition steps + individual goals, visible on the page),
+//     then call engine.Run after decomposition — the engine starts only when the goal node is ready, avoiding a race where the planner runs before the goal.
 //
-// 异步(goroutine)所以调用方立即返回,两条路径行为一致:秒建任务、后台拆目标。
+// Runs asynchronously (goroutine), so the caller returns immediately. Both paths behave the same: create the task instantly, decompose goals in the background.
 func (s *Server) launchTask(t *Task, seedText string, seedFirstIntent bool) {
 	if !s.engine.beginTaskOperation(t.ID) {
 		return
@@ -36,7 +36,7 @@ func (s *Server) launchTask(t *Task, seedText string, seedFirstIntent bool) {
 	}
 	s.engine.decInflight(t.ID)
 	if _, err := s.admitTask(t, "bootstrap"); err != nil {
-		log.Printf("[concurrency] task %s 启动失败: %v", t.ID, err)
+		log.Printf("[concurrency] task %s: failed to start: %v", t.ID, err)
 	}
 }
 
@@ -328,7 +328,7 @@ func (s *Server) reconcileConcurrency() {
 				"任务当前无法解析可运行的 Planner/Worker LLM，已释放并发槽；配置恢复后按队列顺序继续"))
 			if err := s.m.EnqueueTask(task.ID, mode); err != nil {
 				s.engine.Resume(task)
-				log.Printf("[concurrency] task %s 因 LLM 不可用入队失败: %v", task.ID, err)
+				log.Printf("[concurrency] task %s: failed to queue because the LLM is unavailable: %v", task.ID, err)
 				continue
 			}
 			s.engine.emitActivity(task, db.Activity{Worker: "system", Kind: "text",
@@ -404,18 +404,18 @@ func (s *Server) reconcileConcurrency() {
 	}
 }
 
-// reviveTask 让一个已停下的任务重新跑起来:把终态(done/failed/timeout)拉回 running、
-// 解除暂停,并(重)启动引擎循环 + 唤醒。已在 running 且未暂停的任务:只剩 Run 里的一次
-// Notify,近乎无副作用。用于「主 agent set_goals 新增目标」和「重跑 blocked 意图」两处。
+// reviveTask restarts a stopped task: transitions a terminal state (done/failed/timeout) back to running,
+// unpauses it, and (re)starts the engine loop + wakes it. For a task already running and not paused, only one
+// Notify in Run remains, with virtually no side effects. Used for goals added by the main agent via set_goals and for rerunning blocked intents.
 //
-// 为什么必须显式复活:planner/worker 循环的终态门(engine.go)会吞掉普通 notify——光改
-// 图 + Notify 唤不醒已判完成的任务;重启后终态任务的 goroutine 也可能已不在,故还要 Run。
+// Why explicit revival is required: the terminal gate in the planner/worker loop (engine.go) swallows ordinary notifications—just changing the
+// graph + Notify cannot wake a task already marked complete; after a restart, the goroutine for a terminal task may also be gone, so Run is needed too.
 func (s *Server) reviveTask(t *Task) {
 	if t == nil {
 		return
 	}
 	if _, err := s.admitTask(t, "resume"); err != nil {
-		log.Printf("[revive] task %s 恢复失败: %v", t.ID, err)
+		log.Printf("[revive] task %s: failed to resume: %v", t.ID, err)
 	}
 }
 
@@ -454,7 +454,7 @@ func (s *Server) createGoals(ctx context.Context, t *Task, emit func(db.Activity
 		// as a single goal so the task still has something to judge against. This is the
 		// only path that writes here — decomposed goals are already persisted by the tool.
 		if g := strings.TrimSpace(t.Goal); g != "" {
-			log.Printf("[goals] task %s: LLM 目标拆解无产出，回退为「原始目标作为单目标」", t.ID)
+			log.Printf("[goals] task %s: LLM goal decomposition produced no output; falling back to \"original goal as a single goal\"", t.ID)
 			origin, _ := t.Store.OriginFactID()
 			id, _ := t.Store.AddNode(db.KindGoal, map[string]any{"text": g}, 0, "open", "system", nil)
 			if origin > 0 && id > 0 {

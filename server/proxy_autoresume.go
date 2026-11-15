@@ -436,7 +436,7 @@ func (s *Server) testTaskProxy(w http.ResponseWriter, r *http.Request) {
 		s.proxyReconnectSuccessWithGuards(guards, nil)
 	}
 	if !res.OK && res.Error == "" {
-		res.Error = "代理探测失败"
+		res.Error = "Proxy probe failed"
 	}
 	writeJSON(w, 200, map[string]any{"ok": res.OK, "error": res.Error, "task_id": t.ID})
 }
