@@ -64,14 +64,14 @@ import type {
   Tool,
 } from "@/lib/types";
 
-// fmtTokens 把 token 数压成紧凑写法(1.2k / 3.4M),用于审批用量统计。
+// fmtTokens formats token counts compactly (1.2k / 3.4M) for approval usage statistics.
 function fmtTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
   if (n >= 1000) return (n / 1000).toFixed(1) + "k";
   return String(n);
 }
 
-// JudgeStat 是一块统计数字(标签 + 数值)。
+// JudgeStat is a single statistic (label + value).
 function JudgeStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-lg border bg-muted/20 px-3 py-2">
@@ -81,7 +81,7 @@ function JudgeStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-// JudgeSparkbars 用纯 div 画近 N 天每日消耗(输入+输出)的迷你柱图,免图表库依赖。
+// JudgeSparkbars draws a mini bar chart of daily usage (input + output) over the past N days using plain divs, with no chart library dependency.
 function JudgeSparkbars({ daily }: { daily: JudgeDayUsage[] }) {
   const max = Math.max(1, ...daily.map((d) => d.input_tokens + d.output_tokens));
   return (
@@ -220,12 +220,12 @@ function JudgeCard() {
   const [usage, setUsage] = React.useState<JudgeUsage | null>(null);
   const [testing, setTesting] = React.useState(false);
 
-  // 审批用量统计:失败不打断配置页,仅在开启时拉取。
+  // Approval usage statistics: failures don't interrupt the configuration page; fetch only when enabled.
   const loadUsage = React.useCallback(async () => {
     try {
       setUsage(await api.interceptJudgeUsage(30));
     } catch {
-      // 忽略:统计不可用不应影响配置编辑
+      // Ignore: unavailable statistics should not affect configuration editing
     }
   }, []);
 
@@ -246,7 +246,7 @@ function JudgeCard() {
     load();
   }, [load]);
 
-  // 开启后(含初次加载把开关读为 true 时)拉取审批用量统计。
+  // Fetch approval usage statistics when enabled (including when the initial load reads the switch as true).
   React.useEffect(() => {
     if (cfg.enabled) loadUsage();
   }, [cfg.enabled, loadUsage]);
@@ -300,7 +300,7 @@ function JudgeCard() {
   }
 
   async function restorePrompt() {
-    // 清空提示词并保存 → 服务端下次返回内置模板全文,回填到输入框。
+    // Clear the prompt and save → the server returns the full built-in template next time, which is then filled into the input.
     setSaving(true);
     try {
       await api.interceptSetJudgeConfig({ ...cfg, prompt: "" });
@@ -316,7 +316,7 @@ function JudgeCard() {
 
   return (
     <div className="space-y-4">
-      {/* 启用开关 —— 独立高亮条 */}
+      {/* Enable switch — separate highlighted bar */}
       <div
         className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-3 ${
           cfg.enabled ? "border-violet-400/50 bg-violet-50/40 dark:bg-violet-950/20" : "bg-muted/40"
@@ -337,7 +337,7 @@ function JudgeCard() {
         </div>
       </div>
 
-      {/* 审批 Token 用量统计(全局累计,独立于各模型配置) */}
+      {/* Approval token usage statistics (global total, independent of model configurations) */}
       {cfg.enabled && usage && (
         <Card>
           <CardContent className="p-4">
@@ -373,7 +373,7 @@ function JudgeCard() {
 
       {cfg.enabled && (
         <div className="grid gap-4 lg:grid-cols-5">
-          {/* 左:提示词编辑器(直接展开,主区域) */}
+          {/* Left: prompt editor (expanded directly in the main area) */}
           <Card className="lg:col-span-3">
             <CardContent className="flex min-h-0 flex-1 flex-col gap-2 p-4">
               <div className="flex items-center justify-between">
@@ -396,7 +396,7 @@ function JudgeCard() {
             </CardContent>
           </Card>
 
-          {/* 右:判定参数(设置栏) */}
+          {/* Right: decision parameters (settings panel) */}
           <Card className="lg:col-span-2">
             <CardContent className="space-y-5 p-4">
               <div className="space-y-4">
@@ -561,7 +561,7 @@ export default function InterceptPage() {
   const [form, setForm]       = React.useState<RuleForm>(defaultForm());
   const [saving, setSaving]   = React.useState(false);
   const [regexErr, setRegexErr] = React.useState("");
-  const [regexWarn, setRegexWarn] = React.useState(false); // true = JS 无法解析但可能是合法 Go 语法
+  const [regexWarn, setRegexWarn] = React.useState(false); // true = JS cannot parse it, but it may be valid Go syntax
 
   // ---- tool scope dialog ----
   const [scopeOpen, setScopeOpen]       = React.useState(false);
@@ -569,7 +569,7 @@ export default function InterceptPage() {
   const [enabledTools, setEnabledTools] = React.useState<Set<string>>(new Set());
   const [scopeLoading, setScopeLoading] = React.useState(false);
   const [scopeSaving, setScopeSaving]   = React.useState(false);
-  const [scopeTools, setScopeTools]     = React.useState<string[]>([]); // 页头信息条:当前进入拦截的工具
+  const [scopeTools, setScopeTools]     = React.useState<string[]>([]); // Header info bar: tools currently entering interception
 
   // ---- data ----
 
@@ -578,7 +578,7 @@ export default function InterceptPage() {
       const cfg = await api.interceptGetToolConfig();
       setScopeTools(cfg.enabled_tools);
     } catch {
-      // 信息条非关键,失败静默
+      // The info bar is non-critical; fail silently
     }
   }, []);
 
@@ -729,7 +729,7 @@ export default function InterceptPage() {
         </div>
       </div>
 
-      {/* ---- 拦截范围信息条（规则匹配与模型兜底共用：不在范围内的工具两者都不介入）---- */}
+      {/* ---- Interception scope banner (shared by rule matching and model fallback: neither applies to out-of-scope tools)---- */}
       <div
         className={`flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 ${
           scopeTools.length === 0
@@ -770,7 +770,7 @@ export default function InterceptPage() {
           <TabsTrigger value="judge">Model config</TabsTrigger>
         </TabsList>
 
-        {/* ---- tab: 拦截规则 ---- */}
+        {/* ---- Tab: interception rules ---- */}
         <TabsContent value="rules" className="mt-4 flex flex-col gap-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
@@ -866,7 +866,7 @@ export default function InterceptPage() {
           </Card>
         </TabsContent>
 
-        {/* ---- tab: 模型配置 ---- */}
+        {/* ---- Tab: model configuration ---- */}
         <TabsContent value="judge" className="mt-4">
           <JudgeCard />
         </TabsContent>

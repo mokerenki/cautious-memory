@@ -60,7 +60,7 @@ export default function CommandsPage() {
   const [total, setTotal] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
 
-  // 各工具调用次数。弹窗打开时才拉取（多一次聚合查询，不必每次翻页都付）。
+  // Tool call counts. Fetch only when the dialog opens (one extra aggregation query, not something to pay for on every page turn).
   const [statsOpen, setStatsOpen] = React.useState(false);
   const [stats, setStats] = React.useState<ToolStat[]>([]);
   const [statsLoading, setStatsLoading] = React.useState(false);
@@ -102,7 +102,7 @@ export default function CommandsPage() {
     };
   }, [page, size, queryQ, taskFilter]);
 
-  // 统计跟随筛选条件走，和表格描述的是同一批记录（但不分页）。
+  // Statistics follow the filters and describe the same set of records as the table (but are not paginated).
   React.useEffect(() => {
     if (!statsOpen) return;
     let alive = true;
