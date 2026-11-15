@@ -80,41 +80,41 @@ func scanSchedule(sc interface{ Scan(...any) error }) (*TaskSchedule, error) {
 func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 	in.Name = strings.TrimSpace(in.Name)
 	if in.Name == "" {
-		return in, fmt.Errorf("计划名称不能为空")
+		return in, fmt.Errorf("Schedule name cannot be empty")
 	}
 	if in.TimezoneMode == "" {
 		in.TimezoneMode = "beijing"
 	}
 	if in.TimezoneMode != "beijing" && in.TimezoneMode != "system" {
-		return in, fmt.Errorf("时区必须选择北京时间或系统当前时区")
+		return in, fmt.Errorf("Timezone must be Beijing time or the system time zone")
 	}
 	if in.ScheduleType != "once" && in.ScheduleType != "weekly" {
-		return in, fmt.Errorf("规则必须选择一次性或按周")
+		return in, fmt.Errorf("Rule must be one-time or weekly")
 	}
 	if _, err := time.Parse("15:04", in.StartTime); err != nil {
-		return in, fmt.Errorf("开始时间格式不正确，请使用 HH:MM")
+		return in, fmt.Errorf("Invalid start time format; use HH:MM")
 	}
 	if in.EndTime != "" && in.EndTime != "24:00" {
 		if _, err := time.Parse("15:04", in.EndTime); err != nil {
-			return in, fmt.Errorf("结束时间格式不正确，请使用 HH:MM")
+			return in, fmt.Errorf("Invalid end time format; use HH:MM")
 		}
 	}
 	if in.ScheduleType == "once" {
 		if _, err := time.Parse("2006-01-02", in.RunDate); err != nil {
-			return in, fmt.Errorf("开始日期格式不正确")
+			return in, fmt.Errorf("Invalid start date format")
 		}
 		if in.EndDate != "" {
 			startDate, _ := time.Parse("2006-01-02", in.RunDate)
 			endDate, err := time.Parse("2006-01-02", in.EndDate)
 			if err != nil {
-				return in, fmt.Errorf("截止日期格式不正确")
+				return in, fmt.Errorf("Invalid end date format")
 			}
 			if endDate.Before(startDate) {
-				return in, fmt.Errorf("截止日期不能早于开始日期")
+				return in, fmt.Errorf("End date cannot be earlier than start date")
 			}
 			if endDate.Equal(startDate) && in.EndTime != "" && in.EndTime != "24:00" {
 				if in.EndTime <= in.StartTime {
-					return in, fmt.Errorf("同一天的结束时间必须晚于开始时间")
+					return in, fmt.Errorf("On the same day, the end time must be later than the start time")
 				}
 			}
 		}
@@ -123,12 +123,12 @@ func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 		seen := map[int]bool{}
 		for _, day := range in.Weekdays {
 			if day < 1 || day > 7 || seen[day] {
-				return in, fmt.Errorf("星期选择必须为周一至周日且不能重复")
+				return in, fmt.Errorf("Select weekdays Monday through Sunday without duplicates")
 			}
 			seen[day] = true
 		}
 		if len(in.Weekdays) == 0 {
-			return in, fmt.Errorf("按周计划至少选择一天")
+			return in, fmt.Errorf("Select at least one day for a weekly schedule")
 		}
 		sort.Ints(in.Weekdays)
 		in.RunDate = ""
@@ -137,12 +137,12 @@ func normalizeScheduleInput(in TaskScheduleInput) (TaskScheduleInput, error) {
 	seenTasks := map[int64]bool{}
 	for _, id := range in.TaskIDs {
 		if id <= 0 || seenTasks[id] {
-			return in, fmt.Errorf("绑定任务编号无效或重复")
+			return in, fmt.Errorf("Bound task ID is invalid or duplicated")
 		}
 		seenTasks[id] = true
 	}
 	if len(in.TaskIDs) > 100 {
-		return in, fmt.Errorf("最多选择100个任务")
+		return in, fmt.Errorf("Select at most 100 tasks")
 	}
 	return in, nil
 }
@@ -181,14 +181,14 @@ VALUES ($1,$2,$3,$4,NULLIF($5,'')::date,NULLIF($6,'')::date,$7,$8::time,NULLIF($
 	}
 	for _, taskID := range in.TaskIDs {
 		if taskID <= 0 {
-			return nil, fmt.Errorf("task_id 无效")
+			return nil, fmt.Errorf("Invalid task_id")
 		}
 		var exists bool
 		if err := tx.QueryRow(`SELECT EXISTS(SELECT 1 FROM tasks WHERE id=$1 AND deleted_at IS NULL)`, taskID).Scan(&exists); err != nil || !exists {
 			if err != nil {
 				return nil, err
 			}
-			return nil, fmt.Errorf("任务 #%d 不存在", taskID)
+			return nil, fmt.Errorf("Task #%d does not exist", taskID)
 		}
 		if _, err := tx.Exec(`INSERT INTO task_schedule_tasks(schedule_id,task_id) VALUES($1,$2)`, s.ID, taskID); err != nil {
 			return nil, err

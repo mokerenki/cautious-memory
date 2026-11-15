@@ -83,7 +83,7 @@ func (d *DB) ResolveIntercept(id int64, status, action, reason string, source ..
 		decisionSource = source[0]
 	}
 	if decisionSource != "" && decisionSource != "manual" {
-		return false, fmt.Errorf("无效审批来源 %q", decisionSource)
+		return false, fmt.Errorf("Invalid approval source %q", decisionSource)
 	}
 	execution := "not_executed"
 	if action == "allow" {

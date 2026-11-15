@@ -11,7 +11,7 @@ import (
 )
 
 // =====================================================================
-// 公司主体层
+// Company entity layer
 // =====================================================================
 
 // Company is a row in the companies table.
@@ -52,8 +52,8 @@ var (
 )
 
 const (
-	// 企业范围不限制规则条数:逐个 IP / 域名录入的范围动辄上千条,封顶只会逼用户
-	// 拆成多个企业。请求体大小(server 侧 maxCompanyMutationBodyBytes)仍然兜底。
+	// Company scopes have no rule-count limit: scopes entered as individual IPs/domains can easily number in the thousands, and a cap would force users
+	// to split one company into several. Request-body size is still bounded by the server-side maxCompanyMutationBodyBytes.
 	//
 	// Raw and normalized textual scope payloads are bounded by Unicode rune
 	// count so multi-byte input is treated consistently by the API and DB layer.
