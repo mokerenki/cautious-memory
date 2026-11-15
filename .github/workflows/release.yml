@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "已存在的正式版本标签，例如 v0.3.15"
+        description: "Existing stable release tag, for example v0.3.15"
         required: true
         type: string
   push:
@@ -30,11 +30,11 @@ jobs:
           ARTEX_DOCKER_IMAGE: ${{ vars.ARTEX_DOCKER_IMAGE }}
         run: |
           if [[ ! "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
-            echo "正式版本必须是 v主版本.次版本.修订号，例如 v0.3.15" >&2
+            echo "Stable release version must use vMAJOR.MINOR.PATCH format, for example v0.3.15" >&2
             exit 1
           fi
           if [[ ! "$ARTEX_DOCKER_IMAGE" =~ ^[a-z0-9][a-z0-9_-]*/[a-z0-9]+([._-][a-z0-9]+)*$ ]]; then
-            echo "请先配置 Actions 变量 ARTEX_DOCKER_IMAGE，格式为 Docker Hub 用户名/镜像名" >&2
+            echo "Configure the Actions variable ARTEX_DOCKER_IMAGE first, using the Docker Hub username/image-name format" >&2
             exit 1
           fi
           echo "tag=$RELEASE_TAG" >> "$GITHUB_OUTPUT"
@@ -45,7 +45,7 @@ jobs:
         id: commit
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  # ① 前端静态导出（一次），产物给交叉编译各平台复用
+  # ① Export the frontend statically once; reuse the artifact for cross-compiling all platforms
   frontend:
     needs: prepare
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
           name: web-dist
           path: web/out
 
-  # ② 五平台交叉编译（内嵌前端）+ 打 zip
+  # ② Cross-compile for five platforms (with the frontend embedded) and create ZIP archives
   binaries:
     needs: [prepare, frontend]
     runs-on: ubuntu-latest
@@ -98,8 +98,8 @@ jobs:
           ARTEX_BUILD_VERSION: ${{ needs.prepare.outputs.tag }}
           ARTEX_SKIP_FRONTEND: "1"
           ARTEX_SKIP_NPM_CI: "1"
-          # UPX 自解压 ELF 在部分 Linux 内核、虚拟化和安全策略下会崩溃。
-          # Release 使用 Go linker 裁剪和 zip 压缩，优先保证可移植性。
+          # UPX self-extracting ELF binaries can crash under some Linux kernels, virtualization environments, and security policies.
+          # Releases use Go linker trimming and ZIP compression to prioritize portability.
           ARTEX_COMPRESS: "0"
           ARTEX_PACKAGE: "1"
           ARTEX_PACKAGE_DIR: dist
@@ -112,14 +112,14 @@ jobs:
         with:
           name: pkg-${{ matrix.goos }}-${{ matrix.goarch }}
           path: "dist/*.zip"
-      # Linux 生二进制单独上传，供 docker job 复用（免在镜像里重编前端+Go）
+      # Upload the raw Linux binary separately for reuse by the Docker job (avoids rebuilding the frontend and Go binary in the image).
       - if: matrix.goos == 'linux'
         uses: actions/upload-artifact@v4
         with:
           name: bin-linux-${{ matrix.goarch }}
           path: dist/artex-linux-${{ matrix.goarch }}/artex
 
-  # ③ 汇总所有 zip → 创建 GitHub Release
+  # ③ Collect all ZIP archives and create the GitHub Release
   release:
     needs: [prepare, binaries, docker-publish]
     runs-on: ubuntu-latest
@@ -153,10 +153,10 @@ jobs:
             target=$(jq -r '.targetCommitish // empty' /tmp/artex-release.json)
             if [[ "$draft" != "true" ]]; then
               if [[ "$target" == "$RELEASE_COMMIT" ]]; then
-                echo "该版本已发布且已指向当前提交，拒绝重复发布" >&2
+                echo "This version is already published and points to the current commit; refusing to publish it again" >&2
                 exit 1
               fi
-              echo "标签已移动到新提交，删除旧 Release 后重新创建 $RELEASE_TAG"
+              echo "The tag has moved to a new commit; deleting the old Release and recreating $RELEASE_TAG"
               gh release delete "$RELEASE_TAG" --yes
             fi
           elif ! grep -qi 'release not found\|HTTP 404' /tmp/artex-release.err; then
@@ -174,15 +174,15 @@ jobs:
             dist/SHA256SUMS
           generate_release_notes: true
           body: |
-            Docker Hub 镜像：`${{ vars.ARTEX_DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}`，同时提供 `latest`。
-            支持 Linux AMD64 / ARM64，Docker 会自动选择宿主机架构。
-            程序包提供 Linux、macOS 的 AMD64 / ARM64 及 Windows AMD64，并附 SHA256SUMS。
-            部署和在线更新说明见本仓库 README。
+            Docker Hub image: `${{ vars.ARTEX_DOCKER_IMAGE }}:${{ needs.prepare.outputs.tag }}`, also available as `latest`.
+            Supports Linux AMD64 / ARM64; Docker automatically selects the host architecture.
+            Packages are provided for Linux and macOS AMD64 / ARM64 and Windows AMD64, with SHA256SUMS.
+            See this repository’s README for deployment and online update instructions.
       - name: Publish complete release
         run: gh release edit "$RELEASE_TAG" --draft=false --latest
 
-  # GITHUB_TOKEN 发布的 Release 不会再次触发 release: published 工作流。
-  # 直接依赖发布 job，保证 ZIP、校验文件和镜像全部发布成功后才更新 Demo。
+  # A Release published with GITHUB_TOKEN will not trigger the release: published workflow again.
+  # Depend directly on the release job so the Demo is updated only after the ZIPs, checksum file, and image are all published successfully.
   demo:
     needs: [prepare, release]
     uses: ./.github/workflows/demo.yml
@@ -192,7 +192,7 @@ jobs:
     secrets:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
-  # ④ 在原生 AMD64 / ARM64 runner 上构建和测试，再推送架构镜像。
+  # ④ Build and test on native AMD64 / ARM64 runners, then push architecture-specific images.
   docker:
     needs: [prepare, binaries]
     strategy:
@@ -215,7 +215,7 @@ jobs:
           --health-cmd "pg_isready -U artex -d artex"
           --health-interval 5s --health-timeout 3s --health-retries 10
     steps:
-      - uses: actions/checkout@v4 # 取 Dockerfile 与 skills/
+      - uses: actions/checkout@v4 # Check out the Dockerfile and skills/
         with:
           ref: ${{ needs.prepare.outputs.commit }}
       - uses: actions/download-artifact@v4
@@ -271,7 +271,7 @@ jobs:
             org.opencontainers.image.licenses=AGPL-3.0
           cache-from: type=gha,scope=docker-${{ matrix.arch }}
 
-  # ⑤ 只有两种架构都通过启动验证，才发布正式版本和 latest 镜像。
+  # ⑤ Publish the stable and latest images only after startup validation passes on both architectures.
   docker-publish:
     needs: [prepare, docker]
     runs-on: ubuntu-24.04

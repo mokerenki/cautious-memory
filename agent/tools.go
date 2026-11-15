@@ -94,18 +94,18 @@ type ToolSet struct {
 	// can't, because the planner's terminal gate swallows wakes. Wired ONLY for the
 	// main agent (human steering); nil for the goals decomposer and workers.
 	resumeTask func()
-// notifyGoal, if set, wakes the planner AND records ONE "human added N goals: ..." trigger
-// for a whole set_goals call (batch-aware — one call, one trigger, not one per goal)
-// so the next round spells out the added goals (instead of the planner having to
-// spot new open goals in the overview). Wired ONLY for the main agent; nil for the
-// goals decomposer (round-0 has no running planner to inform) and workers → those
-// fall back to the bare notify.
+	// notifyGoal, if set, wakes the planner AND records ONE "human added N goals: ..." trigger
+	// for a whole set_goals call (batch-aware — one call, one trigger, not one per goal)
+	// so the next round spells out the added goals (instead of the planner having to
+	// spot new open goals in the overview). Wired ONLY for the main agent; nil for the
+	// goals decomposer (round-0 has no running planner to inform) and workers → those
+	// fall back to the bare notify.
 	notifyGoal func(texts []string)
-// notifyHint, if set, wakes the planner AND records ONE "human added N strategic hints: ..."
-// trigger for a whole add_hint call (batch-aware — one call, one trigger) so the next
-// round is told the round was fired by a new hint and spells the hint out, instead of
-// the planner having to spot it folded into the graph overview. Wired for the main
-// agent + cross-task orchestration; nil elsewhere → falls back to the bare notify.
+	// notifyHint, if set, wakes the planner AND records ONE "human added N strategic hints: ..."
+	// trigger for a whole add_hint call (batch-aware — one call, one trigger) so the next
+	// round is told the round was fired by a new hint and spells the hint out, instead of
+	// the planner having to spot it folded into the graph overview. Wired for the main
+	// agent + cross-task orchestration; nil elsewhere → falls back to the bare notify.
 	notifyHint func(texts []string)
 }
 
@@ -366,8 +366,8 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 		gsum = append(gsum, map[string]any{"id": g.ID, "state": g.State, "text": p["text"]})
 	}
 	out["goals"] = gsum
-// hints: human/main agent attach strategic hints to graph via add_hint; folded in so the
-// planner reads them every round when generating intents (otherwise write-only, no read).
+	// hints: human/main agent attach strategic hints to graph via add_hint; folded in so the
+	// planner reads them every round when generating intents (otherwise write-only, no read).
 	hints, _ := t.ts.ListByKind(db.KindHint, 50)
 	hsum := make([]map[string]any, 0, len(hints))
 	for _, h := range hints {
@@ -429,9 +429,9 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 		}
 	}
 	out["running_intents"] = compactIntents(running, parentsOf, yieldsOf)
-// done_intents_total: total finished intents (done/blocked/exhausted), parallel to recent_done_intents
-// naming — the latter is just its latest window truncated view. Both keys side-by-side self-describe: "seeing N/total",
-// so planner dedup doesn't mistake "not shown" for "never dispatched", no need to explain in prompt.
+	// done_intents_total: total finished intents (done/blocked/exhausted), parallel to recent_done_intents
+	// naming — the latter is just its latest window truncated view. Both keys side-by-side self-describe: "seeing N/total",
+	// so planner dedup doesn't mistake "not shown" for "never dispatched", no need to explain in prompt.
 	if dt, err := t.ts.CountFinishedIntents(); err == nil {
 		out["done_intents_total"] = dt
 	}
@@ -468,9 +468,9 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 		findingList = append(findingList, m)
 	}
 	out["finding_list"] = findingList
-// recent_facts: latest window of non-folded facts (≤N, factNodes already id desc = newest first). Already folded
-// into digest and still cold (hidden) go to cold_digests, not repeated here. Each entry {id, summary, from_intent?,
-// confidence?}; evidence etc. via node_detail(id). Earlier pages via list_facts.
+	// recent_facts: latest window of non-folded facts (≤N, factNodes already id desc = newest first). Already folded
+	// into digest and still cold (hidden) go to cold_digests, not repeated here. Each entry {id, summary, from_intent?,
+	// confidence?}; evidence etc. via node_detail(id). Earlier pages via list_facts.
 	const recentFactsCap = 20
 	recentFacts := make([]map[string]any, 0, recentFactsCap)
 	for _, n := range factNodes {
@@ -495,15 +495,15 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 		recentFacts = append(recentFacts, m)
 	}
 	out["recent_facts"] = recentFacts
-// recent_done_intents: latest window of non-folded finished intents (≤N, recentDone already id desc).
-// Earlier via done_intents_total count + node_detail(id).
+	// recent_done_intents: latest window of non-folded finished intents (≤N, recentDone already id desc).
+	// Earlier via done_intents_total count + node_detail(id).
 	const recentDoneCap = 12
 	if len(recentDone) > recentDoneCap {
 		recentDone = recentDone[:recentDoneCap]
 	}
 	out["recent_done_intents"] = compactIntents(recentDone, parentsOf, yieldsOf)
-// cold-digest §6.1: folded cold region digest bodies, take top N by newest member time desc; older truncated digests
-// only get bare ids (still expandable via expand_digest), avoid infinite cold-region tail.
+	// cold-digest §6.1: folded cold region digest bodies, take top N by newest member time desc; older truncated digests
+	// only get bare ids (still expandable via expand_digest), avoid infinite cold-region tail.
 	const coldDigestsCap = 15
 	if cds, more := coldDigestsRecent(t.ts, coldDigestsCap); len(cds) > 0 {
 		out["cold_digests"] = cds // [{id, body, member_count}] — read body directly (§6.1)
@@ -520,10 +520,10 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 	// summaries in a separate field so their intents never enter this task's
 	// frontier or get mistaken for locally claimable work.
 	out["related_tasks"] = t.relatedTaskOverviews()
-// coverage: rough asset test coverage reference — proportion of assets in scope (task_scope) touched by facts
-// + by_type (total/tested per type). To see specific untested assets, agent calls list_untested_assets as needed. Task context only.
-// coverage feature disabled: keep only host_count (target host count awareness), drop denominator/tested/pct/by_type/note
-// and other coverage metrics to avoid polluting context, and not induce already-hidden add_task_scope/list_untested_assets.
+	// coverage: rough asset test coverage reference — proportion of assets in scope (task_scope) touched by facts
+	// + by_type (total/tested per type). To see specific untested assets, agent calls list_untested_assets as needed. Task context only.
+	// coverage feature disabled: keep only host_count (target host count awareness), drop denominator/tested/pct/by_type/note
+	// and other coverage metrics to avoid polluting context, and not induce already-hidden add_task_scope/list_untested_assets.
 	if t.as != nil && t.ts != nil && t.taskID > 0 {
 		{
 			m := map[string]any{}
@@ -542,8 +542,8 @@ func (t *ToolSet) graphOverviewData() map[string]any {
 				}
 			}
 			if hosts, err := t.as.HostsByTaskWithSources(t.taskID); err == nil {
-// only give host total count, no longer flatten host list into graph_overview (large-scope tasks would repeat
-// massive strings every round, limited planning decision value); specific hosts query via list_assets on demand.
+				// only give host total count, no longer flatten host list into graph_overview (large-scope tasks would repeat
+				// massive strings every round, limited planning decision value); specific hosts query via list_assets on demand.
 				m["host_count"] = len(hosts)
 			}
 			if len(m) > 0 {
@@ -1145,10 +1145,10 @@ func (t *ToolSet) addIntent() actool.CoreTool {
 				createdAny = true
 			}
 
-// human directly injects intent via main agent → if task already done (goalless branch with no open goals),
-// pull it back to running so a worker can claim this intent. resumeTask only wired by main agent Chat
-// (SetResumeTask); planner's ToolSet is nil so planner calling add_intent here is no-op, doesn't affect
-// normal intent generation. intent node already created above (open), revival won't be misjudged as drained.
+			// human directly injects intent via main agent → if task already done (goalless branch with no open goals),
+			// pull it back to running so a worker can claim this intent. resumeTask only wired by main agent Chat
+			// (SetResumeTask); planner's ToolSet is nil so planner calling add_intent here is no-op, doesn't affect
+			// normal intent generation. intent node already created above (open), revival won't be misjudged as drained.
 			if createdAny && t.resumeTask != nil {
 				t.resumeTask()
 			}
@@ -1194,18 +1194,18 @@ func (t *ToolSet) proveGoal() actool.CoreTool {
 			if goal == 0 || ev == 0 {
 				return actool.Errorf("goal_id and evidence_id required"), nil
 			}
-goalNode, err := t.ts.GetNode(goal)
-		if err != nil || goalNode == nil || goalNode.Kind != db.KindGoal {
-			return actool.Errorf("goal_id must be this task's goal node (related task goals read-only)"), nil
-		}
-		evidenceNode, err := t.ts.GetNodeWithSources(ev)
-		if err != nil || evidenceNode == nil || (evidenceNode.Kind != db.KindFact && evidenceNode.Kind != db.KindFinding) {
-			return actool.Errorf("evidence_id must be this task's or direct related task's fact/finding node"), nil
-		}
+			goalNode, err := t.ts.GetNode(goal)
+			if err != nil || goalNode == nil || goalNode.Kind != db.KindGoal {
+				return actool.Errorf("goal_id must be this task's goal node (related task goals read-only)"), nil
+			}
+			evidenceNode, err := t.ts.GetNodeWithSources(ev)
+			if err != nil || evidenceNode == nil || (evidenceNode.Kind != db.KindFact && evidenceNode.Kind != db.KindFinding) {
+				return actool.Errorf("evidence_id must be this task's or direct related task's fact/finding node"), nil
+			}
 			_ = t.ts.Link(ev, db.RelProves, goal)
 			_ = t.ts.SetNodeState(goal, "met")
-// each time a goal is marked met, check if this task's [all goals] are met; if so, auto-determine
-		// task complete (set GoalMet), no need for model to explicitly call goal_met.
+			// each time a goal is marked met, check if this task's [all goals] are met; if so, auto-determine
+			// task complete (set GoalMet), no need for model to explicitly call goal_met.
 			if goals, err := t.ts.ListByKind(db.KindGoal, 1000); err == nil && len(goals) > 0 {
 				allMet := true
 				for _, g := range goals {
@@ -1216,8 +1216,8 @@ goalNode, err := t.ts.GetNode(goal)
 				}
 				if allMet {
 					t.GoalMet = true
-t.Reason = fmt.Sprintf("all %d goals met (last triggered by goal %d)", len(goals), goal)
-				return actool.Text(fmt.Sprintf("goal %d marked met; all goals in this task achieved, task auto-determined complete", goal)), nil
+					t.Reason = fmt.Sprintf("all %d goals met (last triggered by goal %d)", len(goals), goal)
+					return actool.Text(fmt.Sprintf("goal %d marked met; all goals in this task achieved, task auto-determined complete", goal)), nil
 				}
 			}
 			return actool.Text(fmt.Sprintf("goal %d marked met", goal)), nil
@@ -1244,7 +1244,7 @@ func (t *ToolSet) addFinding() actool.CoreTool {
 		"intent_id": idp("current task intent id"), "asset_ids": map[string]any{"type": "array", "items": map[string]any{"type": "integer"}, "description": "affected asset ids"},
 		"evidence":         str("evidence/PoC text"),
 		"evidence_hint_id": idp("optional: hint node ID in this task for this vuln, auto-carries its structured traffic_refs; cannot reference inherited hint or other vuln's hint"),
-		"traffic_refs": map[string]any{"type": "array", "description": "optional; for HTTP/HTTPS vulns, first search and verify each request/response actually supports the vuln conclusion, then fill real IDs in reproduction order. for TCP etc. non-HTTP vulns, uncollected or no exact records found, omit or pass [], doesn't block reporting; explain reason in evidence and provide other verifiable evidence. don't guess IDs, infer by domain/time, or re-probe just to补 packets. roles: baseline normal baseline / proof vuln proof / verification supplementary verification / supporting auxiliary evidence.", "items": obj(map[string]any{"traffic_id": str("real traffic ID from traffic_search"), "role": map[string]any{"type": "string", "enum": []string{"baseline", "proof", "verification", "supporting"}}, "note": str("how this traffic supports the vuln conclusion")}, "traffic_id")},
+		"traffic_refs":     map[string]any{"type": "array", "description": "optional; for HTTP/HTTPS vulns, first search and verify each request/response actually supports the vuln conclusion, then fill real IDs in reproduction order. for TCP etc. non-HTTP vulns, uncollected or no exact records found, omit or pass [], doesn't block reporting; explain reason in evidence and provide other verifiable evidence. don't guess IDs, infer by domain/time, or re-probe just tofill in packets. roles: baseline normal baseline / proof vuln proof / verification supplementary verification / supporting auxiliary evidence.", "items": obj(map[string]any{"traffic_id": str("real traffic ID from traffic_search"), "role": map[string]any{"type": "string", "enum": []string{"baseline", "proof", "verification", "supporting"}}, "note": str("how this traffic supports the vuln conclusion")}, "traffic_id")},
 	}, "vulnclass", "severity", "summary"), func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 		var a struct {
 			VulnClass, Name, Severity, Summary, Evidence string
@@ -1470,8 +1470,8 @@ func (t *ToolSet) addOneHint(it hintItem) (int64, error) {
 	if len(refs) > 0 {
 		payload["traffic_refs"] = refs
 	}
-// wake planner not per-item here — addHint triggers once after whole batch written (with hint text),
-// avoids one add_hint multi-hint spamming planner trigger lines.
+	// wake planner not per-item here — addHint triggers once after whole batch written (with hint text),
+	// avoids one add_hint multi-hint spamming planner trigger lines.
 	return t.ts.AddNode(db.KindHint, payload, 0, "active", "human", anchors)
 }
 

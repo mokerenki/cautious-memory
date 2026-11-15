@@ -1,7 +1,7 @@
 name: deploy-demo
 
 on:
-  # 网页手工发布的正式版；Actions 自己发布的版本由 workflow_call 接入。
+  # A stable release published manually on the web; releases published by Actions are wired in through workflow_call.
   release:
     types: [published]
   workflow_call:
@@ -18,14 +18,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "已发布的最新正式版标签；留空自动选择最新正式版"
+        description: "Tag of the latest published stable release; leave blank to select the latest automatically"
         required: false
         type: string
 
 permissions:
   contents: read
 
-# 不中断正在上传的部署；旧版本在构建前和上线前都会检查是否仍为 latest。
+# Do not interrupt an upload already in progress; the selected release is checked before build and deployment to ensure it is still latest.
 concurrency:
   group: demo-production
   cancel-in-progress: false
@@ -53,20 +53,20 @@ jobs:
             const { data: latest } = await github.rest.repos.getLatestRelease({ owner, repo });
             const tag = process.env.REQUESTED_TAG || latest.tag_name;
             if (!/^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(tag)) {
-              throw new Error('只允许 v主版本.次版本.修订号 的正式标签');
+              throw new Error('Only stable tags in vMAJOR.MINOR.PATCH format are allowed');
             }
             const { data: release } = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-            if (release.draft || release.prerelease) throw new Error('草稿和预发布版本不可部署');
+            if (release.draft || release.prerelease) throw new Error('Draft and prerelease versions cannot be deployed');
             const version = tag.slice(1);
             const assets = new Set(release.assets.map(asset => asset.name));
             for (const platform of ['linux-amd64', 'linux-arm64', 'darwin-amd64', 'darwin-arm64', 'windows-amd64']) {
-              if (!assets.has(`artex-${version}-${platform}.zip`)) throw new Error(`缺少 ${platform} 发布包`);
+              if (!assets.has(`artex-${version}-${platform}.zip`)) throw new Error(`Missing release archive for ${platform}`);
             }
-            if (!assets.has('SHA256SUMS')) throw new Error('缺少发布校验文件');
+            if (!assets.has('SHA256SUMS')) throw new Error('Missing release checksum file');
             core.setOutput('tag', tag);
             core.setOutput('current', String(tag === latest.tag_name));
             if (tag !== latest.tag_name) {
-              core.notice(`${tag} 已被 ${latest.tag_name} 替代，跳过以免覆盖新版 Demo`);
+              core.notice(`${tag} has been superseded by ${latest.tag_name}; skipping to avoid overwriting the newer Demo`);
             }
 
       - name: Check deployment configuration
@@ -76,12 +76,12 @@ jobs:
         run: |
           for name in VERCEL_ORG_ID VERCEL_PROJECT_ID VERCEL_TOKEN DEMO_URL; do
             if [ -z "${!name}" ]; then
-              echo "::error::请先在仓库 Actions 中配置 $name，参见 README 的在线 Demo 部署说明"
+              echo "::error::Configure $name in the repository Actions settings first; see the README for online Demo deployment instructions"
               exit 1
             fi
           done
           if [[ ! "$DEMO_URL" =~ ^https://[a-zA-Z0-9][a-zA-Z0-9.-]+/?$ ]]; then
-            echo "::error::DEMO_URL 必须是 HTTPS 生产域名，不能含路径、查询参数或凭据"
+            echo "::error::DEMO_URL must be an HTTPS production domain without a path, query parameters, or credentials"
             exit 1
           fi
 
@@ -99,14 +99,14 @@ jobs:
         run: |
           commit=$(git rev-parse HEAD)
           if [ -n "$EXPECTED_COMMIT" ] && [ "$commit" != "$EXPECTED_COMMIT" ]; then
-            echo "::error::发布标签已移动，拒绝部署与 Release 构建不同的提交"
+            echo "::error::The release tag has moved; refusing to deploy a commit different from the one used to build the Release"
             exit 1
           fi
           mkdir -p web/public
           jq -n --arg tag "$RELEASE_TAG" --arg commit "$commit" \
             --arg release "https://github.com/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG" \
             '{tag: $tag, commit: $commit, release: $release, mock: true}' > web/public/demo-version.json
-          # 兼容首次部署尚未含此配置的历史正式版；CLI 部署不受此开关影响。
+          # Support historical stable releases that do not yet include this configuration on first deployment; CLI deployments are unaffected by this setting.
           jq -n '{"$schema":"https://openapi.vercel.sh/vercel.json", framework:"nextjs", installCommand:"npm ci", buildCommand:"npm run build", git:{deploymentEnabled:false}}' > web/vercel.json
 
       - uses: actions/setup-node@v4
@@ -125,7 +125,7 @@ jobs:
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         run: |
-          # CLI 以 web/ 为项目根；设置与 runner 一致的 Node 主版本。
+          # The CLI uses web/ as the project root; set the same Node major version as the runner.
           curl --fail-with-body --silent --show-error --request PATCH \
             --header "Authorization: Bearer $VERCEL_TOKEN" --header 'Content-Type: application/json' \
             --data '{"framework":"nextjs","nodeVersion":"22.x","rootDirectory":null,"installCommand":"npm ci","buildCommand":"npm run build"}' \
@@ -137,8 +137,8 @@ jobs:
             "https://api.vercel.com/v10/projects/$VERCEL_PROJECT_ID/env?teamId=$VERCEL_ORG_ID&upsert=true" \
             --output /tmp/demo-env.json
           jq -e '(.failed // []) | length == 0' /tmp/demo-env.json
-          # 项目令牌无法调用 CLI alias 依赖的用户信息接口，直接配置项目域名。
-          # 将域名关联到项目后，--prod 会随每次发布自动更新该域名。
+          # The project token cannot call the user-information endpoint required by the CLI alias, so configure the project domain directly.
+          # Once the domain is linked to the project, --prod automatically updates it with each deployment.
           domain="${DEMO_URL#https://}"
           domain="${domain%/}"
           status=$(curl --silent --show-error --write-out '%{http_code}' \
@@ -183,7 +183,7 @@ jobs:
             const { data: latest } = await github.rest.repos.getLatestRelease(context.repo);
             const current = latest.tag_name === process.env.RELEASE_TAG;
             core.setOutput('current', String(current));
-            if (!current) core.notice('构建期间已有更新的正式版发布，保留线上版本，等待新版部署');
+            if (!current) core.notice('A newer stable release was published during the build; keeping the live version until the newer release is deployed');
 
       - name: Deploy the prebuilt demo to production
         if: steps.publish.outputs.current == 'true'
@@ -194,18 +194,18 @@ jobs:
         run: |
           url=$(vercel deploy --prebuilt --prod --yes --token="$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "### Demo 已部署" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 正式版本：${{ steps.release.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 固定网址：$DEMO_URL" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 部署地址：$url" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Demo deployed" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Stable release: ${{ steps.release.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Stable URL: $DEMO_URL" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Deployment URL: $url" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Verify production version metadata
         if: steps.publish.outputs.current == 'true'
         env:
           RELEASE_TAG: ${{ steps.release.outputs.tag }}
         run: |
-          # 检查公开的生产域名；Vercel 可单独保护部署专属的随机域名。
-          # HTTP 成功时也可能暂时读到旧版本，因此请求和内容校验必须一起重试。
+          # Check the public production domain; Vercel can separately protect random deployment-specific domains.
+          # An HTTP-success response may still serve the old version temporarily, so retry both the request and content validation together.
           expected_commit=$(git rev-parse HEAD)
           response=$(mktemp)
           trap 'rm -f "$response"' EXIT
@@ -223,16 +223,16 @@ jobs:
               -o "$response" && \
               jq -e --arg tag "$RELEASE_TAG" --arg commit "$expected_commit" \
                 '.tag == $tag and .commit == $commit and .mock == true' "$response" > /dev/null; then
-              echo "Demo 版本校验通过：$RELEASE_TAG ($expected_commit)"
+              echo "Demo version verified: $RELEASE_TAG ($expected_commit)"
               exit 0
             fi
-            echo "::notice::Demo 版本尚未就绪（第 $attempt/24 次），等待生产域名同步"
+            echo "::notice::Demo version is not ready yet (attempt $attempt/24); waiting for the production domain to sync"
             remaining=$((deadline - SECONDS))
             if [ "$attempt" -lt 24 ] && [ "$remaining" -gt 0 ]; then
               sleep "$((remaining < 5 ? remaining : 5))"
             fi
           done
-          echo "::error::Demo 版本校验失败，期望 $RELEASE_TAG ($expected_commit)，mock=true；最后一次响应如下"
+          echo "::error::Demo version verification failed; expected $RELEASE_TAG ($expected_commit), mock=true. Last response follows"
           if [ -f "$response" ]; then
             cat "$response"
           fi
