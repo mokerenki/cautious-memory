@@ -765,7 +765,7 @@ func (d *DB) CurrentPrompt(agentID int64) (string, error) {
 	return tmpl.String, err
 }
 
-// SeedPromptIfEmpty writes the code-default template as the agent's first prompt
+// SeedPromptIfEmpty writes the built-in default template as the agent's first prompt
 // version ONLY when it has none yet (current_prompt_id IS NULL). Mirrors
 // SeedTool's first-insert-only philosophy: a user's edited prompt is never
 // clobbered on restart. Idempotent — a no-op once any version exists.
@@ -777,14 +777,14 @@ func (d *DB) SeedPromptIfEmpty(agentID int64, tmpl string) error {
 	if cur.Valid {
 		return nil // already seeded or user-edited → leave it
 	}
-	_, err := d.SavePrompt(agentID, tmpl, "内置默认", "system")
+	_, err := d.SavePrompt(agentID, tmpl, "built-in default", "system")
 	return err
 }
 
 // ResetPromptToDefault appends the code-default template as a new version and
-// points current at it — the explicit "恢复为内置默认" action.
+// points current at it — the explicit "reset to built-in default" action.
 func (d *DB) ResetPromptToDefault(agentID int64, tmpl string) (int, error) {
-	return d.SavePrompt(agentID, tmpl, "恢复为内置默认", "system")
+	return d.SavePrompt(agentID, tmpl, "reset to built-in default", "system")
 }
 
 // SavePrompt appends a new version and points current_prompt_id at it.
