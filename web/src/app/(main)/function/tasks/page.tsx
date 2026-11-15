@@ -215,7 +215,7 @@ function appendUploads(desc: string, atts: ChatAttachment[]): string {
 }
 
 // POLL_MS is the task-list refresh interval. Task state moves on the server (planner /
-// worker), so the list has to be pulled; 10s is plenty for status / 进度 / token 变化.
+// worker), so the list has to be pulled; 10s is plenty for status / progress / token changes.
 const POLL_MS = 10_000;
 const MAX_SOURCE_TASKS = 8;
 
@@ -302,13 +302,13 @@ const STATUS_OPTIONS: { value: TaskStatus; label: string }[] = [
   { value: "timeout", label: "Timed out" },
 ];
 
-// Select 不接受空字符串 value,所以「无分类」在筛选器、新建表单和批量移动里
-// 统一用这个哨兵值,提交时再翻译成后端的 null。
+// Select does not accept an empty string as a value, so “No category” in filters, new-item forms, and bulk moves
+// uses this sentinel value consistently, then converts it to backend null on submission.
 const UNCATEGORIZED_VALUE = "uncategorized";
 
-// 可暂停 = 非终态且未暂停,与后端 applyTaskControlWithCause 的门控一致
-// (done/failed/timeout 为终态);paused 才可继续。行内按钮与批量控制共用此判断,
-// 两边不会出现一个可点、另一个不可点的分歧。
+// Can be paused = non-terminal and not paused, consistent with the backend applyTaskControlWithCause gate
+// (done/failed/timeout are terminal states); only paused tasks can be resumed. Row and bulk controls share this check,
+// so they cannot disagree about whether an action is available.
 const PAUSABLE_STATUSES = new Set<TaskStatus>(["created", "queued", "running"]);
 const ARCHIVABLE_STATUSES = new Set<TaskStatus>([
   "paused",
@@ -565,7 +565,7 @@ export default function TasksPage() {
     [ordered, page, pageSize],
   );
 
-  // 多选删除:选择跨翻页/筛选保留,只在任务真的消失(被删或后端不再返回)时收敛。
+  // Bulk delete: selections persist across pages/filters and are pruned only when a task actually disappears (deleted or no longer returned by the backend).
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(
     () => new Set(),
   );
@@ -689,14 +689,14 @@ export default function TasksPage() {
       setCategoryFilter("all");
   }, [categories, categoriesLoaded, categoryFilter]);
 
-  // 只在确有 running 任务时才每秒 tick——其余情况「运行时长」是静态值,空转的 tick 会白白
-  // 重渲染整张表。
+  // Tick every second only when there is a running task—the “runtime” is static otherwise, so ticking idly would just waste
+  // Re-render the entire table.
   const hasRunning = React.useMemo(
     () => tasks.some((t) => t.status === "running"),
     [tasks],
   );
 
-  // tick every second so running tasks' 运行时长 counts up live.
+  // Tick every second so running tasks' runtime counts up live.
   React.useEffect(() => {
     if (!hasRunning) return;
     setNowSec(Math.floor(Date.now() / 1000));
@@ -724,9 +724,9 @@ export default function TasksPage() {
     [load],
   );
 
-  // controlTask 是行内暂停/继续:批量走 controlTasksBatch,单行走单任务接口,省去
-  // 「先勾选再点批量」。清空 lastRef 让下一次轮询即使负载相同也照单接收,否则状态
-  // 回写会被去重挡掉、按钮看起来没反应。
+  // controlTask handles inline pause/resume: use controlTasksBatch for batch actions and the single-task endpoint for one task, avoiding
+  // “select first, then click batch.” Clear lastRef so the next poll is accepted even if the payload is identical; otherwise state
+  // updates will be deduplicated, making the button appear unresponsive.
   const controlTask = React.useCallback(
     async (id: string, action: "pause" | "resume") => {
       try {
@@ -741,7 +741,7 @@ export default function TasksPage() {
           `${action === "pause" ? "Pause" : "Resume"} failed: ${(e as Error).message}`,
         );
       } finally {
-        // 无论成败都刷新:失败多半是状态已变化,重新拉取才能让按钮回到正确形态。
+        // Refresh whether the request succeeds or fails: failures usually mean the state has changed, and refetching restores the button to the correct state.
         lastRef.current = "";
         load();
       }
@@ -838,8 +838,8 @@ export default function TasksPage() {
     [load],
   );
 
-  // deleteTasks 逐个删除所选任务:后端没有批量接口,且单次删除会连带清理资产/流量/文件,
-  // 串行执行以免一次性打爆后端;成功的从选中集移除,失败的保留以便重试。
+  // deleteTasks deletes selected tasks one by one: the backend has no batch endpoint, and deleting a task also cleans up assets/traffic/files,
+  // so execute serially to avoid overwhelming the backend; remove successful tasks from the selection and keep failed ones so they can be retried.
   const deleteTasks = React.useCallback(
     async (
       ids: string[],
@@ -995,7 +995,7 @@ export default function TasksPage() {
     [batchControlling, load],
   );
 
-  // 后端把整批分类写入放在一个事务里，所以失败项只可能是勾选后又被删掉的任务。
+  // The backend writes the entire batch of categories in one transaction, so an item can fail only if its task was deleted after selection.
   const moveSelectedTasksCategory = React.useCallback(
     async (categoryID?: number) => {
       const ids = [...selectedIds];
@@ -1303,8 +1303,8 @@ export default function TasksPage() {
                     <TaskRow
                       key={task.id}
                       task={task}
-                      // running 任务才吃 nowSec;其余行传 0 —— props 不变,memo 就能拦下每秒 tick
-                      // 带来的整表重渲染,只让在跑的那几行走时长。
+                      // Only running tasks use nowSec; pass 0 for other rows — unchanged props let memo block the per-second tick
+                      // from re-rendering the entire table, so only running rows update their runtime.
                       nowSec={task.status === "running" ? nowSec : 0}
                       onDelete={deleteTask}
                       onControl={controlTask}
@@ -2062,15 +2062,15 @@ function TaskGlobalAssetsAction({
   );
 }
 
-// 三态图标分开写而非嵌套三元:仓库 Biome 基线禁 noNestedTernary。
+// Write the three state icons separately instead of using nested ternaries: the repository's Biome baseline disables noNestedTernary.
 function taskControlIcon(pending: boolean, action: "pause" | "resume" | null) {
   if (pending) return <Loader2Icon className="animate-spin" />;
   if (action === "resume") return <PlayIcon />;
   return <PauseIcon />;
 }
 
-// TaskControlButton 是行内的暂停/继续开关。终态任务渲染为 disabled 而不是隐藏,
-// 这样各行操作列宽度一致,按钮位置不会随状态跳动。
+// TaskControlButton is the inline pause/resume toggle. Render terminal tasks as disabled rather than hiding them,
+// so the action column has a consistent width across rows and button positions do not shift with state.
 function TaskControlButton({
   task,
   onControl,
@@ -3189,8 +3189,8 @@ function BulkDeleteTasksDialog({
   );
 }
 
-// CreateTaskSheet is the 新建任务 drawer. Its form state lives HERE, not in TasksPage: with
-// 描述/目标 held by the page component every keystroke re-rendered the whole task table
+// CreateTaskSheet is the create-task drawer. Its form state lives HERE, not in TasksPage: with
+// description/target held by the page component, every keystroke re-rendered the whole task table
 // behind the drawer (plus its sticky column and 20 AlertDialog trees), which showed up as
 // input lag. Now typing only re-renders the drawer.
 function SourceTaskPicker({
@@ -3315,14 +3315,14 @@ function CategoryPicker({
 
   const trimmed = inputValue.trim();
   const lower = trimmed.toLowerCase();
-  // 与 base-ui 默认子串过滤保持一致，用来判断「有没有相关分类」。
+  // Match base-ui's default substring filtering to determine whether there are “related categories.”
   const matchCount = trimmed
     ? allCategories.filter((c) => c.name.toLowerCase().includes(lower)).length
     : allCategories.length;
 
   const createAndSelect = async () => {
     if (!trimmed || creating) return;
-    // 精确同名已存在则直接选中，不重复创建。
+    // If an exact name match already exists, select it directly instead of creating a duplicate.
     const existing = allCategories.find((c) => c.name.toLowerCase() === lower);
     if (existing) {
       onValueChange(existing.id);
@@ -3351,7 +3351,7 @@ function CategoryPicker({
       multiple
       value={selectedIDs}
       onValueChange={(next: string[]) => {
-        // 单选：取最新选中的一个；移除 chip（清空）则回到未分类。
+        // Single-select: use the most recently selected item; removing the chip (clearing it) returns to uncategorized.
         const last = next[next.length - 1];
         onValueChange(last ? Number(last) : undefined);
         setInputValue("");
@@ -3373,7 +3373,7 @@ function CategoryPicker({
             selectedIDs.length ? "" : "Search categories, or type a new name and press Enter to create"
           }
           onKeyDown={(e) => {
-            // 完全无匹配时回车 = 创建；有匹配项时保留 base-ui 的「回车选中高亮项」。
+            // When there are no matches, Enter = create; when there are matches, preserve base-ui's “press Enter to select the highlighted item” behavior.
             if (e.key === "Enter" && matchCount === 0 && trimmed) {
               e.preventDefault();
               void createAndSelect();
@@ -4045,15 +4045,15 @@ function CreateTaskSheet({
   const [companyIDs, setCompanyIDs] = React.useState<number[]>([]);
   const [llmProfileIDs, setLLMProfileIDs] = React.useState<string[]>([]);
   const [creating, setCreating] = React.useState(false);
-  const [timeoutMin, setTimeoutMin] = React.useState(""); // 任务级超时(分钟);空/0 = 不限时
-  const [heartbeatMin, setHeartbeatMin] = React.useState("10"); // planner 心跳(分钟);默认10,下限10(与后端一致)
-  const [seedFirstIntent, setSeedFirstIntent] = React.useState(false); // 创建时下发种子意图,worker 免等首轮 planner 直接开跑;默认关闭,走标准先规划再执行
+  const [timeoutMin, setTimeoutMin] = React.useState(""); // Task-level timeout (minutes); empty/0 = no limit
+  const [heartbeatMin, setHeartbeatMin] = React.useState("10"); // Planner heartbeat (minutes); default 10, minimum 10 (matches the backend)
+  const [seedFirstIntent, setSeedFirstIntent] = React.useState(false); // Send seed intent on creation so the worker can start immediately without waiting for the first planner cycle; disabled by default, using the standard plan-then-execute flow
   const [shareGlobalAssets, setShareGlobalAssets] = React.useState(false);
-  const [coverageEnabled, setCoverageEnabled] = React.useState(true); // 资产覆盖度功能;默认开。关闭=不计算/展示覆盖度、不累积范围、隐藏范围类工具(company 关联不受影响)
-  const [workerCount, setWorkerCount] = React.useState(""); // 本任务 Worker 数;空/0=用全局默认
+  const [coverageEnabled, setCoverageEnabled] = React.useState(true); // Asset coverage feature; enabled by default. Disabled = do not calculate/display coverage or accumulate scope, and hide scope-related tools (company association is unaffected)
+  const [workerCount, setWorkerCount] = React.useState(""); // Number of workers for this task; empty/0 = use the global default
   const [interceptRules, setInterceptRules] = React.useState<
     AssetInterceptRuleInput[]
-  >([]); // 任务级资产拦截规则(仅本任务生效,不进全局表)
+  >([]); // Task-level asset block rules (apply only to this task; not added to the global table)
   const [scheduleEnabled, setScheduleEnabled] = React.useState(false);
   const { t } = useTranslation();
   const [schedule, setSchedule] = React.useState<ScheduleInput>({
@@ -4067,7 +4067,7 @@ function CreateTaskSheet({
     timezone_mode: "beijing",
     start_immediately: false,
   });
-  // 方式1 文件上传:建任务前把文件暂存到 drafts/<draftId>/uploads/,拿回绝对路径追加进描述。
+  // Method 1, file upload: stage the file in drafts/<draftId>/uploads/ before creating the task, then append the returned absolute path to the description.
   const [uploading, setUploading] = React.useState(false);
   const [uploadCount, setUploadCount] = React.useState(0);
   const draftIdRef = React.useRef<string>("");
@@ -4090,7 +4090,7 @@ function CreateTaskSheet({
   // absolute paths to the description; the task's agents open them by path via Read/Bash.
   async function pickFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
-    // crypto.randomUUID 仅在安全上下文可用(https/localhost);经 IP+http 访问时降级。
+    // crypto.randomUUID is available only in secure contexts (https/localhost); fall back when accessed over IP+http.
     if (!draftIdRef.current) {
       draftIdRef.current =
         globalThis.crypto?.randomUUID?.() ??
@@ -4131,7 +4131,7 @@ function CreateTaskSheet({
     try {
       const timeoutSec = Math.max(0, Math.floor(Number(timeoutMin) || 0)) * 60;
       const heartbeatSec =
-        Math.max(10, Math.floor(Number(heartbeatMin) || 10)) * 60; // 下限 10min，与后端归一一致
+        Math.max(10, Math.floor(Number(heartbeatMin) || 10)) * 60; // Minimum 10 min, consistent with backend normalization
       await api.createTask({
         name: name.trim(),
         remark: remark.trim(),
@@ -4199,8 +4199,8 @@ function CreateTaskSheet({
           <PlusIcon /> {t("tasks.create.new_task")}
         </Button>
       </SheetTrigger>
-      {/* 45vw 宽的右侧抽屉:整屏高度可滚动,长表单不再受弹窗高度限制。窄屏退化为全宽。
-            内容为 flex 列:头/脚固定,中间字段区 flex-1 独立滚动。 */}
+      {/* 45vw-wide right drawer: full-screen height and scrollable, so long forms are no longer limited by modal height. Falls back to full width on narrow screens.
+            Content is a flex column: header/footer fixed, middle fields area flex-1 and independently scrollable. */}
       <SheetContent
         ref={sheetContentRef}
         side="right"
@@ -4419,7 +4419,7 @@ function CreateTaskSheet({
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
-              {/* 上传文件(可多选):暂存到 drafts/,把绝对路径追加进上方描述,worker 据此 Read/Bash 打开。 */}
+              {/* Upload files (multiple selection supported): stage them in drafts/, then append their absolute paths to the description above. The worker uses Read/Bash to open them. */}
               <div className="flex flex-wrap items-center gap-2">
                 <input
                   ref={fileInputRef}
@@ -4522,7 +4522,7 @@ function CreateTaskSheet({
               </FieldDescription>
             </Field>
 
-            {/* 高级参数默认折叠:超时/心跳/首个意图,展开才占空间,常用路径保持清爽。 */}
+            {/* Advanced parameters are collapsed by default: timeout/heartbeat/first intent only take up space when expanded, keeping the common path uncluttered. */}
             <Collapsible>
               <CollapsibleTrigger className="group flex w-full items-center gap-2 border-t pt-4 text-sm font-medium">
                 <ChevronRightIcon className="text-muted-foreground size-4 transition-transform group-data-[state=open]:rotate-90" />

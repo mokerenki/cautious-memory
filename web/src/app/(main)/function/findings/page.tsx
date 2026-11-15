@@ -71,14 +71,14 @@ import {
 
 const FINDING_LIST_PREFERENCE_KEY = "artex_finding_list_preferences";
 
-// 列表视图:flat = 跨任务平铺大表(默认);grouped = 按任务分组折叠;
-// asset = 左侧资产树 + 右侧该子树下的发现。
+// List view: flat = large cross-task table (default); grouped = collapsible groups by task;
+// asset = asset tree on the left + findings under the selected subtree on the right.
 type FindingView = "cases" | "flat" | "grouped" | "asset";
 
 const FINDING_VIEWS: FindingView[] = ["cases", "flat", "grouped", "asset"];
 
-// 资产树的一次性快照。与另外两个视图不同,资产视图不轮询:进入视图、改筛选、
-// 或本页改动了发现之后才重新查询。
+// One-time snapshot of the asset tree. Unlike the other two views, the asset view does not poll: it queries again only when entering the view, changing filters,
+// or modifying a finding on this page.
 interface AssetTreeState {
   nodes: FindingAssetNode[];
   findingTotal: number;
@@ -97,7 +97,7 @@ const EMPTY_ASSET_TREE: AssetTreeState = {
   loading: false,
 };
 
-// 分组视图里每个已展开任务组自带一份分页状态,彼此独立。
+// In grouped view, each expanded task group has its own pagination state, independent of the others.
 interface GroupFindingsState {
   caseRows: FindingCaseListRow[];
   items: Finding[];
@@ -108,7 +108,7 @@ interface GroupFindingsState {
   loading: boolean;
 }
 
-// 平铺视图的页码单独放 state(而非塞进快照),筛选一变就能连带重置并触发重新加载。
+// The flat view's page number is stored separately in state (rather than in the snapshot), so a filter change can reset it and trigger a reload.
 interface FlatFindingsState {
   caseRows: FindingCaseListRow[];
   items: Finding[];
@@ -182,7 +182,7 @@ export default function FindingsPage() {
   const activeFilterFingerprint = React.useRef(filterFingerprint);
   activeFilterFingerprint.current = filterFingerprint;
 
-  // 一个轻量请求覆盖所有行/视图，避免逐行拉取完整复测历史；等待上一轮完成再轮询。
+  // One lightweight request covers all rows/views, avoiding fetching full retest history row by row; wait for the previous request to finish before polling again.
   React.useEffect(() => {
     let disposed = false;
     let failed = false;
@@ -250,7 +250,7 @@ export default function FindingsPage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  // setFindings 同时改写两个视图缓存里的同一条发现,切换视图不会看到过期状态。
+  // setFindings updates the same finding in both view caches, so switching views won't show stale state.
   const setFindings = React.useCallback((update: (current: Finding[]) => Finding[]) => {
     function applyUpdate<T extends { items: Finding[]; caseRows: FindingCaseListRow[] }>(current: T): T {
       const items = update(current.items);
@@ -272,9 +272,9 @@ export default function FindingsPage() {
     });
   }, []);
 
-  // 勾选导出:按 finding_id(独立表 id)记选中项,跨页保留。
+  // Selection for export: track selected items by finding_id (the standalone table id), preserving selection across pages.
   const [selectedIds, setSelectedIds] = React.useState<Set<string>>(() => new Set());
-  // 导出弹窗状态:范围(当前筛选/全部/选中) × 格式(md 单文件/md 分文件 zip/csv/json)。
+  // Export modal state: scope (current filters/all/selected) × format (single-file md/multi-file md zip/csv/json).
   const [exportOpen, setExportOpen] = React.useState(false);
   const [exportScope, setExportScope] = React.useState<"filtered" | "all" | "selected">("filtered");
   const [exportFormat, setExportFormat] = React.useState<"md-single" | "md-zip" | "csv" | "json">("md-single");
@@ -302,7 +302,7 @@ export default function FindingsPage() {
     });
   }, []);
 
-  // 打开导出弹窗时,若有勾选项则默认范围切到「选中」,否则「当前筛选」。
+  // When opening the export modal, default the scope to “selected” if any items are selected; otherwise, use “current filters”.
   function openExport() {
     setExportScope(selectedIds.size > 0 ? "selected" : "filtered");
     setExportOpen(true);
@@ -349,10 +349,10 @@ export default function FindingsPage() {
   groupFindingsRef.current = groupFindings;
   visibleGroupKeysRef.current = new Set(groups.map(findingGroupKey));
 
-  // 资产视图右侧列表 = 平铺列表 + 选中子树的筛选,所以两个视图共用一份列表状态。
+  // The list on the right in asset view = flat list + filter by the selected subtree, so both views share the same list state.
   const activeAssetScope = view === "asset" ? assetScope : null;
 
-  // loadFlat 拉取平铺视图的当前页;task 筛选交给后端,与分组视图共用同一批筛选条件。
+  // loadFlat fetches the current page in flat view; task filtering is handled by the backend, and uses the same filters as grouped view.
   const loadFlat = React.useCallback(async () => {
     const requestFilter = filterFingerprint;
     if (activeFilterFingerprint.current !== requestFilter) return;
@@ -401,8 +401,8 @@ export default function FindingsPage() {
     sort,
   ]);
 
-  // loadAssetTree 取整棵资产树。树不随选中节点变化(否则选一下就塌成一条链),
-  // 所以这里不带 assetScope。
+  // loadAssetTree fetches the entire asset tree. The tree does not change when a node is selected (otherwise, selecting one would collapse it to a single chain),
+  // so assetScope is not included here.
   const loadAssetTree = React.useCallback(async () => {
     const requestFilter = filterFingerprint;
     if (activeFilterFingerprint.current !== requestFilter) return;
@@ -541,17 +541,17 @@ export default function FindingsPage() {
     [expandedGroups, groupFindings, loadGroup],
   );
 
-  // 行内改动后刷新当前视图:平铺视图重拉当前页,分组视图刷组头 + 该发现所在的组。
+  // After an inline change, refresh the current view: reload the current page in flat view; in grouped view, refresh the group headers and the group containing that finding.
   const refreshAfterMutation = React.useCallback(
     (finding: Finding, removed = false) => {
       if (view === "asset") {
-        // 资产视图不轮询,所以改完要顺带把树的计数也重新算一次。
+        // The asset view does not poll, so after a change, recalculate the tree counts as well.
         void loadFlat();
         void loadAssetTree();
         return;
       }
       if (view === "flat") {
-        // 删空最后一页时,页码由越界修正 effect 回退并连带重新加载。
+        // When deleting the last item on the last page, the out-of-range correction effect moves back a page and triggers a reload.
         void loadFlat();
         return;
       }
@@ -576,31 +576,31 @@ export default function FindingsPage() {
     setGroupFindings({});
     setFlatPage(1);
     setFlat(EMPTY_FLAT_STATE);
-    // 筛选变了树也会变,原先选中的节点可能已经不在树里,退回「全部资产」。
+    // The tree also changes when filters change, so the previously selected node may no longer be in it; fall back to “all assets”.
     setAssetScope(null);
     setAssetTree(EMPTY_ASSET_TREE);
   }, [filterFingerprint]);
 
-  // 换资产节点等于换了一份结果集,回到第一页。
+  // Changing the asset node is equivalent to changing the result set, so return to the first page.
   React.useEffect(() => {
     void assetScope;
     setFlatPage(1);
   }, [assetScope]);
 
-  // 资产树只在进入视图 / 筛选变化时查一次(以及本页改动发现后由
-  // refreshAfterMutation 主动重拉),不做轮询。
+  // The asset tree is queried only when entering the view or when filters change (and after modifying a finding on this page, via
+  // refreshAfterMutation to explicitly reload); it does not poll.
   React.useEffect(() => {
     if (!preferencesHydrated || view !== "asset") return;
-    void activeRetestFingerprint; // 复测结束可能改变状态筛选下的资产计数。
+    void activeRetestFingerprint; //The asset count under the status filter may change when a retest finishes.
     void loadAssetTree();
   }, [activeRetestFingerprint, loadAssetTree, preferencesHydrated, view]);
 
-  // 只轮询当前视图:平铺视图刷当前页,分组视图刷组头与每个已展开的组(其分页彼此独立)。
-  // 资产视图只查一次(见下面的 return),它的左树是导航结构,没必要每 5 秒重算。
-  // 等偏好水合后再发首个请求,否则会先按默认视图/筛选白拉一次。
+  // Poll only the current view: refresh the current page in tile view, and the group headers plus each expanded group in grouped view (their pagination is independent).
+  // The asset view is queried only once (see the return below); its left tree is for navigation, so there is no need to recalculate it every 5 seconds.
+  // Wait for preferences to hydrate before sending the first request; otherwise, we make a wasted request using the default view/filter.
   React.useEffect(() => {
     if (!preferencesHydrated) return;
-    void activeRetestFingerprint; // 包括不定时轮询的资产视图，也在复测结束后刷新处置状态。
+    void activeRetestFingerprint; //This also refreshes the disposition status after a retest finishes in the asset view, which does not use timed polling.
     const refresh = () => {
       if (view === "flat" || view === "asset") {
         if (!flatStateRef.current.loading) void loadFlat();
@@ -697,16 +697,16 @@ export default function FindingsPage() {
     [refreshAfterMutation, setFindings, status],
   );
 
-  // 行内展开的详细报告缓存按全局稳定行键存。report 是大段 Markdown,列表查询不带它,
-  // 故展开时才按 finding_id 单独拉取一次;done 且文本为空 = 该漏洞暂无报告。
+  // Cache inline expanded detailed reports by globally stable row key. report is a large Markdown string and is not included in list queries,
+  // so fetch it once by finding_id only when the row is expanded; done with empty text means this finding has no report yet.
   const [reports, setReports] = React.useState<Record<string, FindingReport>>({});
 
-  // 行内可编辑缓冲:当前展开行的名称/类别/严重等级,展开时用该行数据初始化,收起清空。
-  // 单行展开,故一份缓冲即可。
+  // Inline edit buffer for the currently expanded row's name/category/severity; initialize it from the row data when expanded and clear it when collapsed.
+  // Only one row can be expanded, so a single buffer is sufficient.
   const [edit, setEdit] = React.useState<FindingEdit | null>(null);
   const [saving, setSaving] = React.useState(false);
 
-  // toggle 展开/收起一行;新展开时初始化编辑缓冲,并(尚未取过时)按 finding_id 拉一次报告缓存。
+  // Toggle a row open/closed; when opening a new row, initialize the edit buffer and fetch the report cache once by finding_id if not already fetched.
   const toggleRow = React.useCallback(
     (f: Finding) => {
       const key = findingRowKey(f);
@@ -728,7 +728,7 @@ export default function FindingsPage() {
     [expanded, reports],
   );
 
-  // saveEdit 保存当前展开行的名称/类别/严重等级,回写本地列表并刷新统计(类别下拉/严重计数可能变)。
+  // saveEdit saves the name/category/severity of the currently expanded row, updates the local list, and refreshes statistics (the category dropdown/severity counts may change).
   const saveEdit = React.useCallback(
     async (f: Finding) => {
       if (!f.finding_id || !edit) return;
@@ -763,7 +763,7 @@ export default function FindingsPage() {
     [edit, refreshAfterMutation, setFindings],
   );
 
-  // deleteFinding 删除一个漏洞(需二次确认):删成功后从列表移除、收起行、刷新统计。
+  // deleteFinding deletes a finding (after confirmation): on success, remove it from the list, collapse the row, and refresh statistics.
   const deleteFinding = React.useCallback(
     async (f: Finding) => {
       if (!f.finding_id) return;
@@ -828,8 +828,8 @@ export default function FindingsPage() {
     { label: "Low", value: stats.distinct?.low ?? stats.low, tone: "text-slate-500", icon: InfoIcon },
   ];
 
-  // 导出弹窗里「当前筛选」的条数:两个视图的筛选一致,只是统计口径来源不同。
-  // 平铺与资产视图共用 flat 列表状态,分组视图的口径来自组接口的 finding_total。
+  // Count for “Current filters” in the export dialog: filters are the same in both views; only the source of the count differs.
+  // Tile and asset views share the flat list state; the count in grouped view comes from finding_total in the group API.
   const [caseTotal, setCaseTotal] = React.useState(0);
   const filteredTotal = view === "cases" ? caseTotal : view === "grouped" ? total : flat.total;
   const assetPath = React.useMemo(
@@ -855,7 +855,7 @@ export default function FindingsPage() {
     onDelete: deleteFinding,
   };
 
-  // 平铺视图与资产视图右侧是同一张表 + 同一份分页,只是筛选条件不同。
+  // The right side of tile and asset views uses the same table and pagination; only the filters differ.
   const flatListCard = (
     <Card className="gap-0 py-0">
       <CardContent className="px-0">

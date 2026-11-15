@@ -75,19 +75,19 @@ export default function SystemSettingsPage() {
   const [proxyReconnectMax, setProxyReconnectMax] = React.useState("5");
   const [proxyReconnectInterval, setProxyReconnectInterval] = React.useState("30");
   const [savingEgressVisibility, setSavingEgressVisibility] = React.useState(false);
-  // 出口探测：测一次真实请求，拿到"直连 / 经全局代理"两条出口 IP。
+  // Egress probe: send one real request to get the egress IPs for “direct / via global proxy.”
   const [egressTesting, setEgressTesting] = React.useState(false);
   const [egressReport, setEgressReport] = React.useState<EgressReport | null>(null);
-  // 请求序号：改了输入/保存/切捕获之后，在途请求回来时序号已经变了，直接丢弃。
-  // 不这么做会出现"结果刚被清空，又被上一次的响应填回来"。
+  // Request sequence number: after inputs change, settings are saved, or capture is toggled, the sequence number will have changed when an in-flight request returns, so discard it directly.
+  // Otherwise, “results can be cleared, then repopulated by the previous response.”
   const egressSeq = React.useRef(0);
-  // 清空结果并作废在途请求。
+  // Clear results and invalidate in-flight requests.
   const clearEgressReport = () => {
     egressSeq.current += 1;
     setEgressReport(null);
     setEgressTesting(false);
   };
-  // 探测地址：留空用公网回显；隔离网填内网回显服务。
+  // Probe URL: leave blank to use a public IP echo service; for isolated networks, enter an internal IP echo service.
   const [egressProbeUrl, setEgressProbeUrl] = React.useState("");
   const [savingEgressProbeUrl, setSavingEgressProbeUrl] = React.useState(false);
   const [testing, setTesting] = React.useState(false);
@@ -100,12 +100,12 @@ export default function SystemSettingsPage() {
   const [savingWorkers, setSavingWorkers] = React.useState(false);
   const [workerPools, setWorkerPools] = React.useState<WorkerPool[]>([]);
   const [llmProfiles, setLlmProfiles] = React.useState<LLMProfile[]>([]);
-  // 操作约束注入范围(默认都开)。
+  // Inject operation constraints (all enabled by default).
   const [injectPlanner, setInjectPlanner] = React.useState(true);
   const [injectWorker, setInjectWorker] = React.useState(true);
-  // 实验功能:noa 上下文压缩(默认关)。
+  // Experimental feature: noa context compression (off by default).
   const [noaCompaction, setNoaCompaction] = React.useState(false);
-  // 纯前端偏好：不走 /api/settings，直接读写 localStorage。
+  // Frontend-only preference: bypass /api/settings and read/write localStorage directly.
   const sendMode = useChatSendMode();
   const {
     enabled: showEgressIp,
@@ -266,7 +266,7 @@ export default function SystemSettingsPage() {
       .setSettings({ traffic_capture: v })
       .then((s) => {
         apply(s);
-        // 捕获开关一变，② 的链路就变了，旧结果不能留。
+        // When the capture switch changes, the route for ② changes, so old results must not be kept.
         clearEgressReport();
       })
       .catch(() => setTrafficCapture(!v)) // revert on failure
@@ -476,7 +476,7 @@ export default function SystemSettingsPage() {
       .setSettings({ global_proxy: globalProxyInput.trim() })
       .then((s) => {
         apply(s);
-        // 保存后链路变了，旧结果（尤其"尚未保存"）立刻失效。
+        // After saving, the route changes, so old results (especially “unsaved” ones) become invalid immediately.
         clearEgressReport();
         if (showEgressIp) void probeEgress().catch(() => undefined);
         toast.success(globalProxyInput.trim() ? "Global proxy saved." : "Global proxy cleared; using a direct connection.");
@@ -585,7 +585,7 @@ export default function SystemSettingsPage() {
     }
   };
 
-  // 测表单里当前的值，不要求先保存；后端返回直连 / 经代理两条。
+  // Test the current form values without requiring a save first; the backend returns both direct and proxied results.
   const testEgress = () => {
     const seq = ++egressSeq.current;
     setEgressTesting(true);
@@ -597,10 +597,10 @@ export default function SystemSettingsPage() {
         probe_url: egressProbeUrl.trim(),
       })
       .then((rep) => {
-        if (seq !== egressSeq.current) return; // 期间改过配置，这份结果已经过期
+        if (seq !== egressSeq.current) return; //Configuration changed during this period; this result is now stale
         setEgressReport(rep);
         if (rep.ok) {
-          // 先取 ②：直连那行永远成功，先命中它会把直连 IP 当成出口报出去。
+          // Check ② first: the direct row always succeeds, so matching it first would report the direct IP as the egress IP.
           const hit =
             rep.checks.find((c) => c.key === "global" && !c.skipped && c.result.ok) ??
             rep.checks.find((c) => !c.skipped && c.result.ok);
@@ -890,14 +890,14 @@ export default function SystemSettingsPage() {
                       disabled={!loaded || savingGlobalProxy}
                       onChange={(e) => {
                         setGlobalProxyInput(e.target.value);
-                        // 旧结果对应的是上一次的地址，留着会让人以为新值已经测过。
+                        // The old result corresponds to the previous URL; keeping it would make people think the new value has already been tested.
                         clearEgressReport();
                       }}
                     />
                     <Button type="button" onClick={saveGlobalProxy} disabled={!loaded || savingGlobalProxy}>
                       Save
                     </Button>
-                    {/* 测表单里当前的值，不要求先保存。 */}
+                    {/* Test the current form values; saving first is not required. */}
                     <Button type="button" variant="outline" onClick={testEgress} disabled={!loaded || egressTesting}>
                       {egressTesting ? "Testing…" : "Test proxy"}
                     </Button>
@@ -961,7 +961,7 @@ export default function SystemSettingsPage() {
                     onCheckedChange={(checked) => void toggleEgressVisibility(checked)}
                   />
                 </div>
-                {/* 紧贴结果区：用户看两行时正好需要它。细节放文档。 */}
+                {/* Keep this next to the results: users need it while reviewing the two lines. Details are in the documentation. */}
                 <details className="text-xs">
                   <summary className="text-muted-foreground cursor-pointer select-none">About egress IP tests</summary>
                   <p className="text-muted-foreground mt-2 leading-relaxed">
@@ -969,7 +969,7 @@ export default function SystemSettingsPage() {
                     If a custom address is configured, only that service is used. Compare the direct and proxy IPs in the results to verify the proxy. You can test a changed address without saving it first.
                   </p>
                 </details>
-                {/* 内网里公网回显不可达，两行都会失败——不是代理坏了。 */}
+                {/* On an intranet, public echo services are unreachable, so both checks fail; this does not mean the proxy is broken. */}
                 <details className="text-xs">
                   <summary className="text-muted-foreground cursor-pointer select-none">
                     Custom IP probe service (optional)
@@ -1009,7 +1009,7 @@ export default function SystemSettingsPage() {
                 {egressReport && (
                   <div className="flex flex-col gap-1 text-xs">
                     {egressReport.checks.map((c) => {
-                      // 经 MITM 时 via 是 HTTP（MITM 自己是代理），标出来会让人以为填错了。
+                      // When using MITM, via is HTTP (MITM itself is a proxy); labeling it would make people think they entered it incorrectly.
                       const viaCapture = !!c.path && c.path !== egressReport.configured;
                       return (
                         <div key={c.key} className="flex flex-wrap items-center gap-x-2">
@@ -1053,7 +1053,7 @@ export default function SystemSettingsPage() {
                               )}
                             </span>
                           ) : (
-                            // 只显示第一个地址的原因：refused=代理没开，timeout=出不了网。
+                            // Reason for showing only the first address: refused = proxy is not running; timeout = cannot reach the internet.
                             <span className="text-destructive">
                               {c.result.probes?.find((p) => p.error)?.error ?? c.result.error}
                             </span>
