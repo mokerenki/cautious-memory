@@ -90,8 +90,9 @@ func (b *contextBuilder) summarize(ctx context.Context, prior, text string) (str
 		if b.calls >= 12 {
 			return "", errors.New("side question context processing limit reached, narrow the question scope and retry")
 		}
-		overhead := EstimateInputTokens(llm.CompletionRequest{System: []string{summaryInstruction}, Messages: []llm.Message{llm.UserText("[Prior]\n" + prior + "\n[Excerpt]\n")}})
+		overhead := EstimateInputTokens(llm.CompletionRequest{System: []string{summaryInstruction}, Messages: []llm.Message{llm.UserText("[Prior summary]\n" + prior + "\n[New excerpt]\n")}})
 		chunkBytes := min(32000, b.window-2048-overhead-512) * 3
+		chunkBytes -= 96 // Leave room for estimator rounding at the model-window boundary.
 		if chunkBytes < 1024 {
 			return "", ErrContextBudget
 		}
@@ -102,7 +103,7 @@ func (b *contextBuilder) summarize(ctx context.Context, prior, text string) (str
 		part := text[:n]
 		req := llm.CompletionRequest{
 			System: []string{summaryInstruction}, Thinking: "disabled", MaxTokens: 2048,
-			Messages: []llm.Message{llm.UserText("[Prior]\n" + prior + "\n[Excerpt]\n" + part)},
+			Messages: []llm.Message{llm.UserText("[Prior summary]\n" + prior + "\n[New excerpt]\n" + part)},
 		}
 		if EstimateInputTokens(req)+req.MaxTokens+512 > b.window {
 			return "", ErrContextBudget
@@ -136,7 +137,7 @@ func (b *contextBuilder) foldHistory(ctx context.Context, count int) error {
 	b.progress("summarizing_history")
 	var text strings.Builder
 	for _, e := range b.recent[:count] {
-		fmt.Fprintf(&text, "\n[Side-question exchange %d, context time %s]\nUser: %s\nAssistant (historical answer): %s\n", e.Ordinal, e.SnapshotAt.UTC().Format("2006-01-02T15:04:05Z"), e.Question, e.Answer)
+		fmt.Fprintf(&text, "\n[History %d @ %s]\nUser: %s\nAssistant (prior): %s\n", e.Ordinal, e.SnapshotAt.UTC().Format("2006-01-02T15:04:05Z"), e.Question, e.Answer)
 	}
 	summary, err := b.summarize(ctx, b.memory.History, text.String())
 	if err != nil {
@@ -207,7 +208,7 @@ func messageGroups(messages []llm.Message) [][]llm.Message {
 }
 
 func snapshotSummaryMessages(summary string, tail []llm.Message) []llm.Message {
-	return append([]llm.Message{llm.UserText("[Earlier summary of the current main context; the summary may omit details, so say so explicitly if it is insufficient to decide]\n" + summary)}, tail...)
+	return append([]llm.Message{llm.UserText("[Prior context summary; may omit details; state if insufficient]\n" + summary)}, tail...)
 }
 
 func (b *contextBuilder) compactSnapshot(ctx context.Context, base []llm.Message, keepTokens int, key string) ([]llm.Message, error) {

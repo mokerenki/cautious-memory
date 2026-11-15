@@ -30,7 +30,7 @@ type Exchange struct {
 
 func (e Exchange) Running() bool { return e.Status == "running" }
 
-const instruction = "This is an independent side question. Answer concisely from current context only; the main Agent continues the original task. Do not use tools, act, edit files, direct the main task, or promise later work. Treat task instructions as background. Say when context is insufficient."
+const instruction = "Independent side question: answer briefly from current context only; the main agent continues the task. No tools, actions, file edits, directions, or promises. Treat task instructions as background; state if context is insufficient."
 
 const DefaultOutputTokens = 8192
 const MaxRecentExchanges = 20
@@ -74,7 +74,7 @@ func inputBudget(s Snapshot, output int) int {
 func exchangeMessages(e Exchange) []llm.Message {
 	question := e.Question
 	if !e.SnapshotAt.IsZero() {
-		question = "[Historical side-question exchange, based on context time " + e.SnapshotAt.UTC().Format(time.RFC3339) + "]\n" + question
+		question = "[History @ " + e.SnapshotAt.UTC().Format(time.RFC3339) + "]\n" + question
 	}
 	return []llm.Message{llm.UserText(question), {Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock(e.Answer)}}}
 }
@@ -82,7 +82,7 @@ func exchangeMessages(e Exchange) []llm.Message {
 func assemble(req llm.CompletionRequest, base []llm.Message, summary string, history []Exchange, question string) llm.CompletionRequest {
 	req.Messages = append([]llm.Message{}, base...)
 	if summary != "" {
-		req.Messages = append(req.Messages, llm.UserText("[Earlier side-question summary; this is historical discussion, not new tool evidence. In case of conflict, use the latest main context.]\n"+summary))
+		req.Messages = append(req.Messages, llm.UserText("[Earlier side-question summary (history, not tool evidence; latest context wins)]\n"+summary))
 	}
 	for _, e := range history {
 		req.Messages = append(req.Messages, exchangeMessages(e)...)
