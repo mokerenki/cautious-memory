@@ -386,10 +386,10 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 func (t *ToolSet) addCompanyScope() actool.CoreTool {
 	return writeTool(
 		"add_company_scope",
-		"把域名/IP/CIDR/ICP备案/企业关键词加入某公司的【资产范围】——域名、网络和ICP会自动认领命中的资产，关键词只提供给Agent作为范围提示。\n"+
-			"公司名唯一：company 不存在则新建，已存在则复用(只把范围并进去)。\n"+
-			"scope 一行一条，系统自动识别：根域名 / URL / 单个 IP / CIDR 网段 / ICP备案 / 企业关键词。\n"+
-			"务必给 reason 说明归属依据(whois/证书/ASN 等)。\n"+
+		"Add domains/IPs/CIDRs/ICP filings/enterprise keywords to a company's [asset scope] - domains, networks, and ICP filings will automatically claim matching assets; keywords are only provided to the Agent as scope hints.\n"+
+			"Company names are unique: if company does not exist it is created, if it already exists it is reused (only the scope is merged in).\n"+
+			"One scope entry per line; the system auto-detects: root domain / URL / single IP / CIDR range / ICP filing / enterprise keyword.\n"+
+			"You must provide reason to explain the ownership basis (whois/certificate/ASN, etc.).\n"+
 			"Guardrails: bare TLDs and overly broad ranges are rejected (IPv4 prefix must be /16-/32, IPv6 prefix must be /32-/128); invalid lines are skipped and returned in errors.",
 		obj(map[string]any{
 			"company": str("company name (created if missing, reused if it exists; names are unique)"),
@@ -440,10 +440,10 @@ func (t *ToolSet) addCompanyScope() actool.CoreTool {
 func (t *ToolSet) addTaskScope() actool.CoreTool {
 	return writeTool(
 		"add_task_scope",
-		"把测试范围加入【本任务】——这是本任务的授权边界，也是资产测试覆盖度的分母。\n"+
-			"kind 支持：company(整个公司名下资产) / root_domain(整个根域，含所有子域) / subdomain(单个精确子域) / ip / cidr / icp / keyword。\n"+
-			"说明：worker 逐个碰到的主机会被系统【自动】加进范围(精确子域)；本工具用于【主动扩大】——把整个根域/整个公司纳入，或补充指定某子域/IP。\n"+
-			"value：company 传公司名或 id(公司须已存在)；root_domain/subdomain 传域名；ip/cidr 传 IP 或网段；icp/keyword 传备案号或企业关键词。\n"+
+		"Add test scope to [this task] - this is the authorization boundary for this task and the denominator for asset test coverage.\n"+
+			"Supported kinds: company (all assets under a company name) / root_domain (entire root domain, including all subdomains) / subdomain (a single exact subdomain) / ip / cidr / icp / keyword.\n"+
+			"Note: hosts encountered one by one by workers are [automatically] added to scope by the system (exact subdomain); this tool is for [deliberately widening] scope - adding an entire root domain/company, or adding a specific subdomain/IP.\n"+
+			"value: for company pass the company name or id (the company must already exist); for root_domain/subdomain pass a domain; for ip/cidr pass an IP or range; for icp/keyword pass a filing number or enterprise keyword.\n"+
 			"You must provide reason to explain the basis (auditable). Use the entries array for multiple items.",
 		obj(map[string]any{
 			"entries": map[string]any{"type": "array", "description": "Batch: [{kind, value}]. kind in company/root_domain/subdomain/ip/cidr/icp/keyword.", "items": map[string]any{"type": "object"}},
@@ -496,8 +496,8 @@ func (t *ToolSet) addTaskScope() actool.CoreTool {
 func (t *ToolSet) listUntestedAssets() actool.CoreTool {
 	return readTool(
 		"list_untested_assets",
-		"查询【本任务及直接关联任务】范围内、还没被事实锚点覆盖的资产（关联范围只读，供你自己判断要不要补测，不代替你决策）。\n"+
-			"可选按资产类型过滤：root_domain/subdomain/service/app/endpoint/ip。\n"+
+		"Query assets within the scope of [this task and directly associated tasks] that are not yet covered by fact anchors (associated scope is read-only for you to judge whether additional testing is needed; it does not decide for you).\n"+
+			"Optionally filter by asset type: root_domain/subdomain/service/app/endpoint/ip.\n"+
 			"Pagination: page starts at 1, page_size defaults to 10. Returns {assets:[{id,type,label}], total, page, page_size}. Only available in task context.",
 		obj(map[string]any{
 			"type":      str("asset type filter (optional): root_domain/subdomain/service/app/endpoint/ip"),
@@ -539,10 +539,10 @@ func (t *ToolSet) listUntestedAssets() actool.CoreTool {
 func (t *ToolSet) listAssets() actool.CoreTool {
 	return readTool(
 		"list_assets",
-		"查询资产库：DSL 表达式搜索，或按 id/ids 直取；支持分页。默认只返回本任务及直接关联任务的资产；用户开启「共享全局资产」后可查询全局资产。\n"+
-			"DSL：field=value 模糊(ILIKE) | field==value 精确 | field!=value 排除 | 数字字段支持 > >= < <= | 裸词=全文模糊；AND/OR 组合(AND 优先级高)，可用括号分组。资产类型用独立 type 参数，不写进 DSL。\n"+
-			"未传 id/ids 时 dsl 必须非空（不允许无条件全量查询）。\n"+
-			"可用字段：domain(根/子/服务域名)、root_domain、ip、url、page_title、icp、service_name、app_name、method(如 GET/POST)、service_type(http|other)、record_type(如 A/CNAME)、technology(数组，=模糊 ==精确)、port/status_code/company_id(整数)。\n"+
+		"Query the asset store: search with a DSL expression, or fetch directly by id/ids; pagination supported. By default only assets of this task and directly associated tasks are returned; global assets can be queried after the user enables \"Share global assets\".\n"+
+			"DSL: field=value fuzzy (ILIKE) | field==value exact | field!=value exclude | numeric fields support > >= < <= | bare term = full-text fuzzy; combine with AND/OR (AND has higher precedence), parentheses for grouping. Asset type uses the separate type parameter, not the DSL.\n"+
+			"When id/ids are not provided, dsl must be non-empty (unconditional full scans are not allowed).\n"+
+			"Available fields: domain (root/sub/service domain), root_domain, ip, url, page_title, icp, service_name, app_name, method (e.g. GET/POST), service_type (http|other), record_type (e.g. A/CNAME), technology (array, = fuzzy == exact), port/status_code/company_id (integers).\n"+
 			"Examples: status_code>=400 AND technology=shiro ; (port==80 OR port==443) AND technology=nginx",
 		obj(map[string]any{
 			"dsl":    str(`DSL query expression (see tool description for syntax/fields). Required when id/ids are not provided.`),
@@ -592,7 +592,7 @@ func (t *ToolSet) listAssets() actool.CoreTool {
 	)
 }
 
-// listCompanies lets an agent enumerate companies (企业) with their scope + asset count.
+// listCompanies lets an agent enumerate companies with their scope + asset count.
 func (t *ToolSet) listCompanies() actool.CoreTool {
 	return readTool(
 		"list_companies",
