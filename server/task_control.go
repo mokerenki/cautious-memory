@@ -193,7 +193,7 @@ func (s *Server) applyTaskControlWithCause(t *Task, action string, pauseCause er
 	return out, nil
 }
 
-// intentSummaryOf 取意图 payload 里的 summary,供删除通知在意图节点消失(真删除)前留档。
+// intentSummaryOf extracts the summary from an intent payload so deletion notifications can preserve it before the intent node disappears (permanent deletion).
 func intentSummaryOf(n *db.Node) string {
 	if n == nil {
 		return ""

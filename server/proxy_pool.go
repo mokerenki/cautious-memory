@@ -92,7 +92,7 @@ func ParseProxyBatch(raw string) ([]ProxyPoolEntry, []ProxyImportError) {
 		}
 		key := proxyURLKey(u)
 		if seen[key] {
-			errs = append(errs, ProxyImportError{Line: n + 1, Input: maskSecrets(line), Error: "重复代理，已跳过"})
+			errs = append(errs, ProxyImportError{Line: n + 1, Input: maskSecrets(line), Error: "Duplicate proxy; skipped"})
 			continue
 		}
 		seen[key] = true
@@ -779,7 +779,7 @@ func (s *Server) importProxyPool(w http.ResponseWriter, r *http.Request) {
 			if i := strings.LastIndex(p.ID, "-"); i >= 0 {
 				_, _ = fmt.Sscanf(p.ID[i+1:], "%d", &line)
 			}
-			errs = append(errs, ProxyImportError{Line: line, Input: maskSecrets(p.URL), Error: "重复代理，已跳过"})
+			errs = append(errs, ProxyImportError{Line: line, Input: maskSecrets(p.URL), Error: "Duplicate proxy; skipped"})
 			continue
 		}
 		u, _ := traffic.ValidateProxyURL(p.URL)

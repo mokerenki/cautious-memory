@@ -67,7 +67,7 @@ func validateTaskTemplateRequest(req taskTemplateRequest) error {
 		{name: "name", value: req.Name, limit: db.MaxTaskTemplateNameRunes},
 		{name: "description", value: req.Description, limit: db.MaxTaskTemplateTextRunes},
 		{name: "goal", value: req.Goal, limit: db.MaxTaskTemplateTextRunes},
-		{name: "remark", value: req.Remark, limit: db.MaxTaskRemarkRunes}, // 与任务备注 normalizeRemark 上限一致
+		{name: "remark", value: req.Remark, limit: db.MaxTaskRemarkRunes}, // Same limit as the task remark normalizeRemark
 	}
 	for _, check := range checks {
 		if check.value == nil {
