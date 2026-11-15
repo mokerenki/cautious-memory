@@ -11,25 +11,25 @@ import (
 	"time"
 )
 
-// Repo 是发布源。写死而不是做成配置项：更新源可配等于给任何能改配置的人一条
-// 远程代码执行通道，对一个渗透测试平台来说这个口子开不得。
+// Repo is the release source. It is hard-coded rather than configurable: a configurable update source would give anyone who can change the configuration
+// a remote-code-execution channel, which is unacceptable for a penetration-testing platform.
 const Repo = "RuoJi6/ARTEX"
 
-// latestURL 是 GitHub 的"最新正式版"接口。它会自动跳过 prerelease 和 draft。
+// latestURL is GitHub’s "latest stable release" endpoint. It automatically skips prereleases and drafts.
 const latestURL = "https://api.github.com/repos/" + Repo + "/releases/latest"
 
-// allowedHosts 限定升级链路能访问的域名。配合下面的 checkRedirect，
-// 任何一跳被重定向到名单外的主机都会直接失败——这是防止 DNS 污染 / 中间人
-// 把二进制换掉的第一道闸门，第二道是 SHA256SUMS 比对。
+// allowedHosts limits the domains accessible to the update flow. Together with checkRedirect below,
+// any redirect to a host outside the allowlist fails immediately — this is the first defense against DNS poisoning / man-in-the-middle
+// attacks replacing the binary; the second defense is comparison against SHA256SUMS.
 var allowedHosts = map[string]bool{
 	"api.github.com":                       true,
 	"github.com":                           true,
-	"objects.githubusercontent.com":        true, // release 资产实际落地的对象存储
+	"objects.githubusercontent.com":        true, // Object storage where release assets are actually hosted
 	"release-assets.githubusercontent.com": true,
 	"raw.githubusercontent.com":            true,
 }
 
-// Release 是 GitHub Release 里我们关心的字段。
+// Release contains the fields we need from a GitHub Release.
 type Release struct {
 	TagName     string    `json:"tag_name"`
 	Name        string    `json:"name"`
@@ -41,7 +41,7 @@ type Release struct {
 	Assets      []Asset   `json:"assets"`
 }
 
-// Asset 是 Release 上挂的一个文件。
+// Asset is a file attached to a Release.
 type Asset struct {
 	Name string `json:"name"`
 	URL  string `json:"browser_download_url"`
@@ -56,23 +56,23 @@ func ParseProxy(raw string) (*url.URL, error) {
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return nil, fmt.Errorf("代理地址格式无效")
+		return nil, fmt.Errorf("Invalid proxy URL format")
 	}
 	switch u.Scheme {
 	case "http", "https", "socks5", "socks5h":
 	default:
-		return nil, fmt.Errorf("代理协议须为 http、https、socks5 或 socks5h")
+		return nil, fmt.Errorf("Proxy scheme must be http, https, socks5, or socks5h")
 	}
 	if u.Hostname() == "" || (u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.Fragment != "" {
-		return nil, fmt.Errorf("代理地址须包含主机，且不能包含路径、查询或片段")
+		return nil, fmt.Errorf("Proxy URL must include a host and must not contain a path, query, or fragment")
 	}
 	if port := u.Port(); port != "" {
 		n, err := strconv.Atoi(port)
 		if err != nil || n < 1 || n > 65535 {
-			return nil, fmt.Errorf("代理端口须在 1–65535 之间")
+			return nil, fmt.Errorf("Proxy port must be between 1 and 65535")
 		}
 	} else if strings.HasSuffix(u.Host, ":") {
-		return nil, fmt.Errorf("代理端口不能为空")
+		return nil, fmt.Errorf("Proxy port cannot be empty")
 	}
 	return u, nil
 }
@@ -94,28 +94,28 @@ func NewClient(proxy string) (*http.Client, error) {
 
 	return &http.Client{
 		Transport: tr,
-		Timeout:   30 * time.Minute, // 下载整包，不能按请求级超时卡死
+		Timeout:   30 * time.Minute, // Download the entire package; do not let a request-level timeout interrupt it
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
-				return fmt.Errorf("重定向次数过多")
+				return fmt.Errorf("Too many redirects")
 			}
 			return checkURL(req.URL)
 		},
 	}, nil
 }
 
-// checkURL 强制 https + 域名白名单。
+// checkURL enforces HTTPS and the domain allowlist.
 func checkURL(u *url.URL) error {
 	if u.Scheme != "https" {
-		return fmt.Errorf("拒绝非 HTTPS 地址: %s", u.Scheme+"://"+u.Host)
+		return fmt.Errorf("Refusing non-HTTPS URL: %s", u.Scheme+"://"+u.Host)
 	}
 	if !allowedHosts[strings.ToLower(u.Hostname())] {
-		return fmt.Errorf("拒绝非 GitHub 域名: %s", u.Hostname())
+		return fmt.Errorf("Refusing non-GitHub domain: %s", u.Hostname())
 	}
 	return nil
 }
 
-// FetchLatest 查询最新正式版。
+// FetchLatest retrieves the latest stable release.
 func FetchLatest(ctx context.Context, c *http.Client) (*Release, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, latestURL, nil)
 	if err != nil {
@@ -129,37 +129,37 @@ func FetchLatest(ctx context.Context, c *http.Client) (*Release, error) {
 
 	resp, err := c.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("访问 GitHub 失败（可在版本与更新中配置更新代理）: %w", err)
+		return nil, fmt.Errorf("Failed to access GitHub (configure an update proxy under Version & Updates): %w", err)
 	}
 	defer resp.Body.Close()
 
 	switch {
 	case resp.StatusCode == http.StatusForbidden, resp.StatusCode == http.StatusTooManyRequests:
-		// 未认证的 GitHub API 是每 IP 每小时 60 次，共用出口 IP 时很容易撞上。
-		return nil, fmt.Errorf("GitHub 接口限流（每小时 60 次），请稍后再试")
+		// The unauthenticated GitHub API allows 60 requests per IP per hour, which is easy to hit when sharing an egress IP.
+		return nil, fmt.Errorf("GitHub API rate limit reached (60 requests per hour); try again later")
 	case resp.StatusCode == http.StatusNotFound:
-		return nil, fmt.Errorf("仓库 %s 不可访问或尚未发布正式版本", Repo)
+		return nil, fmt.Errorf("Repository %s is inaccessible or has not published a stable release", Repo)
 	case resp.StatusCode != http.StatusOK:
-		return nil, fmt.Errorf("GitHub 返回 %d", resp.StatusCode)
+		return nil, fmt.Errorf("GitHub returned %d", resp.StatusCode)
 	}
 
 	var rel Release
 	if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-		return nil, fmt.Errorf("解析 Release 失败: %w", err)
+		return nil, fmt.Errorf("Failed to parse Release: %w", err)
 	}
 	if strings.TrimSpace(rel.TagName) == "" {
-		return nil, fmt.Errorf("Release 缺少 tag")
+		return nil, fmt.Errorf("Release is missing a tag")
 	}
 	return &rel, nil
 }
 
-// AssetName 返回当前平台对应的发布包名，与 build.sh 的 package_binary 保持一致：
-// artex-<版本>-<os>-<arch>.zip（版本号不带 v 前缀）。
+// AssetName returns the release archive name for the current platform, matching package_binary in build.sh:
+// artex-<version>-<os>-<arch>.zip (version without the v prefix).
 func AssetName(tag, goos, goarch string) string {
 	return fmt.Sprintf("artex-%s-%s-%s.zip", strings.TrimPrefix(tag, "v"), goos, goarch)
 }
 
-// FindAsset 在 Release 里按名字找资产。
+// FindAsset looks up an asset in the Release by name.
 func (r *Release) FindAsset(name string) (Asset, bool) {
 	for _, a := range r.Assets {
 		if strings.EqualFold(a.Name, name) {
