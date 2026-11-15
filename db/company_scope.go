@@ -152,9 +152,9 @@ func ParseAutoScopeLine(line string) (ParsedScope, error) {
 	if looksLikeDomain {
 		return ParseScopeLine(raw)
 	}
-	// 备案号本身不含点号（如 京ICP备12345678号-1）。带点的文本多半掺了域名或版本号，
-	// 按 ICP 存下来只会得到一条永远匹配不上任何资产的死规则 —— ICP 归属走的是精确
-	// 相等比较（见 companies.go 的 kind='icp' 归属查询），所以这类文本归为关键词。
+	// ICP filing numbers themselves contain no periods (for example, 京ICP备12345678号-1). Text with periods likely includes a domain or version number,
+	// and storing it as an ICP would create a dead rule that never matches an asset. ICP ownership uses exact
+	// equality (see the kind='icp' ownership query in companies.go), so this kind of text is classified as a keyword.
 	lower := strings.ToLower(raw)
 	if !strings.ContainsAny(raw, ".．。") &&
 		(strings.Contains(lower, "icp") || strings.Contains(raw, "备案")) {

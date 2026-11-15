@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var ErrFindingCaseConflict = errors.New("漏洞组已变更，请重新读取证据后再操作")
+var ErrFindingCaseConflict = errors.New("Finding group changed; reload the evidence before continuing")
 
 type FindingCase struct {
 	ID             int64     `json:"id,string"`
@@ -175,7 +175,7 @@ func sortedFindingIDs(ids []int64) ([]int64, error) {
 	out := []int64{}
 	for _, id := range ids {
 		if id <= 0 {
-			return nil, errors.New("无效漏洞编号")
+			return nil, errors.New("Invalid finding ID")
 		}
 		if !set[id] {
 			set[id] = true
@@ -184,13 +184,13 @@ func sortedFindingIDs(ids []int64) ([]int64, error) {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i] < out[j] })
 	if len(out) < 2 {
-		return nil, errors.New("至少需要两条漏洞记录")
+		return nil, errors.New("At least two finding records are required")
 	}
 	return out, nil
 }
 func lockCaseTask(tx *sql.Tx, taskID int64) error {
 	if taskID <= 0 {
-		return errors.New("归并需要仍存在的同一任务")
+		return errors.New("Findings can be merged only within the same existing task")
 	}
 	if _, err := tx.Exec(`SELECT pg_advisory_xact_lock($1)`, int64(5100000000000000)+taskID); err != nil {
 		return err
@@ -207,7 +207,7 @@ func (d *DB) mergeFindingCase(ctx context.Context, taskID int64, ids []int64, ti
 		return 0, err
 	}
 	if strings.TrimSpace(title) == "" || strings.TrimSpace(reason) == "" {
-		return 0, errors.New("必须提供漏洞名称及基于证据的归并理由")
+		return 0, errors.New("A finding name and evidence-based merge rationale are required")
 	}
 	keptIDs := append([]int64(nil), ids...)
 	var cid int64
@@ -232,7 +232,7 @@ func (d *DB) mergeFindingCase(ctx context.Context, taskID int64, ids []int64, ti
 				return err
 			}
 			if !tid.Valid || tid.Int64 != taskID {
-				return errors.New("只能归并同一任务的漏洞")
+				return errors.New("Only findings from the same task can be merged")
 			}
 			if group > 0 {
 				groupSet[group] = true
@@ -277,7 +277,7 @@ func (d *DB) mergeFindingCase(ctx context.Context, taskID int64, ids []int64, ti
 			return err
 		}
 		if blocked {
-			return errors.New("人工已否决或撤销这些记录的归并")
+			return errors.New("A user has rejected or revoked merging these records")
 		}
 		if len(groups) > 0 {
 			cid = groups[0]
@@ -312,7 +312,7 @@ func (d *DB) mergeFindingCase(ctx context.Context, taskID int64, ids []int64, ti
 		}
 		for _, excluded := range dropped {
 			if all[excluded] {
-				return fmt.Errorf("排除的记录 #%d 已与所选记录在同一文件夹，请先移出该文件夹后再确认", excluded)
+				return fmt.Errorf("Excluded record #%d is in the same folder as the selected records; move it out of that folder before confirming", excluded)
 			}
 			for _, kept := range keptIDs {
 				if _, err := tx.Exec(`INSERT INTO finding_case_blocks(left_id,right_id,reason)
@@ -379,7 +379,7 @@ func (d *DB) RemoveFindingCaseMember(ctx context.Context, cid, fid int64, reason
 		return err
 	}
 	if c == nil {
-		return errors.New("归并组不存在")
+		return errors.New("Finding group does not exist")
 	}
 	return d.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		var origin int64
@@ -423,7 +423,7 @@ func (d *DB) RemoveFindingCaseMember(ctx context.Context, cid, fid int64, reason
 }
 func (d *DB) UpdateFindingCaseReport(ctx context.Context, cid, version int64, title, report, severity, reason string) error {
 	if !ValidSeverity(severity) || strings.TrimSpace(report) == "" || strings.TrimSpace(reason) == "" || strings.TrimSpace(title) == "" {
-		return errors.New("完整报告、名称、有效等级和评级依据必填")
+		return errors.New("Full report, name, valid severity, and rating rationale are required")
 	}
 	return d.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		c, err := scanCase(tx.QueryRow(`SELECT `+caseColumns+` FROM finding_cases c WHERE id=$1 FOR UPDATE`, cid))
@@ -500,15 +500,15 @@ func suggestionMembers(q suggestionQuery, suggestionID, taskID int64) ([]int64, 
 // subsets while holding the task advisory lock.
 func (d *DB) SuggestFindingCase(ctx context.Context, taskID int64, findingIDs []int64, title, reason string) (int64, error) {
 	if strings.TrimSpace(title) == "" || strings.TrimSpace(reason) == "" {
-		return 0, errors.New("建议需要名称和具体证据理由")
+		return 0, errors.New("A name and specific evidence-based rationale are required for the suggestion")
 	}
 	if len(findingIDs) > 20 {
-		return 0, errors.New("疑似重复分组最多20条记录")
+		return 0, errors.New("A suspected-duplicate group can contain at most 20 records")
 	}
 	seen := make(map[int64]bool, len(findingIDs))
 	for _, fid := range findingIDs {
 		if seen[fid] {
-			return 0, errors.New("疑似重复分组中的记录编号必须唯一")
+			return 0, errors.New("Record IDs in a suspected-duplicate group must be unique")
 		}
 		seen[fid] = true
 	}
@@ -533,7 +533,7 @@ func (d *DB) SuggestFindingCase(ctx context.Context, taskID int64, findingIDs []
 				return err
 			}
 			if !tid.Valid || tid.Int64 != taskID {
-				return errors.New("只能建议同一任务的归并")
+				return errors.New("A merge can only be suggested for findings from the same task")
 			}
 			if cid == 0 {
 				sameActiveCase = false
@@ -545,7 +545,7 @@ func (d *DB) SuggestFindingCase(ctx context.Context, taskID int64, findingIDs []
 			}
 		}
 		if sameActiveCase && firstCase > 0 && len(caseIDs) == 1 {
-			return errors.New("已在同一文件夹")
+			return errors.New("Already in the same folder")
 		}
 
 		raw, _ := json.Marshal(ids)
@@ -571,7 +571,7 @@ func (d *DB) SuggestFindingCase(ctx context.Context, taskID int64, findingIDs []
 			return err
 		}
 		if len(blocked) > 0 {
-			return fmt.Errorf("人工已否决这些记录的归并：%s；请去掉其中一方后重新提交", strings.Join(blocked, "、"))
+			return fmt.Errorf("A user rejected merging these records: %s; remove one of them and resubmit", strings.Join(blocked, "、"))
 		}
 
 		type pendingGroup struct {
@@ -718,7 +718,7 @@ func (d *DB) ResolveFindingCaseSuggestion(ctx context.Context, id int64, accept 
 		return 0, err
 	}
 	if len(members) < 2 {
-		return 0, errors.New("疑似重复分组成员不足")
+		return 0, errors.New("A suspected-duplicate group has too few members")
 	}
 	memberSet := map[int64]bool{}
 	for _, fid := range members {
@@ -727,7 +727,7 @@ func (d *DB) ResolveFindingCaseSuggestion(ctx context.Context, id int64, accept 
 	excludeSet := map[int64]bool{}
 	for _, fid := range exclude {
 		if !memberSet[fid] {
-			return 0, fmt.Errorf("排除记录 #%d 不属于该分组", fid)
+			return 0, fmt.Errorf("Excluded record #%d does not belong to this group", fid)
 		}
 		excludeSet[fid] = true
 	}
@@ -739,12 +739,12 @@ func (d *DB) ResolveFindingCaseSuggestion(ctx context.Context, id int64, accept 
 	}
 	if accept {
 		if len(kept) < 2 {
-			return 0, errors.New("至少保留两条记录")
+			return 0, errors.New("At least two records must remain")
 		}
 		return d.mergeFindingCase(ctx, s.TaskID, kept, s.Title, s.Reason, "human", id, exclude)
 	}
 	if len(exclude) > 0 {
-		return 0, errors.New("否决分组时不能排除记录")
+		return 0, errors.New("Records cannot be excluded when rejecting a group")
 	}
 	return 0, d.WithEvidenceTx(ctx, func(tx *sql.Tx) error {
 		if err := lockCaseTask(tx, s.TaskID); err != nil {
@@ -811,7 +811,7 @@ func (d *DB) FindingCaseCandidates(fid int64, page, size int, scope ...[]int64) 
 		return nil, 0, 0, err
 	}
 	if f == nil || f.TaskID == nil {
-		return nil, 0, 0, errors.New("漏洞任务不可用")
+		return nil, 0, 0, errors.New("Finding task is unavailable")
 	}
 	if page < 1 {
 		page = 1

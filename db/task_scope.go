@@ -103,7 +103,7 @@ func (s *AssetStore) upsertTaskScope(ts TaskScope) error {
 
 // AddAutoScope records the conservative task scope implied by ONE explicitly-inserted
 // asset item (source='auto'). MUST be called only from insertAssets' top-level loop —
-// never from a db-layer side effect (linkHostAssets), so派生资产不会盲目扩大范围。
+// never from a db-layer side effect (linkHostAssets), so derived assets do not blindly expand the scope.
 // Rule: scope granularity follows the asset's own type. taskID<=0 → no-op.
 func (s *AssetStore) AddAutoScope(taskID int64, assetType, domain, rawURL, ip string) error {
 	if taskID <= 0 {
@@ -149,16 +149,16 @@ func (s *AssetStore) AddAgentScope(taskID int64, kind, value, reason, source str
 	}
 	ts := TaskScope{TaskID: taskID, Kind: kind, Source: source, Reason: reason}
 	if taskID <= 0 {
-		return ts, fmt.Errorf("需要 task_id")
+		return ts, fmt.Errorf("task_id is required")
 	}
 	value = strings.TrimSpace(value)
 	if value == "" {
-		return ts, fmt.Errorf("value 不能为空")
+		return ts, fmt.Errorf("value cannot be empty")
 	}
 	switch kind {
 	case "company":
 		if s.company == nil {
-			return ts, fmt.Errorf("company store 未启用")
+			return ts, fmt.Errorf("company store is not enabled")
 		}
 		var comp *Company
 		var err error
@@ -171,7 +171,7 @@ func (s *AssetStore) AddAgentScope(taskID int64, kind, value, reason, source str
 			return ts, err
 		}
 		if comp == nil {
-			return ts, fmt.Errorf("company 不存在: %s（先用 list_companies 确认，或建好企业）", value)
+			return ts, fmt.Errorf("company does not exist: %s (check with list_companies or create the company first)", value)
 		}
 		ts.CompanyID = &comp.ID
 	case "root_domain":
@@ -181,13 +181,13 @@ func (s *AssetStore) AddAgentScope(taskID int64, kind, value, reason, source str
 			root = d
 		}
 		if root == "" {
-			return ts, fmt.Errorf("无效根域: %s", value)
+			return ts, fmt.Errorf("Invalid root domain: %s", value)
 		}
 		ts.Domain = root
 	case "subdomain":
 		d := DomainKey(stripHostPort(value))
 		if d == "" {
-			return ts, fmt.Errorf("无效子域: %s", value)
+			return ts, fmt.Errorf("Invalid subdomain: %s", value)
 		}
 		ts.Domain = d
 	case "ip", "cidr":
@@ -199,10 +199,10 @@ func (s *AssetStore) AddAgentScope(taskID int64, kind, value, reason, source str
 			ts.Kind = "cidr"
 		}
 		if v == "" {
-			return ts, fmt.Errorf("无效 ip/cidr: %s", value)
+			return ts, fmt.Errorf("Invalid ip/cidr: %s", value)
 		}
 		if _, _, err := net.ParseCIDR(v); err != nil {
-			return ts, fmt.Errorf("无效 ip/cidr: %s", value)
+			return ts, fmt.Errorf("Invalid ip/cidr: %s", value)
 		}
 		ts.Net = v
 	case "icp", "keyword":
@@ -212,7 +212,7 @@ func (s *AssetStore) AddAgentScope(taskID int64, kind, value, reason, source str
 		}
 		ts.Value = parsed.Value
 	default:
-		return ts, fmt.Errorf("不支持的 kind: %s（company/root_domain/subdomain/ip/cidr/icp/keyword）", kind)
+		return ts, fmt.Errorf("Unsupported kind: %s (company/root_domain/subdomain/ip/cidr/icp/keyword)", kind)
 	}
 	if err := s.upsertTaskScope(ts); err != nil {
 		return ts, err
@@ -277,12 +277,12 @@ type CoverageByType struct {
 // NOT a precise metric. Denominator = assets matching any active task_scope row;
 // Tested = those anchored to at least one fact node in the exploration.
 type Coverage struct {
-	Enabled     bool             `json:"enabled"`     // 资产覆盖度功能是否开启；false 时其余字段为零值
-	ScopeRows   int              `json:"scope_rows"`  // 0 → 范围未锚定
-	Denominator int              `json:"denominator"` // 范围内资产数
-	Tested      int              `json:"tested"`      // 已测(约)
-	Pct         *float64         `json:"pct"`         // 覆盖度；分母 0 时 null
-	ByType      []CoverageByType `json:"by_type"`     // 按资产类型的 总数/已测
+	Enabled     bool             `json:"enabled"`     // Whether asset coverage is enabled; other fields are zero when false
+	ScopeRows   int              `json:"scope_rows"`  // 0 = scope is not anchored
+	Denominator int              `json:"denominator"` // Number of assets in scope
+	Tested      int              `json:"tested"`      // Tested (approx.)
+	Pct         *float64         `json:"pct"`         // Coverage; null when denominator is 0
+	ByType      []CoverageByType `json:"by_type"`     // Total/tested counts by asset type
 }
 
 // CoverageEnabled reports whether a task has the asset-coverage feature turned on
@@ -438,23 +438,23 @@ func coverageZone(n *CoverageGraphNode) {
 	}
 	if ip := net.ParseIP(host); ip != nil {
 		if ip.IsPrivate() || ip.IsLoopback() || ip.IsLinkLocalUnicast() {
-			n.Zone, n.ZoneReason = "internal", "私有、回环或链路本地地址"
+			n.Zone, n.ZoneReason = "internal", "Private, loopback, or link-local address"
 			return
 		}
 	}
 	switch n.Kind {
 	case "company", "root_domain", "subdomain":
-		n.Zone, n.ZoneReason = "internet", "公网域名或外部入口"
+		n.Zone, n.ZoneReason = "internet", "Public domain or external entry point"
 	case "service", "app", "endpoint":
 		if host != "" {
-			n.Zone, n.ZoneReason = "boundary", "存在可访问的域名、IP或URL暴露面"
+			n.Zone, n.ZoneReason = "boundary", "An accessible domain, IP, or URL exposure exists"
 		} else {
-			n.Zone, n.ZoneReason = "internal", "未发现公网主机证据，按业务资产处理"
+			n.Zone, n.ZoneReason = "internal", "No evidence of a public host was found; treating this as a business asset"
 		}
 	case "ip":
-		n.Zone, n.ZoneReason = "internet", "未识别为私有地址的IP入口"
+		n.Zone, n.ZoneReason = "internet", "IP entry point not identified as a private address"
 	default:
-		n.Zone, n.ZoneReason = "internal", "按业务资产默认归类"
+		n.Zone, n.ZoneReason = "internal", "Classified as a business asset by default"
 	}
 }
 

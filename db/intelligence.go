@@ -75,13 +75,13 @@ func NormalizeIntelligence(in IntelligenceInput) (IntelligenceInput, error) {
 	in.Content = strings.TrimSpace(in.Content)
 	in.Evidence = strings.TrimSpace(in.Evidence)
 	if in.Title == "" || in.Content == "" || in.Evidence == "" {
-		return in, fmt.Errorf("%w: title/content/evidence 不能为空", ErrIntelligenceInvalid)
+		return in, fmt.Errorf("%w: title/content/evidence cannot be empty", ErrIntelligenceInvalid)
 	}
 	if utf8.RuneCountInString(in.Title) > 200 || len(in.Content) > 32768 || len(in.Evidence) > 8192 || len(in.AssetIDs) > 100 {
-		return in, fmt.Errorf("%w: 情报内容过长或关联资产过多", ErrIntelligenceInvalid)
+		return in, fmt.Errorf("%w: Intelligence content is too long or too many assets are associated", ErrIntelligenceInvalid)
 	}
 	if in.Confidence != "observed" && in.Confidence != "inferred" {
-		return in, fmt.Errorf("%w: confidence 必须为 observed/inferred", ErrIntelligenceInvalid)
+		return in, fmt.Errorf("%w: confidence must be observed/inferred", ErrIntelligenceInvalid)
 	}
 	if in.Status == "" {
 		switch in.Kind {
@@ -94,16 +94,16 @@ func NormalizeIntelligence(in IntelligenceInput) (IntelligenceInput, error) {
 		}
 	}
 	if !ValidIntelligenceStatus(in.Kind, in.Status) {
-		return in, fmt.Errorf("%w: 类别或状态无效", ErrIntelligenceInvalid)
+		return in, fmt.Errorf("%w: Invalid category or status", ErrIntelligenceInvalid)
 	}
 	if in.Confidence == "inferred" && (in.Status == "verified" || in.Status == "confirmed") {
-		return in, fmt.Errorf("%w: 推测不能标记为验证成功", ErrIntelligenceInvalid)
+		return in, fmt.Errorf("%w: Inferences cannot be marked as successfully verified", ErrIntelligenceInvalid)
 	}
 	seen := map[int64]bool{}
 	ids := []int64{}
 	for _, id := range in.AssetIDs {
 		if id <= 0 {
-			return in, fmt.Errorf("%w: asset_ids 必须为正整数", ErrIntelligenceInvalid)
+			return in, fmt.Errorf("%w: asset_ids must be positive integers", ErrIntelligenceInvalid)
 		}
 		if !seen[id] {
 			seen[id] = true
@@ -191,7 +191,7 @@ func (d *DB) RecordIntelligence(ctx context.Context, taskID, nodeID int64, worke
 	if nodeID > 0 {
 		err = tx.QueryRowContext(ctx, `SELECT n.id FROM exploration_nodes n JOIN tasks t ON t.exploration_id=n.exploration_id WHERE t.id=$1 AND n.id=$2`, taskID, nodeID).Scan(&found)
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("%w: 来源节点不属于当前任务", ErrIntelligenceInvalid)
+			return nil, fmt.Errorf("%w: Source node does not belong to the current task", ErrIntelligenceInvalid)
 		}
 		if err != nil {
 			return nil, err
@@ -204,7 +204,7 @@ func (d *DB) RecordIntelligence(ctx context.Context, taskID, nodeID int64, worke
 			return nil, err
 		}
 		if count != len(in.AssetIDs) {
-			return nil, fmt.Errorf("%w: 关联资产不存在", ErrIntelligenceInvalid)
+			return nil, fmt.Errorf("%w: Associated asset does not exist", ErrIntelligenceInvalid)
 		}
 	}
 	assets, _ := json.Marshal(in.AssetIDs)
@@ -299,7 +299,7 @@ func (d *DB) UpdateIntelligenceStatus(ctx context.Context, taskID, id int64, sta
 		return ErrIntelligenceNotFound
 	}
 	if !ValidIntelligenceStatus(item.Kind, status) {
-		return fmt.Errorf("%w: 状态无效", ErrIntelligenceInvalid)
+		return fmt.Errorf("%w: Invalid status", ErrIntelligenceInvalid)
 	}
 	result, err := d.ExecContext(ctx, `UPDATE task_intelligence SET status=$3,updated_at=now() WHERE id=$1 AND task_id=$2 AND EXISTS(SELECT 1 FROM tasks WHERE tasks.id=$2 AND deleted_at IS NULL)`, id, taskID, status)
 	if err != nil {
