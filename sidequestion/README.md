@@ -10,14 +10,14 @@ Reuses Go, norma v0.3.7, Next.js, and the existing Markdown / ResizablePanel / D
 
 ```mermaid
 flowchart LR
-    A[主 Agent QueryDeps] --> B[实际 Provider 绑定]
-    B --> C[不可变结构化快照]
-    B --> D[主 Agent 正常工具循环]
-    C --> E[(PostgreSQL 最新快照)]
-    E --> F[快照 + 最近成功旁路问答 + 问题]
-    F --> G[SideQuestionService 单次 Provider 请求]
-    G --> H[(独立旁路历史和用量)]
-    H --> I[累计回答 SSE / 旁路面板]
+    A[Main Agent QueryDeps] --> B[Actual provider binding]
+    B --> C[Immutable structured snapshot]
+    B --> D[Main Agent normal tool loop]
+    C --> E[(Latest PostgreSQL snapshot)]
+    E --> F[Snapshot + recent successful side Q&A + question]
+    F --> G[SideQuestionService single provider request]
+    G --> H[(Independent side-question history and usage)]
+    H --> I[Accumulated answer SSE / side-question panel]
 ```
 
 - `capture.go` only marks main-loop requests at `Options.Deps.CallModel / CallModelSync`. The Provider decorator is located inside the concrete model, after the outer route-pool selection, so it records the actually selected model; compaction and summary requests do not overwrite the snapshot.
