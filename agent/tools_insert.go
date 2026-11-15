@@ -55,8 +55,8 @@ func assetInputLabel(item assetInputItem) string {
 		target = strings.TrimSpace(item.IP)
 	case strings.TrimSpace(item.ServiceIP) != "":
 		target = strings.TrimSpace(item.ServiceIP)
-default:
-			target = "(unknown)"
+	default:
+		target = "(unknown)"
 	}
 	if typ != "" {
 		return fmt.Sprintf("[%s] %s", typ, target)
@@ -194,7 +194,7 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 					"method": str("HTTP method: GET/POST/PUT/PATCH/DELETE etc. (endpoint required)"),
 					"params": map[string]any{
 						"type":        "array",
-						"description": "请求参数列表，每条含 location(query/body/header/path)/name/value/type（可选，追加不覆盖）",
+						"description": "list of request parameters, each with location (query/body/header/path)/name/value/type (optional, appended without overwriting)",
 						"items":       map[string]any{"type": "object"},
 					},
 				}, "type"),
@@ -202,7 +202,7 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 		}, "assets"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			if t.as == nil {
-				return actool.Errorf("insert_assets 未启用: AssetStore 未初始化"), nil
+				return actool.Errorf("insert_assets is not enabled: AssetStore is not initialized"), nil
 			}
 			var a struct {
 				Assets []assetInputItem `json:"assets"`
@@ -210,8 +210,8 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 			if err := json.Unmarshal(in, &a); err != nil {
 				return actool.Errorf("invalid input: " + err.Error()), nil
 			}
-			// task_id 由程序权威赋值(worker: SetTaskID)，不接受模型传入——避免模型漏传/错传
-			// 导致资产未归任务或归错任务。无任务上下文的调用方(auto/pentest/chat)其 t.taskID=0。
+			// task_id is assigned authoritatively by the program (worker: SetTaskID) and is not accepted from model input,
+			// to avoid assets being left unassigned or assigned to the wrong task when the model omits or mis-passes it. Callers without task context (auto/pentest/chat) have t.taskID == 0.
 			taskID := t.taskID
 
 			type result struct {
@@ -227,8 +227,8 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 			var results []result
 			var errs []errEntry
 
-			// 资产闸门规则一次性载入；读取失败则跳过判定（不阻断插入）。
-			// 拦截规则 = 全局 ∪ 任务级 block；允许规则 = 任务级 allow。
+			// Load asset gate rules once; if loading fails, skip evaluation (do not block insertion).
+			// Block rules = global union task-level block rules; allow rules = task-level allow rules.
 			blockRules, _ := t.as.ListAssetInterceptRules()
 			var allowRules []db.AssetInterceptRule
 			if t.taskID > 0 {
@@ -239,12 +239,12 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 			}
 
 			for i, item := range a.Assets {
-				// 资产闸门：先拦截后允许，被拒的资产禁止插入（跳过 Upsert 及后续副作用）。
+				// Asset gate: block first, then allow. Rejected assets must not be inserted (skip Upsert and all subsequent side effects).
 				domains, ips, urls := assetInterceptCandidates(item)
 				if d := db.EvaluateAssetGate(blockRules, allowRules, domains, ips, urls); !d.Allowed {
 					errs = append(errs, errEntry{
 						Index: i,
-						Error: fmt.Sprintf("资产 %s %s，已禁止插入", assetInputLabel(item), d.Reason),
+						Error: fmt.Sprintf("asset %s %s, insertion is not allowed", assetInputLabel(item), d.Reason),
 					})
 					continue
 				}
@@ -340,9 +340,9 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 				if intelligenceEnabled() && typ == "service" && taskID > 0 {
 					for _, auth := range item.Auth {
 						raw, _ := json.Marshal(auth)
-						input := db.IntelligenceInput{Kind: "credential", Title: fmt.Sprintf("服务 #%d 的认证信息", id), Content: string(raw), Evidence: fmt.Sprintf("insert_assets 上报，服务资产 #%d，来源意图 #%d", id, t.ownerNode), Confidence: "observed", Status: "unverified", AssetIDs: []int64{id}}
+						input := db.IntelligenceInput{Kind: "credential", Title: fmt.Sprintf("authentication info for service #%d", id), Content: string(raw), Evidence: fmt.Sprintf("reported via insert_assets, service asset #%d, source intent #%d", id, t.ownerNode), Confidence: "observed", Status: "unverified", AssetIDs: []int64{id}}
 						if _, err := t.saveIntelligence(ctx, 0, input); err != nil {
-							errs = append(errs, errEntry{Index: i, Error: "资产已保存，凭据情报未保存：" + err.Error()})
+							errs = append(errs, errEntry{Index: i, Error: "asset saved, but credential intelligence was not saved: " + err.Error()})
 						}
 					}
 				}
@@ -355,16 +355,16 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 						nodeID := t.ownerNode
 						sourceNodeID = &nodeID
 					}
-					summary := "Agent 通过 insert_assets 登记"
+					summary := "registered by agent via insert_assets"
 					if t.ownerNode > 0 {
-						summary = fmt.Sprintf("Worker 意图 #%d 通过 insert_assets 登记", t.ownerNode)
+						summary = fmt.Sprintf("registered by worker intent #%d via insert_assets", t.ownerNode)
 					}
 					_ = t.as.SetTaskAssetSource(taskID, id, "agent", summary, sourceNodeID)
 				}
-				// 自动入测试范围(source='auto')：只对 worker 顶层显式插入的这一项，按其
-				// 类型加保守范围；side-effect 派生的资产不经此处，故范围不盲目扩大。taskID=0 时无操作。
-				// 与覆盖度开关无关：task_scope 是任务的范围边界(list/查询的过滤基准)，
-				// 覆盖度开关只决定要不要把它当分母去算指标，不决定要不要累积范围本身。
+				// Automatically add to test scope (source='auto'): only for this top-level item explicitly inserted by the worker,
+				// add a conservative scope based on its type. Assets derived as side effects do not pass through here, so the scope is not expanded blindly. No-op when taskID == 0.
+				// Independent of the coverage toggle: task_scope is the task's scope boundary (the filter baseline for list/query operations),
+				// while the coverage toggle only controls whether it is used as the denominator for metrics, not whether the scope itself is accumulated.
 				{
 					svcIP := item.ServiceIP
 					if svcIP == "" {
