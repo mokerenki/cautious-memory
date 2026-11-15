@@ -125,8 +125,8 @@ Once installed, open **http://localhost:8787** (on first entry, set the administ
 ```bash
 git clone https://github.com/RuoJi6/ARTEX.git
 cd ARTEX
-cp .env.example .env          # 填 POSTGRES_PASSWORD、可选 ANTHROPIC_API_KEY
-docker compose up -d          # 拉取 ruoji6/artex 镜像 + postgres
+cp .env.example .env          # set POSTGRES_PASSWORD and optionally ANTHROPIC_API_KEY
+docker compose up -d          # pull the ruoji6/artex image + postgres
 # → http://localhost:8787
 ```
 
@@ -144,21 +144,21 @@ Legacy SSE services usually establish the event stream with `GET /sse`, then rec
 Download the zip for your platform from this repository's [Releases](https://github.com/RuoJi6/ARTEX/releases); after extraction you get `artex` + `start.sh` (`start.bat` on Windows) + `skills/` + `config.example.json`. Choose `linux-arm64` for Linux ARM64 (including ARM64 Kali) and `linux-amd64` for x86_64:
 
 ```bash
-cp config.example.json config.json   # 填好 database 连接
+cp config.example.json config.json   # configure the database connection
 ./start.sh                           # → http://localhost:8787
 ```
 
-> Please start with `start.sh` / `start.bat` instead of running `./artex` directly. It is a daemon script: after the program exits, it decides whether to relaunch based on the exit code, and **[the one-click update on the page](#方式一页面一键更新推荐) relies on it to swap binaries**. If you run `./artex` directly, it will not be relaunched after an update.
+> Please start with `start.sh` / `start.bat` instead of running `./artex` directly. It is a daemon script: after the program exits, it decides whether to relaunch based on the exit code, and **[the one-click update on the page](#method-1-one-click-page-update-recommended) relies on it to swap binaries**. If you run `./artex` directly, it will not be relaunched after an update.
 > To keep it running in the background: `nohup ./start.sh >artex.log 2>&1 &`.
 
 ### Method 4: Compile a single binary from source
 
 ```bash
-# 1) 前端静态导出
+# 1) Export the frontend static files
 cd web && npm ci && npm run build:static && cd ..
-# 2) 拷进内嵌目录
+# 2) Copy them into the embedded frontend directory
 cp -r web/out server/webui/dist
-# 3) 编译（-tags embedui 才内嵌前端）
+# 3) Compile (-tags embedui embeds the frontend)
 CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
 ./start.sh
 ```
@@ -169,7 +169,7 @@ CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
 
 ```bash
 ./build.sh --release
-# 产物：dist/artex-0.3.3-*.zip
+# Output: dist/artex-0.3.3-*.zip
 ```
 
 UPX self-extracting binaries may be incompatible with some Linux kernels, virtualization environments, or security policies, so they are disabled by default. Use `ARTEX_TARGETS` to customize targets; when you have confirmed the target runtime environment is compatible, you can explicitly pass `--upx` to further shrink the binary:
@@ -240,7 +240,7 @@ Continue using the original deployment directory and Compose project name, ensur
 When migrating an existing Docker deployment for the first time, extract the verified new ARM64 ZIP onto the host, back up the original program, then replace only `/app/artex` inside the existing container. For example, if the existing container is named `artex-artex-1`:
 
 ```bash
-# 在下载目录运行；先按 SHA256SUMS 核对下载的 ZIP，再解压。
+# Run from the download directory; verify the downloaded ZIP against SHA256SUMS before extracting.
 sha256sum --ignore-missing --check SHA256SUMS
 unzip artex-0.3.17-linux-arm64.zip
 sudo docker stop artex-artex-1
@@ -268,11 +268,11 @@ The script first optionally runs `git pull` to fetch the latest code, then lets 
 
 ```bash
 cd ARTEX
-git pull                       # 更新 compose / 脚本（可选）
-# 指定版本：在 .env 设 ARTEX_TAG=v0.3.17；不设则用 latest
+git pull                       # update Compose files / scripts (optional)
+# To pin a version, set ARTEX_TAG=v0.3.17 in .env; otherwise latest is used
 docker compose pull artex
-docker compose up -d artex     # 换新镜像重启 → 自动迁移 schema
-docker image prune -f          # 清理旧镜像（可选）
+docker compose up -d artex     # restart with the new image → schema migrates automatically
+docker image prune -f          # remove old images (optional)
 ```
 
 ### Method 4: Prebuilt binaries (Releases)
@@ -280,7 +280,7 @@ docker image prune -f          # 清理旧镜像（可选）
 Download the new version's zip from [Releases](https://github.com/RuoJi6/ARTEX/releases), stop the old process, overwrite `artex` and `skills/` (keeping your `config.json` and `data/`), and restart:
 
 ```bash
-cp -r <解压目录>/skills ./ && cp <解压目录>/artex ./
+cp -r <extracted-directory>/skills ./ && cp <extracted-directory>/artex ./
 ./start.sh
 ```
 
@@ -291,7 +291,7 @@ git pull
 cd web && npm ci && npm run build:static && cd ..
 cp -r web/out server/webui/dist
 CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
-# 重启 ./start.sh
+# Restart ./start.sh
 ```
 
 ---
@@ -321,7 +321,7 @@ Optional: `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ART
 
 In **System Settings → HTTP Basic Auth**, enter a dedicated verification username and password, enable "Enable access verification", and click "Save access verification". It is off by default and takes effect immediately after saving, with no restart needed; the password must be at least 8 characters and at most 72 bytes, and the username cannot contain a colon.
 
-Once enabled, visitors first complete the browser's native username/password verification, then reach the original ARTEX login page. Web pages, static assets, and APIs are all protected; the GET/HEAD health check at `/api/health` must also pass Basic Auth and returns `401` when unauthenticated; after passing, it only returns `{"ok":true}`, without exposing the application name or version. The health check does not additionally require an administrator JWT; external probes need the same Basic Auth credentials configured, for example using `curl --fail --user '验证用户名' http://127.0.0.1:8787/api/health` and entering the password when prompted. When Basic Auth is not enabled, the original credential-free liveness behavior is preserved. The version number is provided by `/api/version`, which requires an administrator JWT; when access verification is enabled, this endpoint is also protected by Basic Auth. The Basic Auth realm for unauthenticated requests uses the generic name `Restricted`; passing access verification still requires logging into ARTEX to use business APIs. For public deployments, please access via HTTPS.
+Once enabled, visitors first complete the browser's native username/password verification, then reach the original ARTEX login page. Web pages, static assets, and APIs are all protected; the GET/HEAD health check at `/api/health` must also pass Basic Auth and returns `401` when unauthenticated; after passing, it only returns `{"ok":true}`, without exposing the application name or version. The health check does not additionally require an administrator JWT; external probes need the same Basic Auth credentials configured, for example using `curl --fail --user 'verification-user' http://127.0.0.1:8787/api/health` and entering the password when prompted. When Basic Auth is not enabled, the original credential-free liveness behavior is preserved. The version number is provided by `/api/version`, which requires an administrator JWT; when access verification is enabled, this endpoint is also protected by Basic Auth. The Basic Auth realm for unauthenticated requests uses the generic name `Restricted`; passing access verification still requires logging into ARTEX to use business APIs. For public deployments, please access via HTTPS.
 
 When upgrading from an older web version that still read the version from `/api/health`, the old page may not be able to automatically determine that the upgrade is complete; after the service restarts, manually refresh the page. The new web version's version display and upgrade polling both use `/api/version`.
 
@@ -355,7 +355,7 @@ server {
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # SSE 关键项：关缓冲、长超时、HTTP/1.1
+        # SSE essentials: disable buffering, use a long timeout, and HTTP/1.1
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 3600s;
@@ -402,7 +402,7 @@ After saving, the top bar's egress IP, proxy test, proxy pool health check, and 
 ### Local run and test
 
 ```bash
-./dev.sh    # 后端(:8787) + 流量代理(:8788) + 前端 next dev(:5173) → http://localhost:5173
+./dev.sh    # backend (:8787) + traffic proxy (:8788) + frontend next dev (:5173) → http://localhost:5173
 ```
 
 - Backend: `go run ./cmd/artex` (without `-tags embedui`, the frontend is not embedded)
@@ -420,28 +420,28 @@ ARTEX is an **LLM multi-agent-driven autonomous penetration system**: a Go monol
 
 ```mermaid
 flowchart TB
-  subgraph FE["前端 Next.js（go:embed 内嵌单二进制）"]
-    UI["仪表盘 · 任务 · 资产 · 覆盖图 · 流量 · 工作空间 · 系统配置"]
+  subgraph FE["Frontend Next.js (embedded in a single binary via go:embed)"]
+    UI["Dashboard · Tasks · Assets · Coverage graph · Traffic · Workspace · System settings"]
   end
-  subgraph SRV["server（Go net/http）"]
-    API["REST /api/*　JWT 鉴权　SSE"]
-    ENG["engine 调度循环"]
-    MGR["Manager　任务/引擎/store 生命周期"]
+  subgraph SRV["server (Go net/http)"]
+    API["REST /api/* | JWT authentication | SSE"]
+    ENG["engine scheduler loop"]
+    MGR["Manager | task/engine/store lifecycle"]
   end
-  subgraph AG["agent（norma SDK）"]
-    GO["goals　目标分解 + 提取范围"]
-    PL["planner　规划者（唯一意图生成者）"]
-    WK["worker　执行者 ×N"]
-    MA["mainagent　人在环路"]
+  subgraph AG["agent (norma SDK)"]
+    GO["goals | goal decomposition + scope extraction"]
+    PL["planner | sole intent generator"]
+    WK["worker | workers ×N"]
+    MA["mainagent | human-in-the-loop"]
   end
   subgraph DB["PostgreSQL"]
-    AGRAPH["资产图　assets / companies / task_scope"]
-    EGRAPH["探索图　exploration_nodes / anchors / activity"]
+    AGRAPH["Asset graph | assets / companies / task_scope"]
+    EGRAPH["Exploration graph | exploration_nodes / anchors / activity"]
   end
-  subgraph SUB["支撑子系统"]
-    PROXY["流量记录代理　MITM + CA 留痕"]
-    GUARD["guard / intercept　工具审批门"]
-    ENR["enrich　DNS / HTTP 异步补全"]
+  subgraph SUB["Supporting subsystems"]
+    PROXY["Traffic-recording proxy | MITM + CA evidence"]
+    GUARD["guard / intercept | tool approval gate"]
+    ENR["enrich | asynchronous DNS / HTTP enrichment"]
     EXT["MCP · skills · memory · report"]
   end
 
@@ -455,7 +455,7 @@ flowchart TB
   WK --> DB
   MA --> DB
   GO --> DB
-  WK -->|"Bash / HTTP 全程留痕"| PROXY
+  WK -->|"Bash / HTTP fully recorded"| PROXY
   WK --> GUARD
   WK --> ENR
   PL -.-> EXT
@@ -482,19 +482,19 @@ The system splits "**what is the target**" and "**how far has testing progressed
 
 ```mermaid
 flowchart LR
-  subgraph EG["探索图（每任务独立 · 推进链）"]
+  subgraph EG["Exploration graph (independent per task · progress chain)"]
     direction TB
-    G["goal 目标"]
-    I1["intent 意图 A"]
-    F1["fact 事实"]
-    I2["intent 意图 B"]
-    FD["finding 漏洞"]
+    G["goal"]
+    I1["intent A"]
+    F1["fact"]
+    I2["intent B"]
+    FD["finding"]
     G -->|spawns| I1
     I1 -->|yields| F1
     F1 -->|derived_from| I2
     I2 -->|proves| FD
   end
-  subgraph AG["资产图（全局共享 · 真值库）"]
+  subgraph AG["Asset graph (globally shared · source of truth)"]
     direction TB
     RD["root_domain"]
     SD["subdomain"]
@@ -517,24 +517,24 @@ The engine is an **event-driven** closed loop: whenever a graph changes it wakes
 ```mermaid
 sequenceDiagram
   autonumber
-  participant EV as 图变更 debounce
+  participant EV as graph-change debounce
   participant P as planner
-  participant FR as frontier 意图队列
+  participant FR as frontier intent queue
   participant W as worker
-  participant PX as 记录代理
-  participant DB as 双图 + activity
+  participant PX as recording proxy
+  participant DB as dual graphs + activity
 
-  EV-->>P: 唤醒
-  P->>DB: 读态势(graph_overview 预取 + coverage/scope)
-  P->>FR: 派 0..N 个意图(带 asset_ids)
-  Note over P,FR: 大多数唤醒派 0 个——无新方向即结束
-  W->>FR: claimNext 领一条意图
-  W->>DB: 取意图 asset_ids 的原始资产作为初始信息
-  W->>PX: 真实工具执行(Kali / Bash / HTTP)
-  PX-->>W: 响应(全程留痕 + CA 验证)
-  W->>DB: 写回 fact / asset / finding + 每步 activity
-  DB-->>EV: 图变更
-  EV-->>P: 再次唤醒(闭环)
+  EV-->>P: wake
+  P->>DB: read situation (prefetched graph_overview + coverage/scope)
+  P->>FR: dispatch 0..N intents (with asset_ids)
+  Note over P,FR: Most wake-ups dispatch 0 intents—stop when there is no new direction
+  W->>FR: claimNext: claim one intent
+  W->>DB: fetch raw assets for the intent asset_ids as initial context
+  W->>PX: execute real tools (Kali / Bash / HTTP)
+  PX-->>W: response (fully recorded + CA-verified)
+  W->>DB: write back fact / asset / finding + per-step activity
+  DB-->>EV: graph change
+  EV-->>P: wake again (closed loop)
 ```
 
 ### Process-level information exchange between workers
@@ -548,12 +548,12 @@ This way, even if there is no corresponding fact on the exploration graph yet, l
 
 ```mermaid
 flowchart LR
-  WA["worker A（意图 #12）"] -->|"每步 activity"| ACT[("探索图 · activity 过程库")]
-  WB["worker B（意图 #34）"] -->|"每步 activity"| ACT
-  WC["worker C（意图 #56）"] ==>|"1) search_all_worker_traces(q)"| ACT
-  ACT ==>|"2) 命中 A/B 的步骤（排除自己）"| WC
+  WA["worker A (intent #12)"] -->|"activity at each step"| ACT[("Exploration graph · activity history")]
+  WB["worker B (intent #34)"] -->|"activity at each step"| ACT
+  WC["worker C (intent #56)"] ==>|"1) search_all_worker_traces(q)"| ACT
+  ACT ==>|"2) matching steps from A/B (excluding self)"| WC
   WC ==>|"3) get_worker_trace(id, step_ids)"| ACT
-  ACT ==>|"4) 返回完整过程内容"| WC
+  ACT ==>|"4) return the complete process contents"| WC
 ```
 
 ### Planner multi-round shared todolist → a stable attack chain
@@ -565,17 +565,17 @@ Real attack chains are often **multi-step sequences with sequential dependencies
 
 ```mermaid
 flowchart TB
-  subgraph TODO["共享 todolist（按任务保留 · 跨唤醒常驻）"]
+  subgraph TODO["shared todolist (retained per task · persists across wake-ups)"]
     direction LR
-    T1["1 注入点　[已完成]"]
-    T2["2 取凭据　[进行中]"]
-    T3["3 横向　[待前置]"]
-    T4["4 提权　[待前置]"]
-    T1 -.前置满足.-> T2 -.-> T3 -.-> T4
+    T1["1 entry point [completed]"]
+    T2["2 obtain credentials [in progress]"]
+    T3["3 lateral movement [blocked by prerequisite]"]
+    T4["4 privilege escalation [blocked by prerequisite]"]
+    T1 -.prerequisite met.-> T2 -.-> T3 -.-> T4
   end
-  R1["第 1 轮唤醒　派意图①"] --> T1
-  R2["第 2 轮（①产出 fact）　派意图②"] --> T2
-  R3["第 3 轮（②产出 fact）　派意图③"] --> T3
+  R1["Wake-up 1: dispatch intent ①"] --> T1
+  R2["Wake-up 2 (① produced a fact): dispatch intent ②"] --> T2
+  R3["Wake-up 3 (② produced a fact): dispatch intent ③"] --> T3
 ```
 
 Thus, even in an "event-driven + stateless session" environment, the attack chain still **advances stably, without repetition or out-of-order steps** — this is the key to ARTEX being able to autonomously complete multi-step exploitation chains.
