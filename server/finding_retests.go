@@ -227,7 +227,7 @@ func (s *Server) seedFindingRetester() error {
 	if id > 0 {
 		var pid int64
 		if err = tx.QueryRow(`INSERT INTO agent_prompts(agent_id,version,template_text,note,updated_by)
-		VALUES ($1,1,$2,'内置默认','system') RETURNING id`, id, agent.RetesterDefaultPrompt).Scan(&pid); err != nil {
+		VALUES ($1,1,$2,'built-in default','system') RETURNING id`, id, agent.RetesterDefaultPrompt).Scan(&pid); err != nil {
 			return err
 		}
 		if _, err = tx.Exec(`UPDATE agents SET current_prompt_id=$1 WHERE id=$2`, pid, id); err != nil {
