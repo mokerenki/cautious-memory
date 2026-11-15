@@ -28,24 +28,24 @@ func (s *Server) taskAssetMapping(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	taskID, _ := strconv.ParseInt(t.ID, 10, 64)
-	message := fmt.Sprintf(`请重新梳理任务 #%d 的网络拓扑，并在同一次会话中输出两份相互独立的结果。
+	message := fmt.Sprintf(`Please reorganize the network topology for task #%d and output two independent results in the same session.
 
-三层区域是本任务拓扑的硬约束，不是可忽略的排版：
-- internet（互联网区）：公网根域、子域名、公共 IP 和外部入口。
-- boundary（边界区）：对外暴露的服务、网关、Web 应用或端点；只有存在公开主机/URL证据时才归入此层。
-- internal（内网区）：私有 IP、回环/链路本地地址及其承载的业务应用、端点和数据库。
-节点摘要中的 zone/zone_reason 是后端根据真实地址和资产证据计算的权威归类；不得仅按 kind 改写区域。没有 zone 或证据不足时必须标记“待确认”，不能臆造跨区连接。
+The three zones are hard constraints for this task topology, not optional formatting:
+- internet: public root domains, subdomains, public IPs, and external entry points.
+- boundary: externally exposed services, gateways, web applications, or endpoints; include a node in this zone only when there is evidence of a public host/URL.
+- internal: private IPs, loopback/link-local addresses, and the business applications, endpoints, and databases they host.
+The zone/zone_reason in node summaries is the authoritative classification computed by the backend from real addresses and asset evidence; do not reassign zones based on kind alone. When zone is missing or evidence is insufficient, mark it as "To be confirmed" and do not fabricate cross-zone connections.
 
-输出必须严格使用下面两个一级标题，不能合并成一份：
-## 资产关系结果
-- 只根据当前任务及其直接关联任务的真实资产数据，保留资产库中的层级和归属关系。
-- 这部分是资产关系图的说明，不要声称本次 Agent 改写了资产关系，也不要补充摘要中没有的资产。
+The output must strictly use the following two level-1 headings and must not be merged into one:
+## Asset Relationship Results
+- Based only on real asset data of the current task and its directly related tasks, preserve the hierarchy and ownership relationships in the asset library.
+- This section explains the asset relationship graph; do not claim that this agent modified asset relationships, and do not add assets not present in the summary.
 
-## 网络拓扑结果
-- 只整理互联网入口、边界服务、内网业务三层网络关系，并说明每个节点所属区域。
-- 只展示有真实资产证据的连接；数据库节点标注可识别的数据库类型。
+## Network Topology Results
+- Only organize network relationships among internet entry points, boundary services, and internal business across the three zones, and state the zone of each node.
+- Show only connections with real asset evidence; label database nodes with identifiable database types.
 
-两份结果都只能使用当前任务及其直接关联任务的真实资产数据；不要探测目标、不要修改资产库，也不要把没有证据的连接描述成已验证通路。`, taskID)
+Both results must use only real asset data of the current task and its directly related tasks; do not probe targets, do not modify the asset library, and do not describe connections without evidence as verified paths.`, taskID)
 	if as := s.m.Assets(); as != nil {
 		if graph, err := as.BuildCoverageGraph(taskID, t.ExpID); err == nil {
 			type nodeSample struct {
@@ -75,10 +75,10 @@ func (s *Server) taskAssetMapping(w http.ResponseWriter, r *http.Request) {
 				"counts_by_kind": counts, "node_sample": sample, "edge_sample": edges,
 				"truncated": len(graph.Nodes) > len(sample) || truncatedEdges,
 			})
-			message += "\n\n页面刚读取的任务资产图真实摘要如下；只依据摘要和任务范围解释，避免把全局资产误当成本任务资产。未列出的节点不要逐一补写：\n" + string(snapshot)
+			message += "\n\nThe following is the real summary of the task asset graph just read by the page; explain only based on the summary and task scope, and avoid mistaking global assets for assets of this task. Do not elaborate on nodes that are not listed:\n" + string(snapshot)
 		}
 	}
-	title := fmt.Sprintf("资产与网络梳理 · 任务 #%d", taskID)
+	title := fmt.Sprintf("Asset and Network Mapping · Task #%d", taskID)
 	conversation, err := s.m.pg.CreateConversation("asset_mapper", title, nil)
 	if err != nil || conversation == nil {
 		writeErr(w, http.StatusInternalServerError, "Failed to create topology mapping session")
@@ -111,8 +111,8 @@ func (s *Server) taskAssetMappingStatus(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	title := fmt.Sprintf("资产与网络梳理 · 任务 #%s", t.ID)
-	legacyTitle := fmt.Sprintf("资产梳理 · 任务 #%s", t.ID)
+	title := fmt.Sprintf("Asset and Network Mapping · Task #%s", t.ID)
+	legacyTitle := fmt.Sprintf("Asset Mapping · Task #%s", t.ID)
 	for _, conversation := range conversations {
 		if conversation.AgentKey != "asset_mapper" || (conversation.Title != title && conversation.Title != legacyTitle) {
 			continue
