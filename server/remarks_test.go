@@ -145,20 +145,20 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 		})
 	}
 	// A normal rename/pin patch must preserve a previously saved remark.
-	note := "保留的任务备注"
+	note := "Preserved task remark"
 	if _, err := m.UpdateTaskMetadata(task.ID, db.TaskPatch{Remark: &note}); err != nil {
 		t.Fatal(err)
 	}
-	rec := request(taskPath, `{"name":"新名称","pinned":true}`, true)
+	rec := request(taskPath, `{"name":"New name","pinned":true}`, true)
 	if rec.Code != 200 || !bytes.Contains(rec.Body.Bytes(), []byte(note)) {
 		t.Fatalf("rename lost remark: %s", rec.Body.String())
 	}
-	note = "保留的计划备注"
+	note = "Preserved schedule remark"
 	if _, err := m.pg.UpdateTaskScheduleRemark(schedule.ID, note); err != nil {
 		t.Fatal(err)
 	}
 	metadataPath := fmt.Sprintf("/api/schedules/%d/metadata", schedule.ID)
-	rec = request(metadataPath, `{"name":"  行内改名  "}`, true)
+	rec = request(metadataPath, `{"name":"  Inline renamed schedule  "}`, true)
 	if rec.Code != 200 {
 		t.Fatalf("schedule rename: %d %s", rec.Code, rec.Body.String())
 	}
@@ -166,7 +166,7 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if renamed.Name != "行内改名" || renamed.Remark != note || renamed.Status != original.Status || renamed.Enabled != original.Enabled || renamed.LastWindowKey != original.LastWindowKey || renamed.LastError != original.LastError || !renamed.LastTransitionAt.Equal(*original.LastTransitionAt) || len(renamed.TaskIDs) != 1 || renamed.TaskIDs[0] != taskID {
+	if renamed.Name != "Inline renamed schedule" || renamed.Remark != note || renamed.Status != original.Status || renamed.Enabled != original.Enabled || renamed.LastWindowKey != original.LastWindowKey || renamed.LastError != original.LastError || !renamed.LastTransitionAt.Equal(*original.LastTransitionAt) || len(renamed.TaskIDs) != 1 || renamed.TaskIDs[0] != taskID {
 		t.Fatalf("rename changed calendar state or metadata: %+v", renamed)
 	}
 	for _, body := range []string{`{}`, `{"name":null}`, `{"name":" "}`, `{"name":123}`, `{"name":"` + strings.Repeat("文", maxTaskNameRunes+1) + `"}`, `{"name":"must not apply","remark":"` + strings.Repeat("文", maxRemarkRunes+1) + `"}`} {
@@ -175,13 +175,13 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 		}
 	}
 	unchanged, err := m.pg.GetTaskSchedule(schedule.ID)
-	if err != nil || unchanged.Name != "行内改名" || unchanged.Remark != note {
+	if err != nil || unchanged.Name != "Inline renamed schedule" || unchanged.Remark != note {
 		t.Fatalf("invalid patch partially changed metadata: %+v %v", unchanged, err)
 	}
 	if rec := request(metadataPath, `{"name":"denied"}`, false); rec.Code != 401 {
 		t.Fatalf("rename auth: %d", rec.Code)
 	}
-	scheduleInput.Name = "新计划名称"
+	scheduleInput.Name = "New schedule name"
 	updated, err := m.pg.UpdateTaskSchedule(schedule.ID, scheduleInput)
 	if err != nil || updated.Remark != note {
 		t.Fatalf("schedule edit lost remark: %+v %v", updated, err)

@@ -79,7 +79,7 @@ func TestFindingsPageAndStats(t *testing.T) {
 	seed := []struct {
 		sev, status, name string
 	}{
-		{"critical", "pending", "严重漏洞标题"},
+		{"critical", "pending", "Critical vulnerability title"},
 		{"high", "resolved", ""},
 		{"high", "resolved", ""},
 		{"high", "pending", ""},
@@ -113,8 +113,8 @@ func TestFindingsPageAndStats(t *testing.T) {
 	if p1[0].Severity != "critical" {
 		t.Fatalf("severity sort: want critical first, got %q", p1[0].Severity)
 	}
-	if p1[0].Name != "严重漏洞标题" {
-		t.Fatalf("name round-trip: want 严重漏洞标题, got %q", p1[0].Name)
+	if p1[0].Name != "Critical vulnerability title" {
+		t.Fatalf("name round-trip: want Critical vulnerability title, got %q", p1[0].Name)
 	}
 	if p1[1].Severity != "high" {
 		t.Fatalf("severity sort: want high second, got %q", p1[1].Severity)
@@ -159,17 +159,17 @@ func TestFindingsPageAndStats(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if one == nil || one.ID != ids[0] || one.Severity != "critical" || one.Name != "严重漏洞标题" {
+	if one == nil || one.ID != ids[0] || one.Severity != "critical" || one.Name != "Critical vulnerability title" {
 		t.Fatalf("GetFinding mismatch: %+v", one)
 	}
 	if one.Report != "" {
 		t.Fatalf("new finding report should be empty, got %q", one.Report)
 	}
 	// report column round-trips through GetFinding.
-	if _, err := d.Exec(`UPDATE findings SET report=$1 WHERE id=$2`, "# 报告\n正文", ids[0]); err != nil {
+	if _, err := d.Exec(`UPDATE findings SET report=$1 WHERE id=$2`, "# Report\nBody", ids[0]); err != nil {
 		t.Fatal(err)
 	}
-	if one, _ = d.GetFinding(ids[0]); one.Report != "# 报告\n正文" {
+	if one, _ = d.GetFinding(ids[0]); one.Report != "# Report\nBody" {
 		t.Fatalf("report not read back: %q", one.Report)
 	}
 	for _, test := range []struct {
@@ -177,10 +177,10 @@ func TestFindingsPageAndStats(t *testing.T) {
 		query string
 		want  int
 	}{
-		{name: "name", query: "严重漏洞标题", want: 1},
+		{name: "name", query: "Critical vulnerability title", want: 1},
 		{name: "summary", query: "summary", want: 6},
 		{name: "evidence", query: "poc", want: 6},
-		{name: "report", query: "正文", want: 1},
+		{name: "report", query: "Body", want: 1},
 		{name: "case insensitive vulnclass", query: strings.ToUpper(vc), want: 6},
 	} {
 		t.Run("query_"+test.name, func(t *testing.T) {

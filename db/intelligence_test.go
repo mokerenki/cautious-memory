@@ -9,7 +9,7 @@ import (
 )
 
 func testIntelligenceInput() IntelligenceInput {
-	return IntelligenceInput{Kind: "credential", Title: "测试数据库账号", Content: `{"username":"qa","password":"local-fixture-secret"}`, Evidence: "本机测试配置文件 /tmp/fixture", Confidence: "observed"}
+	return IntelligenceInput{Kind: "credential", Title: "Test database account", Content: `{"username":"qa","password":"local-fixture-secret"}`, Evidence: "Local test configuration file /tmp/fixture", Confidence: "observed"}
 }
 func TestIntelligenceValidation(t *testing.T) {
 	for _, change := range []func(*IntelligenceInput){
@@ -56,7 +56,7 @@ func TestIntelligenceProvenanceDedupAndDirectContent(t *testing.T) {
 		t.Fatal(err)
 	}
 	in.Content = `{ "password":"local-fixture-secret", "username":"qa" }`
-	in.Title = "不同标题"
+	in.Title = "Different title"
 	again, err := d.RecordIntelligence(t.Context(), first.ID, node, "worker-qa", in)
 	if err != nil || again.ID != item.ID {
 		t.Fatalf("dedup failed: %+v %v", again, err)
