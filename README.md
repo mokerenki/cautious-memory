@@ -1,29 +1,34 @@
-<div align="center">
-
 # ARTEX
 
-AI-powered autonomous penetration testing system (Go backend + Next.js frontend)
+**ARTEX** is a Go application with a Next.js web interface and PostgreSQL persistence. Its repository describes an LLM-assisted multi-agent security assessment system with task planning, asset and exploration graphs, tool execution, approval/interception controls, traffic evidence, findings, and operator-facing configuration.
 
+This README describes the checked-in code, features, and documented operating procedures. Verify commands and settings against the release being used; no security certification or service-level commitment is implied.
 
-🌐 **Online Demo**: [https://artex-demo-ruoji6.vercel.app/](https://artex-demo-ruoji6.vercel.app/)
+> **Fresh-install warning:** `db/schema.sql` currently contains a placeholder rather than the core schema. Application startup executes this embedded file and then seeds core tables, so a clean PostgreSQL installation is not expected to complete successfully until the schema is restored and tested. Existing databases may behave differently. This repository state has not been runtime-validated.
 
-</div>
+## Repository and release status
 
-This repository is the independently maintained [RuoJi6/ARTEX](https://github.com/RuoJi6/ARTEX), preserving the original commit history and AGPL-3.0 license of https://github.com/Autumn-27/ARTEX. Release packages are downloaded from this repository's Releases, and the Docker image [ruoji6/artex](https://hub.docker.com/r/ruoji6/artex) is built and published by this repository's GitHub Actions.
+This repository identifies itself as the independently maintained [RuoJi6/ARTEX](https://github.com/RuoJi6/ARTEX), preserving the original [Autumn-27/ARTEX](https://github.com/Autumn-27/ARTEX) commit history. The checked-in changelog's latest dated entry is **0.3.18 (2026-10-12)**; this statement does not establish the latest published GitHub release. Inspect the [Releases page](https://github.com/RuoJi6/ARTEX/releases) for available artifacts and verify their version and provenance before use.
 
----
-## Acknowledgments
-Acknowledgments to the MiSecurity team
+The project documentation points to the [ruoji6/artex Docker image](https://hub.docker.com/r/ruoji6/artex). Because `latest` is mutable, select an explicitly versioned tag or digest and record the deployed image digest.
+
+## Demo
+
+[Open the ARTEX demo](https://artex-demo-ruoji6.vercel.app/).
+
+The demo is a frontend-only Next.js build with `NEXT_PUBLIC_MOCK=1`. It displays mock data and does **not** connect to a Go backend, PostgreSQL, model provider, or real targets. New-version demo data may require maintainer updates in `web/src/lib/mock/`.
+
+The release workflow can invoke the demo workflow after a qualifying release. The checked-in `demo.yml` also supports a manual deployment workflow. To deploy a mock demo in your own Vercel project, use Node.js 22, keep the Vercel project Git-disconnected, set `NEXT_PUBLIC_MOCK=1` for Production, and configure the GitHub Actions values/secrets documented by `.github/workflows/demo.yml`. Do not place a Vercel token in this repository or README. The workflow's `DEMO_URL`, Vercel project/team IDs, and token must refer to the project you control.
 
 ## Screenshots
 
-> See the [Online Demo](https://artex-demo-ruoji6.vercel.app/) for the full interactive experience.
+The screenshots below are repository assets and may not reflect the exact UI of every release.
 
-| Dashboard (overview / token usage / activity stream) | Task list |
+| Dashboard | Tasks |
 | :---: | :---: |
 | ![Dashboard](screenshots/dashboard.png) | ![Tasks](screenshots/tasks.png) |
 
-| Task · Execution process (session / tool calls) | Exploration chain |
+| Execution sessions | Exploration graph |
 | :---: | :---: |
 | ![Execution process](screenshots/sessions.png) | ![Exploration chain](screenshots/graph.png) |
 
@@ -31,81 +36,48 @@ Acknowledgments to the MiSecurity team
 | :---: | :---: |
 | ![Findings](screenshots/findings.png) | ![Assets](screenshots/assets.png) |
 
-| Asset coverage graph (force-directed layout · tested nodes highlighted · collapsible/expandable nodes) |
-| :---: |
-| ![Asset coverage graph](screenshots/assets_test.png) |
-
-| Traffic recording | Human-in-the-loop chat |
+| Asset coverage graph | Traffic recording |
 | :---: | :---: |
-| ![Traffic](screenshots/traffic.png) | ![Chat](screenshots/chat.png) |
+| ![Asset coverage graph](screenshots/assets_test.png) | ![Traffic](screenshots/traffic.png) |
 
-| Agent management | LLM configuration |
+| Human-in-the-loop chat | Agent and LLM configuration |
 | :---: | :---: |
-| ![Agent](screenshots/agents.png) | ![LLM](screenshots/llm.png) |
+| ![Chat](screenshots/chat.png) | ![LLM configuration](screenshots/llm.png) |
 
 | Intercept approval | Backend logs |
 | :---: | :---: |
-| ![Intercept](screenshots/intercept.png) | ![Logs](screenshots/logs.png) |
+| ![Approval](screenshots/intercept.png) | ![Backend logs](screenshots/logs.png) |
 
+## Feature map
 
----
+Feature descriptions summarize repository documentation and are not efficacy, reliability, or security guarantees. Availability can vary by release and configuration; consult the [changelog](CHANGELOG.md) and the relevant code for the version in use.
 
-## Approval Record Details
+- **Tasks and agents:** task creation, goals, task templates, scheduled tasks, agent management, task sessions, chat, and human-in-the-loop interactions.
+- **Planning and activity:** a planner/worker engine, per-task exploration graph and activity history, worker trace search, and a shared asset graph connected to task exploration through asset anchors. These describe the architecture, not a benchmarked success rate or guarantee of completing a chain.
+- **Scope and assets:** company-associated asset records, task scope, asset coverage views, task/global interception rules, and a documented [ScopeSentry asset-sync integration](https://github.com/Autumn-27/ScopeSentry) for importing selected projects/tasks and asset types.
+- **Approvals and interception:** approval records, review details, command/tool interception controls, and configured human/model review paths. These controls do not replace independent authorization, deployment controls, or operator review.
+- **Execution evidence:** a traffic-recording proxy, traffic search/filter views, task activity, and evidence associated with findings. Repository code describes real tool execution, including Bash/Kali tools and HTTP traffic; this is not merely mock functionality outside the demo.
+- **Findings:** raw findings, grouped vulnerability views and merge history, exports, and manual vulnerability retesting. The changelog describes retest outcomes as “Still reproducible,” “Fixed,” or “Cannot confirm”; it also notes that some retest history is not included in exports/task archives in the documented version.
+- **Integrations and configuration:** LLM provider settings, MCP (including legacy SSE services), skills, notification channels, proxy configuration, optional HTTP Basic Auth, and a custom IP-detection service. Provider and integration behavior depends on operator configuration and external services.
+- **Task intelligence:** an optional auto-recording setting for credentials and other sensitive clues. The repository documentation says records can contain credentials and source evidence and that these contents are displayed directly in task views. Treat this feature and its stored records as sensitive.
+- **Archives and updates:** task-level archive/restore functions and program/image update workflows. Task archives are not full-instance disaster-recovery backups; program rollback does not roll back database state.
 
-The global "Approval Records", the per-task "Intercept Approval", and approval cards in chat all support expanding to view details. The display structure follows [AegisHook's approval detail component](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue), reusing ARTEX's components and theme:
+For version-specific behavior and changes, consult the source tree and `CHANGELOG.md`.
 
+## Requirements and installation options
 
-## Asset Sync (ScopeSentry)
+### Prerequisites
 
-Asset data can be synced directly from [ScopeSentry](https://github.com/Autumn-27/ScopeSentry), eliminating duplicate collection:
+The checked-in files indicate the following toolchain/runtime versions and utilities:
 
-- On the **Asset Sync** page, enter the ScopeSentry address and API Key to connect the data source;
-- Choose the targets and asset types to sync by **project** or **task** (domain / subdomain / IP / port / site / endpoint...);
-- Import in one click and merge by company asset scope, then feed directly into ARTEX's asset graph for agents to explore.
+- PostgreSQL **16** in the Compose example.
+- Go **1.26.10** as declared by `go.mod` for source builds.
+- Node.js **22** in the release workflow for frontend builds; npm is used by frontend scripts.
+- `rsync` and `zip` are required by the release build script. Docker and Docker Compose are required for Compose deployment or the installer's Docker-backed database option.
 
----
+The repository does not document supported CPU/RAM/disk sizing. Worker concurrency is configured in System Settings and defaults to 3 in the README. No scale or capacity guarantee is implied.
 
-## Deploy Your Own Online Demo (auto-updated with each official Release)
-
-The demo only runs the `web/` frontend, built with `NEXT_PUBLIC_MOCK=1`, and needs no Go, PostgreSQL, or model keys. The UI uses mock data and does not perform real scans.
-
-Release pipeline: the official version's program packages, `SHA256SUMS`, and Docker images are all published successfully → the `demo` job of `release.yml` invokes `demo.yml` → checks out the commit for that version tag → builds the mock frontend → deploys to Vercel's fixed production domain. Ordinary main pushes, tag-only creation, failed releases, drafts, and prereleases do not update the demo. Demo data for new version features still needs to be maintained by the maintainer in `web/src/lib/mock/`.
-
-### First-time Vercel setup
-
-1. Create an empty project in your own Vercel account and set a name (for example `artex-demo-ruoji6`). Keep **Git disconnected** to avoid automatic deploys on every commit. `web/vercel.json` also disables Git auto-deploy.
-2. Under **Settings → Build and Deployment**, select **Next.js**, Node.js **22.x**; the install command can be overridden to `npm ci`, the build command is `npm run build`, and Output Directory stays default. **Leave Root Directory empty**: this workflow invokes the Vercel CLI from the checked-out `web/` directory, so you must not add another `web` layer.
-3. Add `NEXT_PUBLIC_MOCK=1` under the project's **Environment Variables**, applied at least to **Production**. Do not set `NEXT_EXPORT=1`, and do not fill in database connections or model keys.
-4. Copy the **Project ID** from the project's **Settings → General**; copy the **Team ID** from the team's **Settings → General** (corresponding to `VERCEL_ORG_ID`). Confirm that the production domain you plan to use exists under **Domains**.
-5. Create a deploy token under Vercel **Account Settings → Tokens**, choose the team that owns the project as the scope, and set an appropriate expiration. Save it directly to the GitHub repository's **Settings → Secrets and variables → Actions → Secrets** under the name `VERCEL_TOKEN`. Do not write the token into the repository, README, or chat; when it expires, update this secret.
-
-Add the following under **Variables** on the same GitHub settings page:
-
-| Variable | Value |
-| --- | --- |
-| `VERCEL_ORG_ID` | Vercel Team ID |
-| `VERCEL_PROJECT_ID` | Vercel Project ID |
-| `DEMO_URL` | Fixed public production URL, including `https://`, for example `https://artex-demo-ruoji6.vercel.app` |
-
-### First deployment and retry
-
-After merging the configuration into the default branch, open **Actions → deploy-demo → Run workflow**, select branch `main`, and leave the tag empty or enter the current latest official version (for example `v0.3.21`). The workflow only accepts the latest official release that is published and contains the five-platform program packages and checksum file; it can also deploy historical official releases that do not yet contain this workflow. There is no need to re-publish a Release or move existing tags.
-
-The workflow sets this dedicated demo project's framework to Next.js, Node to 22.x, root directory to empty, install command to `npm ci`, build command to `npm run build`, and ensures `NEXT_PUBLIC_MOCK=1` for Production, then binds the domain specified by `DEMO_URL`. Use a separate project; subsequent deploys will keep maintaining these settings.
-
-After success, visit the production domain and check `tag`, `commit`, and `mock: true` in `/demo-version.json`. Once it is confirmed accessible, change the old demo links at the top of the README and in the screenshot section to your own production domain.
-
-From then on, simply publishing a higher version through the normal process will update the demo automatically. If the demo deployment fails, the published packages and images remain valid, and the old demo usually continues to serve; after fixing the settings, rerun `deploy-demo` alone, without re-publishing the entire Release. When two versions are published at the same time, deployments run serially and check `latest` before building and before going live, to avoid an outdated build overwriting the new version.
-
-The release workflow invokes the deploy job directly here because a Release created with `GITHUB_TOKEN` does not trigger another `release: published` workflow. `demo.yml` also listens for manually published Releases from the web page and deploys after the same official-version, complete-release-package, and latest checks; a manual retry runs `deploy-demo`.
-
----
-
-## Installation
-
-> Requires the **PostgreSQL** database; exploration requires an **LLM** to be configured (`ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or configure it in the UI).
-
-### Method 1: One-click install script (recommended)
+### 1. Interactive install script
 
 ```bash
 git clone https://github.com/RuoJi6/ARTEX.git
@@ -113,249 +85,134 @@ cd ARTEX
 ./install.sh
 ```
 
-The script will: detect / automatically install Docker → let you choose **① all Docker** or **② build and run locally**:
+The script offers two paths:
 
-- **① All Docker**: enter a Postgres password (press Enter for a random one) → automatically writes `.env` → `docker compose up -d`.
-- **② Local run**: choose the database (connect to an existing one / start one with Docker) → generate `config.json` → `go` compiles an embedded single binary → start.
+1. **Docker:** checks for Docker/Compose, can offer automatic Docker installation on Linux, creates `.env` if needed, then runs `docker compose pull` and `docker compose up -d`.
+2. **Local build:** connects to an existing PostgreSQL database or can start PostgreSQL 16 with Docker, writes `config.json`, and builds the Go program. When npm is available, it builds and embeds the static frontend. If npm is absent, it builds a backend-only program and prints a message to run the frontend separately with `npm run dev`.
 
-Once installed, open **http://localhost:8787** (on first entry, set the administrator password at `/setup`).
+The local path starts `./artex` directly. The checked-in page-update flow relies on `start.sh`/`start.bat` to relaunch after an update, so this local install path does not provide that supervisor behavior as written.
 
-### Method 2: Docker Compose (manual)
+The script prints `http://localhost:8787`; first-time setup is described at `/setup`. **The fresh-install warning above applies.** The local Docker database is started asynchronously by the script; the installer does not wait for a PostgreSQL readiness probe before starting ARTEX.
+
+### 2. Docker Compose
 
 ```bash
 git clone https://github.com/RuoJi6/ARTEX.git
 cd ARTEX
-cp .env.example .env          # set POSTGRES_PASSWORD and optionally ANTHROPIC_API_KEY
-docker compose up -d          # pull the ruoji6/artex image + postgres
-# → http://localhost:8787
+cp .env.example .env
+# Edit .env and set POSTGRES_PASSWORD before starting.
+docker compose up -d
 ```
 
-The image already includes common tools (ripgrep/curl/vim/npm/nmap...); `./skills` and `./data` are persisted via bind mounts.
+Compose runs PostgreSQL 16 and the ARTEX image. The `pgdata` named volume stores PostgreSQL data; `./data` and `./skills` are bind-mounted into the container. The image includes tools as described by the repository, including ripgrep, curl, vim, npm, and nmap.
 
-In `.env`, `ARTEX_IMAGE=ruoji6/artex` and `ARTEX_TAG=latest` use the latest image by default; you can also pin it to `v0.3.17` (full image address `ruoji6/artex:v0.3.17`). The image supports `linux/amd64` and `linux/arm64`, and Docker automatically selects the architecture matching the host, so ARM64 Kali needs no self-compilation. On first deployment, change `POSTGRES_PASSWORD`; running the service does not require a Docker Hub publish token.
+**Network exposure:** the checked-in Compose mapping publishes `8787:8787` on all host interfaces by default. Port 8788 is bound to `127.0.0.1`. The app listener on 8787 is HTTP. This differs from the reverse-proxy guidance below, which recommends keeping 8787 internal and exposing HTTPS at the proxy. For a proxy-fronted deployment, change the app mapping to `127.0.0.1:8787:8787` (or use an internal-only network) before starting, and verify the effective Docker/network rules. If you intentionally expose the service directly, understand that HTTP is not TLS and restrict it using appropriate network controls; do not treat authentication as transport encryption.
 
-For remote MCP, you can choose `http` (Streamable HTTP) or `sse` (legacy SSE) in system settings.
-Legacy SSE services usually establish the event stream with `GET /sse`, then receive JSON-RPC requests via the
-`/message?sessionId=...` returned by the service; when configuring, set the URL to `/sse` and fill in the header as
-`Authorization=Bearer <token>`.
+In `.env`, `ARTEX_IMAGE` defaults to `ruoji6/artex` and `ARTEX_TAG` defaults to `latest`. The release workflow targets `linux/amd64` and `linux/arm64` Docker images. Set `POSTGRES_PASSWORD` and review the database, secrets, and network settings before deployment. Compose uses `sslmode=disable` for its internal PostgreSQL connection in this example; this is not a secure remote-database template.
 
-### Method 3: Download prebuilt binaries (Releases)
+For remote MCP configuration, the UI documents `http` (Streamable HTTP) and legacy `sse`. Legacy SSE services generally use `GET /sse` to establish the event stream and a returned `/message?sessionId=...` URL for JSON-RPC requests; the documented configuration sets the URL to `/sse` and an `Authorization=Bearer <token>` header.
 
-Download the zip for your platform from this repository's [Releases](https://github.com/RuoJi6/ARTEX/releases); after extraction you get `artex` + `start.sh` (`start.bat` on Windows) + `skills/` + `config.example.json`. Choose `linux-arm64` for Linux ARM64 (including ARM64 Kali) and `linux-amd64` for x86_64:
+### 3. Prebuilt release archives
+
+Download the archive for the selected platform from [GitHub Releases](https://github.com/RuoJi6/ARTEX/releases). The documented archive contains `artex`, `start.sh` (or `start.bat` on Windows), `skills/`, and `config.example.json`. The release workflow targets Linux amd64/arm64, macOS amd64/arm64, and Windows amd64.
 
 ```bash
-cp config.example.json config.json   # configure the database connection
-./start.sh                           # → http://localhost:8787
+cp config.example.json config.json
+# Edit config.json for the database connection.
+./start.sh
 ```
 
-> Please start with `start.sh` / `start.bat` instead of running `./artex` directly. It is a daemon script: after the program exits, it decides whether to relaunch based on the exit code, and **[the one-click update on the page](#method-1-one-click-page-update-recommended) relies on it to swap binaries**. If you run `./artex` directly, it will not be relaunched after an update.
-> To keep it running in the background: `nohup ./start.sh >artex.log 2>&1 &`.
-
-### Method 4: Compile a single binary from source
+Use `start.sh`/`start.bat` rather than invoking `./artex` directly when relying on the page update/restart flow. To run the launcher in the background, the repository documents:
 
 ```bash
-# 1) Export the frontend static files
+nohup ./start.sh >artex.log 2>&1 &
+```
+
+**Configuration caveat:** the checked-in `config.example.json` sets the database port to `5433`, while the README, installer, and common PostgreSQL defaults use `5432`. Set the actual database port explicitly. The config example uses `sslmode: disable`; configure and verify TLS for remote database connections.
+
+### 4. Compile a single binary from source
+
+The documented embedded-frontend build is:
+
+```bash
 cd web && npm ci && npm run build:static && cd ..
-# 2) Copy them into the embedded frontend directory
 cp -r web/out server/webui/dist
-# 3) Compile (-tags embedui embeds the frontend)
 CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
 ./start.sh
 ```
 
-### Method 5: Build cross-platform Release archives
+A backend started without `-tags embedui` does not include the frontend. The frontend can be run separately during development; see below. Verify build paths and output names against the checked-out version.
 
-`build.sh` first builds and embeds the frontend, then uses the Go linker to strip debug information, and compresses the release files into a zip. Release mode generates zips for Linux amd64/arm64, macOS amd64/arm64, and Windows amd64 by default:
+### 5. Build cross-platform release archives
 
 ```bash
 ./build.sh --release
-# Output: dist/artex-0.3.3-*.zip
 ```
 
-UPX self-extracting binaries may be incompatible with some Linux kernels, virtualization environments, or security policies, so they are disabled by default. Use `ARTEX_TARGETS` to customize targets; when you have confirmed the target runtime environment is compatible, you can explicitly pass `--upx` to further shrink the binary:
+The release script builds the frontend, embeds it in Go binaries, strips debug information, and zips target artifacts. By default, the documented targets are Linux amd64/arm64, macOS amd64/arm64, and Windows amd64. Customize targets with `ARTEX_TARGETS`:
 
 ```bash
 ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 ./build.sh --target linux/amd64 --upx
 ```
 
----
-
-## Update and Upgrade
-
-> An upgrade only replaces the program and does not touch data: the Postgres data volume `pgdata`, `./data` (jwt.key / SQLite, etc.), and `./skills` are all preserved. **No manual database migration is required** — `artex` idempotently reruns `schema.sql` (including `ADD COLUMN` / `CREATE INDEX IF NOT EXISTS`) on every startup, i.e. "restart means migrate". Even so, it is still recommended to back up `./data` and the database before upgrading.
-
-### Method 1: One-click page update (recommended)
-
-On the **System Settings** page (sidebar "System Settings" → `/system/settings`), the **Version and Updates** card lets you check for and install a new version directly, without logging into the server.
-
-Programs built by this repository always check for updates against the latest official GitHub Release of `RuoJi6/ARTEX`, skipping drafts and prereleases. Older official programs still point to the original author's repository, so the first switch must install a program built by this repository manually; afterwards, publishing a higher three-part version allows upgrading through the page. Pushing only to main or a Git tag without publishing a Release does not produce a new version that can be installed online.
-
-After clicking **Update**: download the release package for the current platform → compare against the Release's `SHA256SUMS` → smoke-test the new binary with `-h` → stage it as `artex.new` → the program exits and `start.sh` / `start.bat` relaunches it to complete the swap. The page automatically waits for the new version to come online and then refreshes.
-
-- **A failure never leaves a broken program**: if the checksum or smoke test fails, the staged file is discarded and the current version keeps running; if the swapped-in new version fails to start 3 times in a row, it automatically rolls back to `artex.old` (the failed one is kept as `artex.failed` for troubleshooting).
-- **You can roll back at any time**: the previous version is kept as `artex.old`, and the card has "Roll back to previous version". Note that the database schema is not rolled back.
-- **An update interrupts running tasks** — updating means restarting, so do it when idle.
-- **Dev builds are not offered updates**: it is disabled when the version is `dev` or `git describe` has a suffix, to avoid an official version overwriting a locally debugged binary.
-- **Under Docker, only the program is replaced, not the image**: toolchains such as playwright / nmap inside the image are not upgraded, and after `docker compose up -d` recreates the container it falls back to the image's built-in version. To upgrade the image as well, still use `docker compose pull artex && docker compose up -d artex`.
-- **Update proxy (optional)** uses the same "address input + save" approach as other proxy settings. After filling in a dedicated update proxy and saving, for example `http://127.0.0.1:7897`; `http://`, `https://`, `socks5://`, `socks5h://`, and username/password authentication are supported. Clearing and saving means a direct connection, unaffected by the global proxy or `HTTP_PROXY` / `HTTPS_PROXY` environment variables. After saving, it automatically rechecks; the version check, checksum, and release package download use the same egress. Updates only download from GitHub domains and enforce HTTPS.
-- The proxy address is accessed by the **ARTEX server**. `127.0.0.1` inside Docker refers to the container itself; when the proxy runs on the host, use an address reachable from the container (usually `http://host.docker.internal:7897` on Docker Desktop) and allow the container to access the proxy port.
-
-### Maintainer: publish online updates via GitHub Actions
-
-The release workflow is `.github/workflows/release.yml`. Pushing an official tag triggers the build; you can also re-run a failed release by entering an existing tag in Actions → release → Run workflow. The tag must be `vMAJOR.MINOR.PATCH`, for example `v0.3.17` below; subsequent versions must be higher than the version the user is running.
-
-```bash
-git push origin main
-git tag v0.3.17
-git push origin v0.3.17
-```
-
-The workflow pins the commit for the tag, exports the frontend with Node.js 22, compiles the five platform programs with the Go version specified in `go.mod` (embedding the frontend), and generates ZIPs and `SHA256SUMS`. The AMD64 and ARM64 images are built on GitHub's native runners, connecting to a temporary PostgreSQL to verify program startup, version, and the embedded frontend; after both architectures pass, it publishes the multi-arch image's version tag and `latest`. After the image is published, it uploads the full ZIPs and checksum files, and finally publishes the Release. An already-published release of the same version cannot be overwritten; publish a new tag instead.
-
-Maintainers need to configure the variable `ARTEX_DOCKER_IMAGE` (Docker Hub username/image name) and the secrets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (with image push permission) in this repository's Settings → Secrets and variables → Actions. Packages are uploaded via GitHub's built-in `GITHUB_TOKEN`; images are pushed to Docker Hub with the above credentials. The credentials are only used for the workflow to log in and are not written into the source or the image. The image address is also recorded in `.env.example` and the Compose defaults.
-
-### Migrate an existing Docker deployment to this repository's image
-
-In the original deployment directory, back up `.env`, the Compose files, `data/`, and the PostgreSQL data, keeping the original database volume and skills mount. Set `.env`'s `ARTEX_IMAGE` to this repository's image address and `ARTEX_TAG` to the target version; if the old Compose still hardcodes the original author's image, you can create the following override file (if an override file already exists, merge the image configuration into it):
-
-```yaml
-# docker-compose.override.yml
-services:
-  artex:
-    image: ${ARTEX_IMAGE}:${ARTEX_TAG:-latest}
-```
-
-Then update only the application container:
-
-```bash
-docker compose pull artex
-docker compose up -d --no-deps artex
-curl --fail http://127.0.0.1:8787/api/health
-docker compose logs --tail=50 artex
-```
-
-Continue using the original deployment directory and Compose project name, ensuring `./data`, `./skills`, and the PostgreSQL data volume still point to the original data. After migration, the program checks for online updates from `Ruoji6/ARTEX`; afterwards you can update the program via the page or update the whole image with the commands above.
-
-When migrating an existing Docker deployment for the first time, extract the verified new ARM64 ZIP onto the host, back up the original program, then replace only `/app/artex` inside the existing container. For example, if the existing container is named `artex-artex-1`:
-
-```bash
-# Run from the download directory; verify the downloaded ZIP against SHA256SUMS before extracting.
-sha256sum --ignore-missing --check SHA256SUMS
-unzip artex-0.3.17-linux-arm64.zip
-sudo docker stop artex-artex-1
-sudo docker cp artex-artex-1:/app/artex ./artex-before-migration
-sudo docker cp ./artex-0.3.17-linux-arm64/artex artex-artex-1:/app/artex
-sudo docker start artex-artex-1
-curl --fail http://127.0.0.1:8787/api/health
-```
-
-This preserves the existing database, data, and skills mounts. Log into the system settings page to check the update source and version. The program replaced inside the container still belongs to the container's writable layer; deleting or recreating the container loses the replacement, so when a rebuild is needed, use an image that contains this repository's program. A program rollback does not revert database migrations, so back up the database and data before upgrading.
-
-### Method 2: One-click update script
-
-```bash
-cd ARTEX
-./update.sh
-```
-
-The script first optionally runs `git pull` to fetch the latest code, then lets you choose **① Docker update** or **② local compile update** (matching `install.sh`):
-
-- **① Docker**: you can specify the target image tag (press Enter to reuse `.env`'s `ARTEX_TAG`, defaulting to `latest`) → `docker compose pull` → `docker compose up -d` (restarting with the new image migrates automatically).
-- **② Local**: rebuild the frontend static output → recompile `./artex` (takes effect after restarting the process).
-
-### Method 3: Docker Compose (manual)
-
-```bash
-cd ARTEX
-git pull                       # update Compose files / scripts (optional)
-# To pin a version, set ARTEX_TAG=v0.3.17 in .env; otherwise latest is used
-docker compose pull artex
-docker compose up -d artex     # restart with the new image → schema migrates automatically
-docker image prune -f          # remove old images (optional)
-```
-
-### Method 4: Prebuilt binaries (Releases)
-
-Download the new version's zip from [Releases](https://github.com/RuoJi6/ARTEX/releases), stop the old process, overwrite `artex` and `skills/` (keeping your `config.json` and `data/`), and restart:
-
-```bash
-cp -r <extracted-directory>/skills ./ && cp <extracted-directory>/artex ./
-./start.sh
-```
-
-### Method 5: Compile from source
-
-```bash
-git pull
-cd web && npm ci && npm run build:static && cd ..
-cp -r web/out server/webui/dist
-CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
-# Restart ./start.sh
-```
-
----
+UPX is disabled by default because self-extracting binaries may not work in some kernels, virtualized environments, or security policies. `rsync` and `zip` are used by the script. The example versioned output path in older README text may be historical; inspect the actual `dist/` contents rather than relying on a stale version example.
 
 ## Configuration
 
-**Database** (`config.json`, or override with the environment variable `ARTEX_PG_DSN`):
+### Database
+
+Configuration can be read from `config.json` or supplied with `ARTEX_PG_DSN`; the environment DSN takes precedence over the individual JSON fields. `config.example.json` also describes an alternative full `database.dsn` form. Example only:
 
 ```json
 {
   "database": {
-    "host": "127.0.0.1", "port": 5432,
-    "user": "artex", "password": "yourpass",
-    "dbname": "artex", "sslmode": "disable"
+    "host": "127.0.0.1",
+    "port": 5432,
+    "user": "artex",
+    "password": "replace-me",
+    "dbname": "artex",
+    "sslmode": "disable"
   }
 }
 ```
 
-**LLM**: `export ANTHROPIC_API_KEY=sk-...` (or `OPENAI_API_KEY`), or fill it in on the UI's "LLM Configuration" page.
-Optional: `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY`.
+Use an appropriate TLS-verifying connection mode for networked databases. Do not use the example's `sslmode=disable` for remote connections without an explicit, reviewed reason and compensating controls.
 
-**Concurrency**: the number of work agents per task is configured in "System Settings" (default 3).
+### LLM and task settings
 
-**Common parameters**: `./start.sh -addr :8787 -proxy :8788` (`-addr` frontend + API, `-proxy` traffic recording proxy). The startup script passes the parameters through to `artex` unchanged.
+Set `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`, or configure a supported provider in the UI's LLM Configuration page. Optional environment variables documented by the README are `ARTEX_LLM_PROVIDER`, `ARTEX_LLM_MODEL`, `ARTEX_LLM_BASE_URL`, and `ARTEX_LLM_PROXY`. Agent concurrency is configured in System Settings (documented default: 3).
 
-### Optional HTTP Basic Auth access verification
+The command-line address flags documented by the README are:
 
-In **System Settings → HTTP Basic Auth**, enter a dedicated verification username and password, enable "Enable access verification", and click "Save access verification". It is off by default and takes effect immediately after saving, with no restart needed; the password must be at least 8 characters and at most 72 bytes, and the username cannot contain a colon.
-
-Once enabled, visitors first complete the browser's native username/password verification, then reach the original ARTEX login page. Web pages, static assets, and APIs are all protected; the GET/HEAD health check at `/api/health` must also pass Basic Auth and returns `401` when unauthenticated; after passing, it only returns `{"ok":true}`, without exposing the application name or version. The health check does not additionally require an administrator JWT; external probes need the same Basic Auth credentials configured, for example using `curl --fail --user 'verification-user' http://127.0.0.1:8787/api/health` and entering the password when prompted. When Basic Auth is not enabled, the original credential-free liveness behavior is preserved. The version number is provided by `/api/version`, which requires an administrator JWT; when access verification is enabled, this endpoint is also protected by Basic Auth. The Basic Auth realm for unauthenticated requests uses the generic name `Restricted`; passing access verification still requires logging into ARTEX to use business APIs. For public deployments, please access via HTTPS.
-
-When upgrading from an older web version that still read the version from `/api/health`, the old page may not be able to automatically determine that the upgrade is complete; after the service restarts, manually refresh the page. The new web version's version display and upgrade polling both use `/api/version`.
-
-The configuration is persisted to the database, the password is stored only as a bcrypt hash, and the UI never echoes it back. Leaving the password blank when saving means no change; when disabled, the credentials are kept for easy re-enabling. The dedicated HttpOnly verification cookie is valid for 12 hours and is compatible with the existing JWT and SSE; saving the configuration invalidates the old verification cookies in other browsers, while the current administrator browser stays signed in. Browsers may cache Basic Auth credentials, so use a new incognito window to check the verification prompt.
-
-Docker and the embedded-frontend binary support this feature directly. The auth check in `next dev` only forwards credentials to the loopback backend on the local machine (`localhost`, `127.0.0.1`, or `::1`); the frontend and backend should use the same hostname. A remote development backend can still be used when verification is not enabled; when it is enabled, access the remote service through the embedded frontend to avoid cross-origin verification cookie issues.
-
-If you forget the dedicated verification password, connect to the application database on the server and run the following statement, then restart ARTEX to disable this layer of access verification, and log in with your original ARTEX account to reconfigure it:
-
-```sql
-UPDATE settings
-SET value = jsonb_set(value::jsonb, '{enabled}', 'false'::jsonb)::text,
-    updated_at = now()
-WHERE key = 'auth.http_basic';
+```bash
+./start.sh -addr :8787 -proxy :8788
 ```
 
-### Reverse proxy deployment (HTTPS / only port 443 open)
+`-addr` configures the frontend/API listener; `-proxy` configures the traffic-recording proxy.
 
-Both the frontend and API/SSE are served by the same backend port (default `:8787`), and the live activity stream uses a **same-origin** address by default, so **there is no need to configure `NEXT_PUBLIC_SSE_BASE`**; for public exposure, open only 443 and keep 8787 on the internal network.
+### Optional HTTP Basic Auth
 
-SSE is a long-lived connection with continuous pushes, so the reverse proxy **must disable buffering**; otherwise the browser can connect but receives no events (appearing as an activity stream that spins forever). Nginx example:
+The README documents an optional HTTP Basic Auth access-verification layer under **System Settings → HTTP Basic Auth**. It is off by default; when enabled, the browser's native prompt precedes the ARTEX login. The documented password length is 8 characters minimum and 72 bytes maximum; usernames cannot contain a colon. The Basic Auth cookie is described as HttpOnly and valid for 12 hours. Saving settings invalidates prior verification cookies in other browsers. Basic Auth is an additional access layer; it does not replace TLS or application authentication.
+
+The repository documents a database SQL recovery procedure to disable this layer if its dedicated password is forgotten. Before using any recovery SQL, back up the database and validate the exact schema/version. The `/api/health` endpoint is documented as a liveness response (`{"ok":true}`), not as a PostgreSQL readiness check. It can require Basic Auth when that feature is enabled. `/api/version` requires an application JWT.
+
+### Reverse proxy and HTTPS
+
+The frontend and API/SSE share the backend port, default `8787`. Production uses a same-origin activity stream by default; `NEXT_PUBLIC_SSE_BASE` is only needed if the stream has a different origin and is baked into the frontend at build time. For public-facing deployments, terminate TLS at a reverse proxy and keep 8787 on loopback or a private network. Ensure host firewall and container port mappings agree with that policy.
+
+The repository's Nginx example disables buffering for SSE and uses a long read timeout:
 
 ```nginx
 server {
     listen 443 ssl;
     server_name your.domain.com;
-    # ssl_certificate / ssl_certificate_key ...
+    # Configure ssl_certificate and ssl_certificate_key.
 
     location / {
         proxy_pass http://127.0.0.1:8787;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
-
-        # SSE essentials: disable buffering, use a long timeout, and HTTP/1.1
         proxy_buffering off;
         proxy_cache off;
         proxy_read_timeout 3600s;
@@ -365,275 +222,96 @@ server {
 }
 ```
 
-> Only when SSE needs to use a different origin from the page (such as a separate subdomain) should you set `NEXT_PUBLIC_SSE_BASE` **at build time** (this variable is baked into the static bundle during `next build`; setting it again at container runtime has no effect).
+This is a configuration example, not evidence of a hardened or tested production deployment. Reverse-proxy access logs and application logs should not record bearer tokens or sensitive task content.
 
----
+## Updates and releases
 
+The repository documents these update paths: page-based update, `./update.sh`, Docker Compose image pull/recreate, release archive replacement, and source rebuild. Page-based updates download a platform release archive, compare against the release's `SHA256SUMS`, run a binary smoke test, stage a replacement, and rely on `start.sh`/`start.bat` to complete the swap. The README says official programs check the latest published release and skip drafts/prereleases. Dev builds disable the page updater.
 
+**Integrity caveat:** a SHA-256 checksum distributed through the same release channel can detect corruption or mismatch, but is not an independent signature, publisher-authentication mechanism, or build-provenance attestation. The checked-in release workflow does not include artifact signatures, an SBOM, or a build-provenance attestation.
 
-## Development
+**Rollback caveat:** the updater retains `artex.old` and attempts recovery after repeated startup failures, but rollback is best-effort and depends on marker and filesystem operations succeeding. Checksum or smoke-test failure occurs before replacement; post-swap failure may still prevent automatic restoration. A program rollback does not roll back database changes. Back up state and preserve logs before updating; do not rely on automatic rollback as a guarantee.
 
-### Merging the same vulnerability and unified reporting
+Updating interrupts running tasks because it restarts the process. Under Docker, replacing the program inside a running container does not update the container image; recreating the container returns to the image's built-in program. The README's update-proxy setting supports HTTP, HTTPS, SOCKS5/SOCKS5H, and username/password authentication, and the application server makes the update request. In Docker, `127.0.0.1` refers to the container itself.
 
-The findings page defaults to "By vulnerability". Raw reports, per-task, and per-asset views keep the original tables, statuses, and action buttons; only merged records are changed into expandable vulnerability folders. Within the same task, after the Reporter confirms the same actual defect based on target, endpoint parameters, permission boundary, root cause, and verification evidence, it forms a folder; identical type or name alone is not used as an automatic merge criterion. Different severity, endpoint, backend, or read/write impact may still be the same vulnerability; conversely, sharing a login entry or token alone does not prove the same root cause. When there is a relationship but the common root cause cannot be confirmed, submit a manual suggestion. The folder's `critical/high/medium/low` counts are based on the raw records, for example `0/1/1/1`; the findings page's independent vulnerability count is deduplicated per folder, severity counts are based on raw reports, and neither the list nor folder details show a unified rating label. Raw report content, rating, status, report, and evidence are not overwritten.
+### Maintainer release workflow (documented commands)
 
-Click the arrow to expand the raw records; click the folder title to view the unified report, raw records, and merge history. Suggestions with insufficient evidence require clicking "Confirm merge"; after rejection or removal, these relationships will not be automatically merged again by the Agent. Removing a member does not delete the original vulnerability; when fewer than two remain, the folder is dissolved and history is kept. Vulnerability groups from inherited tasks remain read-only.
-
-New reports are generated by the existing Reporter as independent reports and checked for duplicates. The upgrade first adds the Reporter's merge tools and operating instructions for the first time, preserving custom prompts and trigger settings; deleted or disabled Reporters are not rebuilt or enabled. History is not scanned automatically: expand and select raw records, click "Organize selected", queue them per task, and view execution records and failure messages. If the same task already has an organize operation queued or running, duplicate submissions are rejected. Historical organizing reuses the original report in read-only mode and is prohibited from overwriting the original report or attaching evidence retroactively; if the existing report is empty or outdated, state so truthfully and handle it separately through the report-writing process. Before finishing, a root-cause judgment for each selected record must be submitted, and the read scope, suggestions, unified report completeness, and version are checked; completion is shown only after passing acceptance. Folder details allow regenerating the unified report; the Reporter must be enabled with an available model configured. Judgment and writing consume model tokens; candidate retrieval returns summaries page by page first, detail evidence is read on demand, and the target is not re-probed.
-
-After members, reports, or evidence change, the unified report is marked as pending update, and the actually read version is validated when writing. Export defaults to one unified report per group plus unmerged records, with an optional "Include original sub-reports"; when the unified report is not generated or is outdated, a clear explanation and all raw materials are attached. Raw reports show the owning task, asset, and time; expand the task first, then the vulnerability folder; the asset view keeps the asset tree, and matching any member shows the whole folder, marking members that do not match the filter when expanded. Collapsed state only reads lightweight summaries and does not load member reports. The upgrade reuses the idempotent database migration at startup, with no separate SQL to execute.
-
-### Manual vulnerability retesting
-
-The **Retest** tab in task details lets you page through this task's vulnerabilities, view past conclusions and evidence, and manually trigger a retest. After starting, the current tab is kept, showing a spinner and "Retesting"; once the fix is confirmed, the vulnerability status is updated accordingly.
-
-Click **Retest** in the action area of each row in the vulnerability list, or click **Start retest** in the "Vulnerability Retest" area of the vulnerability details, fill in the optional fix version, test conditions, or constraints, and the system creates a separate retest Agent session, keeping the current page after starting. The list's flat, per-task grouped, and asset views all support this entry; while a retest is running, a spinner and "Retesting" are shown, click to enter the corresponding session when needed, and it returns to "Retest" when finished. Retesting does not require restarting the original scan task; conclusions are "Still reproducible", "Fixed", or "Cannot confirm", and each conclusion, evidence, and session link is saved in the vulnerability details.
-
-On first startup, the new backend preloads an editable "Vulnerability Retest" (`retester`) Agent, whose prompt, LLM, run budget, and tools can be configured in Agent Management. It uses its bound LLM by default, or the globally active configuration if none is bound. When a retest session completes successfully with the conclusion "Fixed", the system automatically changes the vulnerability disposition status to "Fixed"; in-progress, failed, stopped, or other conclusions keep the original status. Original evidence and reports are always preserved. You can also manually select "Fixed" from the status dropdown. While the same vulnerability is being retested, an existing session is reused; after stopping, failure, or a service restart, a new one can be started.
-
-In this version, history is viewed through the vulnerability details and sessions; it is not yet included in vulnerability report exports or task archive packages, nor is it automatically linked to traffic packets. Demo mode only generates clearly labeled mock records and does not request real targets.
-
-### Custom IP detection service
-
-In **System Settings → Traffic and Security**, expand **Custom IP detection service (optional)**, enter a reachable HTTP / HTTPS echo service, and click **Save detection service**. The service must return a plain-text IP or JSON in the format `{"ip":"1.2.3.4"}`. Intranet addresses are supported; restrictions on the local machine, link-local addresses, and cross-host redirects are preserved.
-
-After saving, the top bar's egress IP, proxy test, proxy pool health check, and auto-reconnect all use this address, and it remains in effect after refreshing the page or restarting; if the custom service fails, the default public service is not tried again. Clearing the address and saving restores the default api.ipify.org / ifconfig.me. You can also click **Test proxy** first to verify temporarily; the test does not save the address.
-
-### Local run and test
+The checked-in `.github/workflows/release.yml` starts from a `vMAJOR.MINOR.PATCH` tag. Example only; verify version sequencing and branch policy before using:
 
 ```bash
-./dev.sh    # backend (:8787) + traffic proxy (:8788) + frontend next dev (:5173) → http://localhost:5173
+git push origin main
+git tag v0.3.17
+git push origin v0.3.17
 ```
 
-- Backend: `go run ./cmd/artex` (without `-tags embedui`, the frontend is not embedded)
-- Frontend: `cd web && npm run dev` (`/api` is reverse-proxied to the backend, with hot reload)
-- Test: `go test ./...`
-- Mock preview (no backend): `cd web && NEXT_PUBLIC_MOCK=1 npm run dev`
+The workflow definition builds five platform archives, generates `SHA256SUMS`, smoke-tests Linux binary startup, and builds/tests Docker images on AMD64 and ARM64 before publishing. It does not show an artifact signature, SBOM, provenance attestation, or an in-workflow human publication approval. Verify GitHub repository settings, image credentials, branch/tag protection, release approvals, workflow runs, and published artifacts independently.
 
----
+## Data, privacy, and deployment boundaries
 
-## System Technical Architecture
+The application can process and persist task and target descriptions, organizations/assets, tool inputs and outputs, activity/chat, uploads/transcripts, findings/evidence, HTTP traffic, and usage metadata. When credential analysis is enabled, records can include usernames, passwords, tokens, and cookies. A gated LLM recorder can capture provider request/response bodies. The exact data retained depends on code path, settings, configured providers, and deployment; operators should inventory the live configuration and records before onboarding sensitive data.
 
-ARTEX is an **LLM multi-agent-driven autonomous penetration system**: a Go monolith backend (with an embedded Next.js frontend) + PostgreSQL, with agent capabilities provided by the [`norma`](https://github.com/Autumn-27/norma) SDK (`agentcore` / `tool` / `permission` / `harness` / `memory` / `transcript`). The core is a **dual-graph architecture**, plus two autonomy mechanisms built around it: **process-level information exchange between workers** and **a planner multi-round shared todolist for a stable attack chain**.
+The repository documents that task intelligence may display credential bodies and source evidence directly. LLM request/response records and task archives may also contain sensitive content. Task archive packages are compressed, not encrypted by the archive format. Protect databases, filesystems, exported archives, logs, and backups accordingly, and review provider processing and retention terms before sending customer content.
 
-### Overall layering
+The application uses a shared `ARTEX` administrator identity and has no tenant or role claim in its authentication model. Company/task scope records should not be treated as customer isolation. Do not treat one shared instance as a multi-customer security boundary without additional implementation and tests.
 
-```mermaid
-flowchart TB
-  subgraph FE["Frontend Next.js (embedded in a single binary via go:embed)"]
-    UI["Dashboard · Tasks · Assets · Coverage graph · Traffic · Workspace · System settings"]
-  end
-  subgraph SRV["server (Go net/http)"]
-    API["REST /api/* | JWT authentication | SSE"]
-    ENG["engine scheduler loop"]
-    MGR["Manager | task/engine/store lifecycle"]
-  end
-  subgraph AG["agent (norma SDK)"]
-    GO["goals | goal decomposition + scope extraction"]
-    PL["planner | sole intent generator"]
-    WK["worker | workers ×N"]
-    MA["mainagent | human-in-the-loop"]
-  end
-  subgraph DB["PostgreSQL"]
-    AGRAPH["Asset graph | assets / companies / task_scope"]
-    EGRAPH["Exploration graph | exploration_nodes / anchors / activity"]
-  end
-  subgraph SUB["Supporting subsystems"]
-    PROXY["Traffic-recording proxy | MITM + CA evidence"]
-    GUARD["guard / intercept | tool approval gate"]
-    ENR["enrich | asynchronous DNS / HTTP enrichment"]
-    EXT["MCP · skills · memory · report"]
-  end
+Task deletion is not demonstrated to erase every related record: optional cleanup flags default off and some usage ledgers persist. Logs have no repository-evident general retention/deletion policy. The README does not provide a tested end-to-end erasure procedure, data-subject request process, data retention schedule, or complete processor list. Do not promise complete erasure or fixed retention based on this README.
 
-  UI -->|HTTP| API
-  API --> MGR --> ENG
-  ENG --> PL
-  ENG --> WK
-  API --> MA
-  API --> GO
-  PL --> DB
-  WK --> DB
-  MA --> DB
-  GO --> DB
-  WK -->|"Bash / HTTP fully recorded"| PROXY
-  WK --> GUARD
-  WK --> ENR
-  PL -.-> EXT
-  WK -.-> EXT
-  MA -.-> EXT
+The task archive/restore feature archives selected task-related records and files. It is not a full-instance backup: disaster recovery must also account for PostgreSQL, `./data`, `./skills`, deployment configuration and required keys. No complete, tested backup/restore runbook or recovery-time/recovery-point objective is evidenced here.
+
+## Security reporting and support
+
+Community information in this repository points to the SecSentry WeChat official account/group. This is a community link, not a product support commitment or private vulnerability-reporting channel. No security response time or service-level agreement is stated. Establish an accountable support owner and monitored private security-reporting route before relying on support.
+
+## Development and tests
+
+The checked-in development script is documented to start a backend on `:8787`, traffic proxy on `:8788`, and Next.js development frontend on `:5173`:
+
+```bash
+./dev.sh
+# http://localhost:5173
 ```
 
-| Layer | Responsibility |
-| --- | --- |
-| **Frontend** | Next.js static export, embedded into a single binary via `go:embed`; visualizes tasks/assets/exploration chain/coverage graph, with human-in-the-loop chat |
-| **server** | `net/http` routing + JWT auth + SSE; the `Manager` manages the lifecycle of tasks, engines, and DB stores |
-| **engine** | One `plannerLoop` + N worker goroutines per task; intent claiming, timeout/pause/drain |
-| **agent** | goals / planner / worker / mainagent; the `ToolSet` exposes the dual graphs as LLM tools |
-| **db** | Postgres persistence for the dual graphs (pgx); the schema idempotently creates tables on every startup via `go:embed` |
-| **Support** | Recording MITM proxy, approval gate, async enrichment, MCP/skills/memory/report |
+Other documented commands:
 
-### Dual-graph architecture: exploration graph + asset graph
+```bash
+# Backend (without -tags embedui, frontend is not embedded)
+go run ./cmd/artex
 
-The system splits "**what is the target**" and "**how far has testing progressed**" into two mutually independent graphs that are connected via anchors:
+# Frontend
+cd web && npm run dev
 
-- **Asset graph (globally shared)**: the asset source of truth shared across tasks. Nodes are `root_domain / subdomain / ip / service / app / endpoint`, owned by a company; the parent-child relationships and dedup keys from domain → subdomain → service → endpoint are all computed by the program, and the agent only submits raw information.
-- **Exploration graph (independent per task)**: the "thinking and progress" process of a single task. Nodes are `goal / intent / fact / finding (vulnerability) / hint`, connected into a **lineage chain** by edges such as `spawns / derived_from / yields / proves`, answering "which direction was derived from which facts and what it produced".
-- **The two graphs are connected via anchors**: `exploration_anchors(node_id, asset_id)` anchors intents/facts/findings to specific assets — so you can see which assets a direction targets, and conversely trace which intents tested a given asset in this task and what facts were derived. This also supports **asset test coverage** and the **asset coverage graph** (in-scope assets + tested highlighting).
+# Tests
+go test ./...
 
-```mermaid
-flowchart LR
-  subgraph EG["Exploration graph (independent per task · progress chain)"]
-    direction TB
-    G["goal"]
-    I1["intent A"]
-    F1["fact"]
-    I2["intent B"]
-    FD["finding"]
-    G -->|spawns| I1
-    I1 -->|yields| F1
-    F1 -->|derived_from| I2
-    I2 -->|proves| FD
-  end
-  subgraph AG["Asset graph (globally shared · source of truth)"]
-    direction TB
-    RD["root_domain"]
-    SD["subdomain"]
-    SV["service"]
-    EP["endpoint"]
-    RD --> SD --> SV --> EP
-  end
-  I1 -. anchor .-> SD
-  F1 -. anchor .-> SV
-  I2 -. anchor .-> EP
-  FD -. anchor .-> EP
+# Mock-only frontend preview
+cd web && NEXT_PUBLIC_MOCK=1 npm run dev
 ```
 
-> Division of labor: the **planner** reads the exploration graph's situation, judges the target, and only dispatches **intents** into the frontier when there are uncovered new directions; the **worker** claims **one intent**, executes it with real tools, writes new assets/facts/findings back to both graphs, and then stops. The asset graph is shared fact; the exploration graph is each task's progress chain.
+Database-dependent Go tests can be skipped when no PostgreSQL DSN is provided. Configure `ARTEX_PG_DSN` to a disposable test database for database-backed coverage, and confirm test output indicates which tests ran. The release workflow's startup smoke checks are not a substitute for the full Go test suite. Consult CI results for the selected commit; this README does not publish a coverage figure.
 
-### Engine and intent lifecycle (the closed loop of one exploration)
+## Known documentation and release limitations
 
-The engine is an **event-driven** closed loop: whenever a graph changes it wakes the planner, the planner dispatches intents, workers claim intents, execute them, and write back, and the write-back triggers the next round — until the goal is proven (`prove_goal`).
+- `CHANGELOG.md` has an empty `Unreleased` section and lists 0.3.18 as its latest dated entry. README tag examples may be historical; check actual releases.
+- `docker-compose.bench.yml` references benchmark build inputs not present in this repository tree. Do not rely on that auxiliary workflow without restoring and validating those files.
+- Docker base tags, package installs, global Playwright `@latest` references, and GitHub Actions major-version tags are not all immutable. Rebuilding later may not reproduce identical inputs.
+- The checked-in application health endpoint is liveness-oriented and does not establish database readiness. In-app logs/metrics are diagnostics, not evidenced as a durable audit or external monitoring system.
+- No sizing guidance, support coverage, production SLA, or performance/efficacy benchmark was identified in the repository.
 
-```mermaid
-sequenceDiagram
-  autonumber
-  participant EV as graph-change debounce
-  participant P as planner
-  participant FR as frontier intent queue
-  participant W as worker
-  participant PX as recording proxy
-  participant DB as dual graphs + activity
+## License and legal notices
 
-  EV-->>P: wake
-  P->>DB: read situation (prefetched graph_overview + coverage/scope)
-  P->>FR: dispatch 0..N intents (with asset_ids)
-  Note over P,FR: Most wake-ups dispatch 0 intents—stop when there is no new direction
-  W->>FR: claimNext: claim one intent
-  W->>DB: fetch raw assets for the intent asset_ids as initial context
-  W->>PX: execute real tools (Kali / Bash / HTTP)
-  PX-->>W: response (fully recorded + CA-verified)
-  W->>DB: write back fact / asset / finding + per-step activity
-  DB-->>EV: graph change
-  EV-->>P: wake again (closed loop)
-```
+**License declarations in this repository conflict and require resolution.** The root [`LICENSE`](LICENSE) says MIT and identifies Victormokerenki; previous README versions and [`CHANGELOG.md`](CHANGELOG.md) refer to AGPL-3.0; the release workflow uses an AGPL-3.0 image label; and [`web/LICENSE`](web/LICENSE) separately says MIT and identifies Mohammed Arham Khan. Git history records a license-file replacement but does not establish the authority or scope of any grant. This README does not determine the applicable license. Review the actual license files, distribution materials, and rights-holder records with qualified counsel before relying on any license representation or distributing the software.
 
-### Process-level information exchange between workers
+The application may present separate terms during login; this README does not modify those terms or determine their legal effect. Nothing in this README is a legal opinion, license grant, or authorization to access a system. Security assessments should be conducted only with appropriate authorization and in compliance with applicable laws and contracts.
 
-In a deep exploration, many valuable observations (a certain error, a certain response segment, a hidden parameter) appear in a worker's **execution process** but may not be written up as a formal fact. To avoid duplicate work and let workers on the chain stand on each other's shoulders, workers have the ability to **search across work processes**:
+The root MIT license text includes an “AS IS” warranty disclaimer. This statement does not resolve the conflicting license declarations or establish rights to all code, dependencies, images, or binaries.
 
-- `search_all_worker_traces(q)`: search by keyword in **the execution processes of other work in this task** (automatically excluding the steps of your own intent), with hits carrying `intent_id`;
-- `list_worker_traces` / `get_worker_trace(intent_id, step_ids=[…])`: first see which work has run, then fetch the full content of specific steps of a given work for detailed exchange.
+## Acknowledgments and references
 
-This way, even if there is no corresponding fact on the exploration graph yet, later workers can reuse observations from others' processes — **information flows between workers at the granularity of "execution process"**, while the boundary stays unchanged (each worker still only does the intent it claimed).
-
-```mermaid
-flowchart LR
-  WA["worker A (intent #12)"] -->|"activity at each step"| ACT[("Exploration graph · activity history")]
-  WB["worker B (intent #34)"] -->|"activity at each step"| ACT
-  WC["worker C (intent #56)"] ==>|"1) search_all_worker_traces(q)"| ACT
-  ACT ==>|"2) matching steps from A/B (excluding self)"| WC
-  WC ==>|"3) get_worker_trace(id, step_ids)"| ACT
-  ACT ==>|"4) return the complete process contents"| WC
-```
-
-### Planner multi-round shared todolist → a stable attack chain
-
-Real attack chains are often **multi-step sequences with sequential dependencies** (for example: find an injection point → obtain credentials → move laterally → escalate privileges); dispatching them all in parallel at once would only cause chaos. The planner therefore keeps a **per-task, cross-wakeup shared planning todolist**:
-
-- The planner is event-driven — it is woken whenever a graph changes, but **each wakeup is a brand-new session**; the shared todolist lets it **record a serial exploitation chain once** and then **dispatch intents step by step according to dependencies** in subsequent rounds, instead of expanding the whole chain up front in one round;
-- Each round only dispatches an intent for the next step whose "prerequisite steps are complete and the facts it depends on already exist", and updates the list as progress is made (marking steps already satisfied by facts as complete).
-
-```mermaid
-flowchart TB
-  subgraph TODO["shared todolist (retained per task · persists across wake-ups)"]
-    direction LR
-    T1["1 entry point [completed]"]
-    T2["2 obtain credentials [in progress]"]
-    T3["3 lateral movement [blocked by prerequisite]"]
-    T4["4 privilege escalation [blocked by prerequisite]"]
-    T1 -.prerequisite met.-> T2 -.-> T3 -.-> T4
-  end
-  R1["Wake-up 1: dispatch intent ①"] --> T1
-  R2["Wake-up 2 (① produced a fact): dispatch intent ②"] --> T2
-  R3["Wake-up 3 (② produced a fact): dispatch intent ③"] --> T3
-```
-
-Thus, even in an "event-driven + stateless session" environment, the attack chain still **advances stably, without repetition or out-of-order steps** — this is the key to ARTEX being able to autonomously complete multi-step exploitation chains.
-
----
+- Acknowledgments to the MiSecurity team.
+- Reference: [Cairn](https://github.com/oritera/Cairn).
+- ScopeSentry integration: [Autumn-27/ScopeSentry](https://github.com/Autumn-27/ScopeSentry).
+- Approval detail component reference: [AegisHook](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue).
 
 ## Community
 
-Scan the QR code to follow the WeChat official account **SecSentry**, and send a direct message in the official account backend to join the group.
-
-<div align="center">
-
-<img src="screenshots/wx.png" alt="WeChat official account SecSentry" width="480" />
-
-</div>
-
----
-## References
-
-https://github.com/oritera/Cairn
-
-
-## License and Disclaimer
-
-### Open-source license
-
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**; see the [LICENSE](LICENSE) file in the repository root for the full terms.
-
-This means anyone may freely use, modify, and distribute this project, but **derivative works must also be open-sourced under AGPL-3.0**; in particular, **if you modify this project and provide it to users over a network (such as deploying it as an online service), you must also make the complete corresponding source code available to those users**.
-
-> ⚠️ **Important note**: the open-source license itself does not restrict the purpose for which the software is used. The "Usage restrictions" and "Disclaimer" below are additional agreements and solemn statements by the author to users, and must be observed.
-
-**ARTEX is for personal learning, code research, and local technical verification only, and must not be used to conduct actual testing against any online system or website.**
-
-### Permitted scope of use
-
-- It may only be used to **read, study, and research this project's source code**, and to verify technical principles in a **local isolated environment**;
-- It is suitable for non-attack purposes such as personal learning, academic research, and code review.
-
-### Prohibited items
-
-- **It is strictly forbidden to use this tool to scan, probe, exploit, or attack any website, online service, or networked system** (regardless of whether authorization has been obtained or whether it is your own asset);
-- It is strictly forbidden to use this tool for any actual penetration testing, attack/defense exercises, or production environments;
-- It is strictly forbidden to use this tool for illegal intrusion, data theft, extortion, denial of service, or any destructive or criminal activity;
-- It is strictly forbidden to use this tool for activities that violate the laws and regulations of your country/region.
-
-### Compliance responsibility
-
-Users must comply with all laws and regulations of their country/region regarding cybersecurity, data protection, and computer crime (in mainland China, including but not limited to the Cybersecurity Law, the Data Security Law, the Personal Information Protection Law, and related judicial interpretations). **All legal responsibilities and consequences arising from the use of this tool are borne by the user.**
-
-### Disclaimer
-
-This project is provided "as is", without any express or implied warranty. The author and contributors are not liable for any direct or indirect loss, data loss, system damage, or legal dispute caused by the use of this tool (regardless of whether it is used properly). **Downloading, installing, or using this project means that you have read, understood, and agreed to all of the above terms.**
-
-### Task intelligence
-
-Enable **Agent auto-recording** in **System Settings → Task Intelligence** to centrally view credentials, important clues, and sensitive data in the task details' "Task Intelligence". This switch is off by default; when off, no intelligence tools, extra fields, or prompts are injected into the Agent, no additional summarization Agent is started, and existing records can still be viewed. Enabling it increases the token consumption of prompts and reports and takes effect for subsequent Agent execution; already-running sessions may still retain the old tool descriptions, and after disabling, the server immediately rejects new intelligence.
-
-Workers can call `record_intelligence`, or attach an `intelligence` array within a single/batch fact in `record_fact` for submission. The service `auth` submitted by `insert_assets` is automatically registered as an unverified credential this time, to avoid duplicate reporting. Tasks and execution nodes are bound by the system; records require real source evidence; obtaining a credential does not mean a successful login.
-
-The page supports categorization, title/reporter search, status filtering, pagination, status updates, and source viewing. The bodies and source evidence of credentials and sensitive data are displayed directly in the list and details, with no extra click needed. Records directly associated with a task are marked as inherited and read-only; after selecting an asset on the assets page, click "Link intelligence" to view the same records. Intelligence is archived, restored, and deleted along with the task; the new archive format is v4, and reading v1–v3 is still supported. This feature does not automatically extract from historical sessions.
+The project community is listed as the SecSentry WeChat official account and group. See `screenshots/wx.png` for the QR image. Community participation should not be interpreted as a support, security-response, or availability commitment.
