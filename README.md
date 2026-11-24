@@ -1,15 +1,15 @@
 <div align="center">
 
-# ARTEX
+# 
 
 AI-powered autonomous penetration testing system (Go backend + Next.js frontend)
 
 
-🌐 **Online Demo**: [https://artex-demo-ruoji6.vercel.app/](https://artex-demo-ruoji6.vercel.app/)
+🌐 **Online Demo**: [https://-demo-ruoji6.vercel.app/](https://-demo-ruoji6.vercel.app/)
 
 </div>
 
-This repository is the independently maintained [RuoJi6/ARTEX](https://github.com/RuoJi6/ARTEX), preserving the original commit history and AGPL-3.0 license of https://github.com/Autumn-27/ARTEX. Release packages are downloaded from this repository's Releases, and the Docker image [ruoji6/artex](https://hub.docker.com/r/ruoji6/artex) is built and published by this repository's GitHub Actions.
+This repository is the independently maintained [RuoJi6/](https://github.com/RuoJi6/), preserving the original commit history and AGPL-3.0 license of https://github.com//. Release packages are downloaded from this repository's Releases, and the Docker image [ruoji6/](https://hub.docker.com/r/ruoji6/) is built and published by this repository's GitHub Actions.
 
 ---
 ## Acknowledgments
@@ -17,7 +17,7 @@ Acknowledgments to the MiSecurity team
 
 ## Screenshots
 
-> See the [Online Demo](https://artex-demo-ruoji6.vercel.app/) for the full interactive experience.
+> See the [Online Demo](https://-demo-ruoji6.vercel.app/) for the full interactive experience.
 
 | Dashboard (overview / token usage / activity stream) | Task list |
 | :---: | :---: |
@@ -52,16 +52,16 @@ Acknowledgments to the MiSecurity team
 
 ## Approval Record Details
 
-The global "Approval Records", the per-task "Intercept Approval", and approval cards in chat all support expanding to view details. The display structure follows [AegisHook's approval detail component](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue), reusing ARTEX's components and theme:
+The global "Approval Records", the per-task "Intercept Approval", and approval cards in chat all support expanding to view details. The display structure follows [AegisHook's approval detail component](https://github.com/RuoJi6/AegisHook/blob/main/web/src/components/CallDetail.vue), reusing 's components and theme:
 
 
 ## Asset Sync (ScopeSentry)
 
-Asset data can be synced directly from [ScopeSentry](https://github.com/Autumn-27/ScopeSentry), eliminating duplicate collection:
+Asset data can be synced directly from [ScopeSentry](https://github.com//ScopeSentry), eliminating duplicate collection:
 
 - On the **Asset Sync** page, enter the ScopeSentry address and API Key to connect the data source;
 - Choose the targets and asset types to sync by **project** or **task** (domain / subdomain / IP / port / site / endpoint...);
-- Import in one click and merge by company asset scope, then feed directly into ARTEX's asset graph for agents to explore.
+- Import in one click and merge by company asset scope, then feed directly into 's asset graph for agents to explore.
 
 ---
 
@@ -73,7 +73,7 @@ Release pipeline: the official version's program packages, `SHA256SUMS`, and Doc
 
 ### First-time Vercel setup
 
-1. Create an empty project in your own Vercel account and set a name (for example `artex-demo-ruoji6`). Keep **Git disconnected** to avoid automatic deploys on every commit. `web/vercel.json` also disables Git auto-deploy.
+1. Create an empty project in your own Vercel account and set a name (for example `-demo-ruoji6`). Keep **Git disconnected** to avoid automatic deploys on every commit. `web/vercel.json` also disables Git auto-deploy.
 2. Under **Settings → Build and Deployment**, select **Next.js**, Node.js **22.x**; the install command can be overridden to `npm ci`, the build command is `npm run build`, and Output Directory stays default. **Leave Root Directory empty**: this workflow invokes the Vercel CLI from the checked-out `web/` directory, so you must not add another `web` layer.
 3. Add `NEXT_PUBLIC_MOCK=1` under the project's **Environment Variables**, applied at least to **Production**. Do not set `NEXT_EXPORT=1`, and do not fill in database connections or model keys.
 4. Copy the **Project ID** from the project's **Settings → General**; copy the **Team ID** from the team's **Settings → General** (corresponding to `VERCEL_ORG_ID`). Confirm that the production domain you plan to use exists under **Domains**.
@@ -85,7 +85,7 @@ Add the following under **Variables** on the same GitHub settings page:
 | --- | --- |
 | `VERCEL_ORG_ID` | Vercel Team ID |
 | `VERCEL_PROJECT_ID` | Vercel Project ID |
-| `DEMO_URL` | Fixed public production URL, including `https://`, for example `https://artex-demo-ruoji6.vercel.app` |
+| `DEMO_URL` | Fixed public production URL, including `https://`, for example `https://-demo-ruoji6.vercel.app` |
 
 ### First deployment and retry
 
@@ -108,8 +108,8 @@ The release workflow invokes the deploy job directly here because a Release crea
 ### Method 1: One-click install script (recommended)
 
 ```bash
-git clone https://github.com/RuoJi6/ARTEX.git
-cd ARTEX
+git clone https://github.com/RuoJi6/.git
+cd 
 ./install.sh
 ```
 
@@ -123,16 +123,16 @@ Once installed, open **http://localhost:8787** (on first entry, set the administ
 ### Method 2: Docker Compose (manual)
 
 ```bash
-git clone https://github.com/RuoJi6/ARTEX.git
-cd ARTEX
+git clone https://github.com/RuoJi6/.git
+cd 
 cp .env.example .env          # set POSTGRES_PASSWORD and optionally ANTHROPIC_API_KEY
-docker compose up -d          # pull the ruoji6/artex image + postgres
+docker compose up -d          # pull the ruoji6/ image + postgres
 # → http://localhost:8787
 ```
 
 The image already includes common tools (ripgrep/curl/vim/npm/nmap...); `./skills` and `./data` are persisted via bind mounts.
 
-In `.env`, `ARTEX_IMAGE=ruoji6/artex` and `ARTEX_TAG=latest` use the latest image by default; you can also pin it to `v0.3.17` (full image address `ruoji6/artex:v0.3.17`). The image supports `linux/amd64` and `linux/arm64`, and Docker automatically selects the architecture matching the host, so ARM64 Kali needs no self-compilation. On first deployment, change `POSTGRES_PASSWORD`; running the service does not require a Docker Hub publish token.
+In `.env`, `_IMAGE=ruoji6/` and `_TAG=latest` use the latest image by default; you can also pin it to `v0.3.17` (full image address `ruoji6/:v0.3.17`). The image supports `linux/amd64` and `linux/arm64`, and Docker automatically selects the architecture matching the host, so ARM64 Kali needs no self-compilation. On first deployment, change `POSTGRES_PASSWORD`; running the service does not require a Docker Hub publish token.
 
 For remote MCP, you can choose `http` (Streamable HTTP) or `sse` (legacy SSE) in system settings.
 Legacy SSE services usually establish the event stream with `GET /sse`, then receive JSON-RPC requests via the
@@ -141,15 +141,15 @@ Legacy SSE services usually establish the event stream with `GET /sse`, then rec
 
 ### Method 3: Download prebuilt binaries (Releases)
 
-Download the zip for your platform from this repository's [Releases](https://github.com/RuoJi6/ARTEX/releases); after extraction you get `artex` + `start.sh` (`start.bat` on Windows) + `skills/` + `config.example.json`. Choose `linux-arm64` for Linux ARM64 (including ARM64 Kali) and `linux-amd64` for x86_64:
+Download the zip for your platform from this repository's [Releases](https://github.com/RuoJi6//releases); after extraction you get `` + `start.sh` (`start.bat` on Windows) + `skills/` + `config.example.json`. Choose `linux-arm64` for Linux ARM64 (including ARM64 Kali) and `linux-amd64` for x86_64:
 
 ```bash
 cp config.example.json config.json   # configure the database connection
 ./start.sh                           # → http://localhost:8787
 ```
 
-> Please start with `start.sh` / `start.bat` instead of running `./artex` directly. It is a daemon script: after the program exits, it decides whether to relaunch based on the exit code, and **[the one-click update on the page](#method-1-one-click-page-update-recommended) relies on it to swap binaries**. If you run `./artex` directly, it will not be relaunched after an update.
-> To keep it running in the background: `nohup ./start.sh >artex.log 2>&1 &`.
+> Please start with `start.sh` / `start.bat` instead of running `./` directly. It is a daemon script: after the program exits, it decides whether to relaunch based on the exit code, and **[the one-click update on the page](#method-1-one-click-page-update-recommended) relies on it to swap binaries**. If you run `./` directly, it will not be relaunched after an update.
+> To keep it running in the background: `nohup ./start.sh >.log 2>&1 &`.
 
 ### Method 4: Compile a single binary from source
 
@@ -159,7 +159,7 @@ cd web && npm ci && npm run build:static && cd ..
 # 2) Copy them into the embedded frontend directory
 cp -r web/out server/webui/dist
 # 3) Compile (-tags embedui embeds the frontend)
-CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
+CGO_ENABLED=0 go build -tags embedui -o  ./cmd/
 ./start.sh
 ```
 
@@ -169,13 +169,13 @@ CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
 
 ```bash
 ./build.sh --release
-# Output: dist/artex-0.3.3-*.zip
+# Output: dist/-0.3.3-*.zip
 ```
 
-UPX self-extracting binaries may be incompatible with some Linux kernels, virtualization environments, or security policies, so they are disabled by default. Use `ARTEX_TARGETS` to customize targets; when you have confirmed the target runtime environment is compatible, you can explicitly pass `--upx` to further shrink the binary:
+UPX self-extracting binaries may be incompatible with some Linux kernels, virtualization environments, or security policies, so they are disabled by default. Use `_TARGETS` to customize targets; when you have confirmed the target runtime environment is compatible, you can explicitly pass `--upx` to further shrink the binary:
 
 ```bash
-ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
+_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 ./build.sh --target linux/amd64 --upx
 ```
 
@@ -183,23 +183,23 @@ ARTEX_TARGETS=linux/amd64,windows/amd64 ./build.sh --release
 
 ## Update and Upgrade
 
-> An upgrade only replaces the program and does not touch data: the Postgres data volume `pgdata`, `./data` (jwt.key / SQLite, etc.), and `./skills` are all preserved. **No manual database migration is required** — `artex` idempotently reruns `schema.sql` (including `ADD COLUMN` / `CREATE INDEX IF NOT EXISTS`) on every startup, i.e. "restart means migrate". Even so, it is still recommended to back up `./data` and the database before upgrading.
+> An upgrade only replaces the program and does not touch data: the Postgres data volume `pgdata`, `./data` (jwt.key / SQLite, etc.), and `./skills` are all preserved. **No manual database migration is required** — `` idempotently reruns `schema.sql` (including `ADD COLUMN` / `CREATE INDEX IF NOT EXISTS`) on every startup, i.e. "restart means migrate". Even so, it is still recommended to back up `./data` and the database before upgrading.
 
 ### Method 1: One-click page update (recommended)
 
 On the **System Settings** page (sidebar "System Settings" → `/system/settings`), the **Version and Updates** card lets you check for and install a new version directly, without logging into the server.
 
-Programs built by this repository always check for updates against the latest official GitHub Release of `RuoJi6/ARTEX`, skipping drafts and prereleases. Older official programs still point to the original author's repository, so the first switch must install a program built by this repository manually; afterwards, publishing a higher three-part version allows upgrading through the page. Pushing only to main or a Git tag without publishing a Release does not produce a new version that can be installed online.
+Programs built by this repository always check for updates against the latest official GitHub Release of `RuoJi6/`, skipping drafts and prereleases. Older official programs still point to the original author's repository, so the first switch must install a program built by this repository manually; afterwards, publishing a higher three-part version allows upgrading through the page. Pushing only to main or a Git tag without publishing a Release does not produce a new version that can be installed online.
 
-After clicking **Update**: download the release package for the current platform → compare against the Release's `SHA256SUMS` → smoke-test the new binary with `-h` → stage it as `artex.new` → the program exits and `start.sh` / `start.bat` relaunches it to complete the swap. The page automatically waits for the new version to come online and then refreshes.
+After clicking **Update**: download the release package for the current platform → compare against the Release's `SHA256SUMS` → smoke-test the new binary with `-h` → stage it as `.new` → the program exits and `start.sh` / `start.bat` relaunches it to complete the swap. The page automatically waits for the new version to come online and then refreshes.
 
-- **A failure never leaves a broken program**: if the checksum or smoke test fails, the staged file is discarded and the current version keeps running; if the swapped-in new version fails to start 3 times in a row, it automatically rolls back to `artex.old` (the failed one is kept as `artex.failed` for troubleshooting).
-- **You can roll back at any time**: the previous version is kept as `artex.old`, and the card has "Roll back to previous version". Note that the database schema is not rolled back.
+- **A failure never leaves a broken program**: if the checksum or smoke test fails, the staged file is discarded and the current version keeps running; if the swapped-in new version fails to start 3 times in a row, it automatically rolls back to `.old` (the failed one is kept as `.failed` for troubleshooting).
+- **You can roll back at any time**: the previous version is kept as `.old`, and the card has "Roll back to previous version". Note that the database schema is not rolled back.
 - **An update interrupts running tasks** — updating means restarting, so do it when idle.
 - **Dev builds are not offered updates**: it is disabled when the version is `dev` or `git describe` has a suffix, to avoid an official version overwriting a locally debugged binary.
-- **Under Docker, only the program is replaced, not the image**: toolchains such as playwright / nmap inside the image are not upgraded, and after `docker compose up -d` recreates the container it falls back to the image's built-in version. To upgrade the image as well, still use `docker compose pull artex && docker compose up -d artex`.
+- **Under Docker, only the program is replaced, not the image**: toolchains such as playwright / nmap inside the image are not upgraded, and after `docker compose up -d` recreates the container it falls back to the image's built-in version. To upgrade the image as well, still use `docker compose pull  && docker compose up -d `.
 - **Update proxy (optional)** uses the same "address input + save" approach as other proxy settings. After filling in a dedicated update proxy and saving, for example `http://127.0.0.1:7897`; `http://`, `https://`, `socks5://`, `socks5h://`, and username/password authentication are supported. Clearing and saving means a direct connection, unaffected by the global proxy or `HTTP_PROXY` / `HTTPS_PROXY` environment variables. After saving, it automatically rechecks; the version check, checksum, and release package download use the same egress. Updates only download from GitHub domains and enforce HTTPS.
-- The proxy address is accessed by the **ARTEX server**. `127.0.0.1` inside Docker refers to the container itself; when the proxy runs on the host, use an address reachable from the container (usually `http://host.docker.internal:7897` on Docker Desktop) and allow the container to access the proxy port.
+- The proxy address is accessed by the ** server**. `127.0.0.1` inside Docker refers to the container itself; when the proxy runs on the host, use an address reachable from the container (usually `http://host.docker.internal:7897` on Docker Desktop) and allow the container to access the proxy port.
 
 ### Maintainer: publish online updates via GitHub Actions
 
@@ -213,40 +213,40 @@ git push origin v0.3.17
 
 The workflow pins the commit for the tag, exports the frontend with Node.js 22, compiles the five platform programs with the Go version specified in `go.mod` (embedding the frontend), and generates ZIPs and `SHA256SUMS`. The AMD64 and ARM64 images are built on GitHub's native runners, connecting to a temporary PostgreSQL to verify program startup, version, and the embedded frontend; after both architectures pass, it publishes the multi-arch image's version tag and `latest`. After the image is published, it uploads the full ZIPs and checksum files, and finally publishes the Release. An already-published release of the same version cannot be overwritten; publish a new tag instead.
 
-Maintainers need to configure the variable `ARTEX_DOCKER_IMAGE` (Docker Hub username/image name) and the secrets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (with image push permission) in this repository's Settings → Secrets and variables → Actions. Packages are uploaded via GitHub's built-in `GITHUB_TOKEN`; images are pushed to Docker Hub with the above credentials. The credentials are only used for the workflow to log in and are not written into the source or the image. The image address is also recorded in `.env.example` and the Compose defaults.
+Maintainers need to configure the variable `_DOCKER_IMAGE` (Docker Hub username/image name) and the secrets `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (with image push permission) in this repository's Settings → Secrets and variables → Actions. Packages are uploaded via GitHub's built-in `GITHUB_TOKEN`; images are pushed to Docker Hub with the above credentials. The credentials are only used for the workflow to log in and are not written into the source or the image. The image address is also recorded in `.env.example` and the Compose defaults.
 
 ### Migrate an existing Docker deployment to this repository's image
 
-In the original deployment directory, back up `.env`, the Compose files, `data/`, and the PostgreSQL data, keeping the original database volume and skills mount. Set `.env`'s `ARTEX_IMAGE` to this repository's image address and `ARTEX_TAG` to the target version; if the old Compose still hardcodes the original author's image, you can create the following override file (if an override file already exists, merge the image configuration into it):
+In the original deployment directory, back up `.env`, the Compose files, `data/`, and the PostgreSQL data, keeping the original database volume and skills mount. Set `.env`'s `_IMAGE` to this repository's image address and `_TAG` to the target version; if the old Compose still hardcodes the original author's image, you can create the following override file (if an override file already exists, merge the image configuration into it):
 
 ```yaml
 # docker-compose.override.yml
 services:
-  artex:
-    image: ${ARTEX_IMAGE}:${ARTEX_TAG:-latest}
+  :
+    image: ${_IMAGE}:${_TAG:-latest}
 ```
 
 Then update only the application container:
 
 ```bash
-docker compose pull artex
-docker compose up -d --no-deps artex
+docker compose pull 
+docker compose up -d --no-deps 
 curl --fail http://127.0.0.1:8787/api/health
-docker compose logs --tail=50 artex
+docker compose logs --tail=50 
 ```
 
-Continue using the original deployment directory and Compose project name, ensuring `./data`, `./skills`, and the PostgreSQL data volume still point to the original data. After migration, the program checks for online updates from `Ruoji6/ARTEX`; afterwards you can update the program via the page or update the whole image with the commands above.
+Continue using the original deployment directory and Compose project name, ensuring `./data`, `./skills`, and the PostgreSQL data volume still point to the original data. After migration, the program checks for online updates from `Ruoji6/`; afterwards you can update the program via the page or update the whole image with the commands above.
 
-When migrating an existing Docker deployment for the first time, extract the verified new ARM64 ZIP onto the host, back up the original program, then replace only `/app/artex` inside the existing container. For example, if the existing container is named `artex-artex-1`:
+When migrating an existing Docker deployment for the first time, extract the verified new ARM64 ZIP onto the host, back up the original program, then replace only `/app/` inside the existing container. For example, if the existing container is named `--1`:
 
 ```bash
 # Run from the download directory; verify the downloaded ZIP against SHA256SUMS before extracting.
 sha256sum --ignore-missing --check SHA256SUMS
-unzip artex-0.3.17-linux-arm64.zip
-sudo docker stop artex-artex-1
-sudo docker cp artex-artex-1:/app/artex ./artex-before-migration
-sudo docker cp ./artex-0.3.17-linux-arm64/artex artex-artex-1:/app/artex
-sudo docker start artex-artex-1
+unzip -0.3.17-linux-arm64.zip
+sudo docker stop --1
+sudo docker cp --1:/app/ ./-before-migration
+sudo docker cp ./-0.3.17-linux-arm64/ --1:/app/
+sudo docker start --1
 curl --fail http://127.0.0.1:8787/api/health
 ```
 
@@ -255,32 +255,32 @@ This preserves the existing database, data, and skills mounts. Log into the syst
 ### Method 2: One-click update script
 
 ```bash
-cd ARTEX
+cd 
 ./update.sh
 ```
 
 The script first optionally runs `git pull` to fetch the latest code, then lets you choose **① Docker update** or **② local compile update** (matching `install.sh`):
 
-- **① Docker**: you can specify the target image tag (press Enter to reuse `.env`'s `ARTEX_TAG`, defaulting to `latest`) → `docker compose pull` → `docker compose up -d` (restarting with the new image migrates automatically).
-- **② Local**: rebuild the frontend static output → recompile `./artex` (takes effect after restarting the process).
+- **① Docker**: you can specify the target image tag (press Enter to reuse `.env`'s `_TAG`, defaulting to `latest`) → `docker compose pull` → `docker compose up -d` (restarting with the new image migrates automatically).
+- **② Local**: rebuild the frontend static output → recompile `./` (takes effect after restarting the process).
 
 ### Method 3: Docker Compose (manual)
 
 ```bash
-cd ARTEX
+cd 
 git pull                       # update Compose files / scripts (optional)
-# To pin a version, set ARTEX_TAG=v0.3.17 in .env; otherwise latest is used
-docker compose pull artex
-docker compose up -d artex     # restart with the new image → schema migrates automatically
+# To pin a version, set _TAG=v0.3.17 in .env; otherwise latest is used
+docker compose pull 
+docker compose up -d      # restart with the new image → schema migrates automatically
 docker image prune -f          # remove old images (optional)
 ```
 
 ### Method 4: Prebuilt binaries (Releases)
 
-Download the new version's zip from [Releases](https://github.com/RuoJi6/ARTEX/releases), stop the old process, overwrite `artex` and `skills/` (keeping your `config.json` and `data/`), and restart:
+Download the new version's zip from [Releases](https://github.com/RuoJi6//releases), stop the old process, overwrite `` and `skills/` (keeping your `config.json` and `data/`), and restart:
 
 ```bash
-cp -r <extracted-directory>/skills ./ && cp <extracted-directory>/artex ./
+cp -r <extracted-directory>/skills ./ && cp <extracted-directory>/ ./
 ./start.sh
 ```
 
@@ -290,7 +290,7 @@ cp -r <extracted-directory>/skills ./ && cp <extracted-directory>/artex ./
 git pull
 cd web && npm ci && npm run build:static && cd ..
 cp -r web/out server/webui/dist
-CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
+CGO_ENABLED=0 go build -tags embedui -o  ./cmd/
 # Restart ./start.sh
 ```
 
@@ -298,30 +298,30 @@ CGO_ENABLED=0 go build -tags embedui -o artex ./cmd/artex
 
 ## Configuration
 
-**Database** (`config.json`, or override with the environment variable `ARTEX_PG_DSN`):
+**Database** (`config.json`, or override with the environment variable `_PG_DSN`):
 
 ```json
 {
   "database": {
     "host": "127.0.0.1", "port": 5432,
-    "user": "artex", "password": "yourpass",
-    "dbname": "artex", "sslmode": "disable"
+    "user": "", "password": "yourpass",
+    "dbname": "", "sslmode": "disable"
   }
 }
 ```
 
 **LLM**: `export ANTHROPIC_API_KEY=sk-...` (or `OPENAI_API_KEY`), or fill it in on the UI's "LLM Configuration" page.
-Optional: `ARTEX_LLM_PROVIDER` / `ARTEX_LLM_MODEL` / `ARTEX_LLM_BASE_URL` / `ARTEX_LLM_PROXY`.
+Optional: `_LLM_PROVIDER` / `_LLM_MODEL` / `_LLM_BASE_URL` / `_LLM_PROXY`.
 
 **Concurrency**: the number of work agents per task is configured in "System Settings" (default 3).
 
-**Common parameters**: `./start.sh -addr :8787 -proxy :8788` (`-addr` frontend + API, `-proxy` traffic recording proxy). The startup script passes the parameters through to `artex` unchanged.
+**Common parameters**: `./start.sh -addr :8787 -proxy :8788` (`-addr` frontend + API, `-proxy` traffic recording proxy). The startup script passes the parameters through to `` unchanged.
 
 ### Optional HTTP Basic Auth access verification
 
 In **System Settings → HTTP Basic Auth**, enter a dedicated verification username and password, enable "Enable access verification", and click "Save access verification". It is off by default and takes effect immediately after saving, with no restart needed; the password must be at least 8 characters and at most 72 bytes, and the username cannot contain a colon.
 
-Once enabled, visitors first complete the browser's native username/password verification, then reach the original ARTEX login page. Web pages, static assets, and APIs are all protected; the GET/HEAD health check at `/api/health` must also pass Basic Auth and returns `401` when unauthenticated; after passing, it only returns `{"ok":true}`, without exposing the application name or version. The health check does not additionally require an administrator JWT; external probes need the same Basic Auth credentials configured, for example using `curl --fail --user 'verification-user' http://127.0.0.1:8787/api/health` and entering the password when prompted. When Basic Auth is not enabled, the original credential-free liveness behavior is preserved. The version number is provided by `/api/version`, which requires an administrator JWT; when access verification is enabled, this endpoint is also protected by Basic Auth. The Basic Auth realm for unauthenticated requests uses the generic name `Restricted`; passing access verification still requires logging into ARTEX to use business APIs. For public deployments, please access via HTTPS.
+Once enabled, visitors first complete the browser's native username/password verification, then reach the original  login page. Web pages, static assets, and APIs are all protected; the GET/HEAD health check at `/api/health` must also pass Basic Auth and returns `401` when unauthenticated; after passing, it only returns `{"ok":true}`, without exposing the application name or version. The health check does not additionally require an administrator JWT; external probes need the same Basic Auth credentials configured, for example using `curl --fail --user 'verification-user' http://127.0.0.1:8787/api/health` and entering the password when prompted. When Basic Auth is not enabled, the original credential-free liveness behavior is preserved. The version number is provided by `/api/version`, which requires an administrator JWT; when access verification is enabled, this endpoint is also protected by Basic Auth. The Basic Auth realm for unauthenticated requests uses the generic name `Restricted`; passing access verification still requires logging into  to use business APIs. For public deployments, please access via HTTPS.
 
 When upgrading from an older web version that still read the version from `/api/health`, the old page may not be able to automatically determine that the upgrade is complete; after the service restarts, manually refresh the page. The new web version's version display and upgrade polling both use `/api/version`.
 
@@ -329,7 +329,7 @@ The configuration is persisted to the database, the password is stored only as a
 
 Docker and the embedded-frontend binary support this feature directly. The auth check in `next dev` only forwards credentials to the loopback backend on the local machine (`localhost`, `127.0.0.1`, or `::1`); the frontend and backend should use the same hostname. A remote development backend can still be used when verification is not enabled; when it is enabled, access the remote service through the embedded frontend to avoid cross-origin verification cookie issues.
 
-If you forget the dedicated verification password, connect to the application database on the server and run the following statement, then restart ARTEX to disable this layer of access verification, and log in with your original ARTEX account to reconfigure it:
+If you forget the dedicated verification password, connect to the application database on the server and run the following statement, then restart  to disable this layer of access verification, and log in with your original  account to reconfigure it:
 
 ```sql
 UPDATE settings
@@ -405,7 +405,7 @@ After saving, the top bar's egress IP, proxy test, proxy pool health check, and 
 ./dev.sh    # backend (:8787) + traffic proxy (:8788) + frontend next dev (:5173) → http://localhost:5173
 ```
 
-- Backend: `go run ./cmd/artex` (without `-tags embedui`, the frontend is not embedded)
+- Backend: `go run ./cmd/` (without `-tags embedui`, the frontend is not embedded)
 - Frontend: `cd web && npm run dev` (`/api` is reverse-proxied to the backend, with hot reload)
 - Test: `go test ./...`
 - Mock preview (no backend): `cd web && NEXT_PUBLIC_MOCK=1 npm run dev`
@@ -414,7 +414,7 @@ After saving, the top bar's egress IP, proxy test, proxy pool health check, and 
 
 ## System Technical Architecture
 
-ARTEX is an **LLM multi-agent-driven autonomous penetration system**: a Go monolith backend (with an embedded Next.js frontend) + PostgreSQL, with agent capabilities provided by the [`norma`](https://github.com/Autumn-27/norma) SDK (`agentcore` / `tool` / `permission` / `harness` / `memory` / `transcript`). The core is a **dual-graph architecture**, plus two autonomy mechanisms built around it: **process-level information exchange between workers** and **a planner multi-round shared todolist for a stable attack chain**.
+ is an **LLM multi-agent-driven autonomous penetration system**: a Go monolith backend (with an embedded Next.js frontend) + PostgreSQL, with agent capabilities provided by the [`norma`](https://github.com//norma) SDK (`agentcore` / `tool` / `permission` / `harness` / `memory` / `transcript`). The core is a **dual-graph architecture**, plus two autonomy mechanisms built around it: **process-level information exchange between workers** and **a planner multi-round shared todolist for a stable attack chain**.
 
 ### Overall layering
 
@@ -578,7 +578,7 @@ flowchart TB
   R3["Wake-up 3 (② produced a fact): dispatch intent ③"] --> T3
 ```
 
-Thus, even in an "event-driven + stateless session" environment, the attack chain still **advances stably, without repetition or out-of-order steps** — this is the key to ARTEX being able to autonomously complete multi-step exploitation chains.
+Thus, even in an "event-driven + stateless session" environment, the attack chain still **advances stably, without repetition or out-of-order steps** — this is the key to  being able to autonomously complete multi-step exploitation chains.
 
 ---
 
@@ -608,7 +608,7 @@ This means anyone may freely use, modify, and distribute this project, but **der
 
 > ⚠️ **Important note**: the open-source license itself does not restrict the purpose for which the software is used. The "Usage restrictions" and "Disclaimer" below are additional agreements and solemn statements by the author to users, and must be observed.
 
-**ARTEX is for personal learning, code research, and local technical verification only, and must not be used to conduct actual testing against any online system or website.**
+** is for personal learning, code research, and local technical verification only, and must not be used to conduct actual testing against any online system or website.**
 
 ### Permitted scope of use
 
