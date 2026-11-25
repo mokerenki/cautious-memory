@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -24,15 +24,15 @@ func hasSkillTool(tools []actool.CoreTool) bool {
 // TestAssembleVisibleSkill verifies a filesystem skill made visible to an agent is
 // packed into that agent's tool set (as the single Skill meta-tool) via the wired
 // ToolAugment hook. Skills live on disk under skillDir; visibility is a per-agent
-// (agent × skill_name) row keyed by the skill's directory name.
+// (agent Ã— skill_name) row keyed by the skill's directory name.
 func TestAssembleVisibleSkill(t *testing.T) {
 	dsn, _, err := db.DSN()
 	if err != nil {
-		t.Skipf("no database config (%v) — skipping", err)
+		t.Skipf("no database config (%v) â€” skipping", err)
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	defer pg.Close()
 
@@ -64,7 +64,7 @@ func TestAssembleVisibleSkill(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pg.SetAgentSkillVisibility(ag.ID, orig) })
 
-	// before: skill not visible → no Skill meta-tool
+	// before: skill not visible â†’ no Skill meta-tool
 	extra, _, cleanup := agent.ToolAugment(context.Background(), "planner")
 	cleanup()
 	if hasSkillTool(extra) {
@@ -91,3 +91,4 @@ func TestAssembleVisibleSkill(t *testing.T) {
 		t.Fatalf("AugmentTools should surface the Skill meta-tool")
 	}
 }
+

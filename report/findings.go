@@ -1,4 +1,4 @@
-﻿package report
+package report
 
 import (
 	"bytes"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Rendering for the findings page "Export": renders a batch of finding rows as a

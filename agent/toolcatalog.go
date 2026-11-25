@@ -1,4 +1,4 @@
-package agent
+﻿package agent
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 //     description + param schema + default bound agent), for server to idempotently seed into tools table at startup.
 //   - ToolResolve hook: at runtime, filters/overrides assembled tools by DB tools rows per agent
 //     (filter by agent + override description/schema + inject param defaults). key/handler stay in code, DB only changes "prose and defaults".
-// handler (Call behavior) ALWAYS comes from code — DB can't change it, only what model sees (description and param defaults).
+// handler (Call behavior) ALWAYS comes from code â€” DB can't change it, only what model sees (description and param defaults).
 
 // ToolSeed is a built-in tool's seedable snapshot: key = CoreTool.Name() (bound to handler,
 // UI read-only), Desc/Schema from code tool definition, Agents = code default agent bindings.
@@ -24,13 +24,13 @@ type ToolSeed struct {
 }
 
 // builtinToolsByAgent uses a "read-only shell" ToolSet (nil stores) to construct each execution agent's
-// domain tool set. tool constructors only stuff closures into Spec, don't dereference store at construct time, so nil is safe —
+// domain tool set. tool constructors only stuff closures into Spec, don't dereference store at construct time, so nil is safe â€”
 // these tools only read Name()/Description()/InputSchema() here, never Call.
 //
 // deliberately EXCLUDES SDK common tools actool.DefaultTools() (Read/Write/Edit/MultiEdit/LS/Glob/
 // Grep/Bash): every agent has them fixed, no "bound to who" choice, and their descriptions mostly live in Prompt()
-// (this catalog only covers Description(), would cause half-override confusion). no seed → no DB row → ToolResolve
-// passes through unchanged, behavior same as before. only artex's own domain tools enter table for management.
+// (this catalog only covers Description(), would cause half-override confusion). no seed â†’ no DB row â†’ ToolResolve
+// passes through unchanged, behavior same as before. only CAUTIOUSMEMORY's own domain tools enter table for management.
 func builtinToolsByAgent() map[string][]actool.CoreTool {
 	ts := NewToolSet(nil, "")
 	return map[string][]actool.CoreTool{
@@ -52,10 +52,10 @@ func builtinToolsByAgent() map[string][]actool.CoreTool {
 }
 
 // defaultUnbound: these system tools enter catalog normally (visible in web, manually checkboxable per agent), but
-// default NOT bound to any agent — ToolResolve drops empty-binding tools for all agents, explicit opt-in required.
+// default NOT bound to any agent â€” ToolResolve drops empty-binding tools for all agents, explicit opt-in required.
 // reason they stay in some agent's base toolset (e.g. goal_met in PlannerTools): one, lets seed construct it to get desc/schema; two, when user manually binds it back, runtime base has it, ToolResolve retains it.
 //
-// goal_met: bypasses per-goal prove_goal, declares [entire task complete] globally, high weight and misjudgment risk, also duplicates "prove_goal marks last goal → auto wrap-up", so default unbound from all agents, manual bind when needed.
+// goal_met: bypasses per-goal prove_goal, declares [entire task complete] globally, high weight and misjudgment risk, also duplicates "prove_goal marks last goal â†’ auto wrap-up", so default unbound from all agents, manual bind when needed.
 var defaultUnbound = map[string]bool{"goal_met": true}
 
 // BuiltinToolSeeds deduplicates and merges each agent's built-in tool sets into a seed list: same-name tools (e.g. list_assets
@@ -121,7 +121,7 @@ func DecorateTool(t actool.CoreTool, desc string, schema map[string]any) actool.
 }
 
 // overriddenTool is a CoreTool decorator: it embeds the original (so all behavioral
-// methods — Prompt/IsReadOnly/IsConcurrencySafe/CheckPermissions/Name — delegate)
+// methods â€” Prompt/IsReadOnly/IsConcurrencySafe/CheckPermissions/Name â€” delegate)
 // and overrides only the model-facing description/schema plus default injection.
 type overriddenTool struct {
 	actool.CoreTool
@@ -138,7 +138,7 @@ func (o *overriddenTool) Call(ctx context.Context, in json.RawMessage, tc *actoo
 
 // injectDefaults fills scalar parameter defaults declared in the (possibly edited)
 // schema into the input JSON whenever the model omitted the field or left it empty/
-// null. Structure (names/types/required) is untouched — only defaults are merged in.
+// null. Structure (names/types/required) is untouched â€” only defaults are merged in.
 func injectDefaults(in json.RawMessage, schema map[string]any) json.RawMessage {
 	defs := scalarDefaults(schema)
 	if len(defs) == 0 {
@@ -199,3 +199,4 @@ func isEmptyJSON(raw json.RawMessage) bool {
 	s := string(raw)
 	return s == "null" || s == `""`
 }
+

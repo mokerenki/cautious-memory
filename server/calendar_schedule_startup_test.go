@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func calendarTestTime(s string) time.Time {
@@ -77,3 +77,4 @@ func TestRuntimeScheduleUsesBeijingWindowAcrossTimezones(t *testing.T) {
 		t.Fatalf("unexpected timezone result: %+v", w)
 	}
 }
+

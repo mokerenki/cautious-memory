@@ -3,7 +3,7 @@ package server
 import (
 	"sync"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Broadcaster is a per-task in-process pub/sub for live activity events. The
@@ -47,7 +47,7 @@ func (b *Broadcaster) Subscribe(task string) (<-chan db.Activity, func()) {
 }
 
 // Publish fans an activity out to all subscribers of a task. Non-blocking: if a
-// subscriber's buffer is full the event is dropped — the client reconnects with
+// subscriber's buffer is full the event is dropped â€” the client reconnects with
 // its last seq cursor and catches up the gap from the DB, so liveness never
 // stalls the engine.
 func (b *Broadcaster) Publish(task string, a db.Activity) {
@@ -60,3 +60,4 @@ func (b *Broadcaster) Publish(task string, a db.Activity) {
 		}
 	}
 }
+

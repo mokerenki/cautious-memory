@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	"github.com/Autumn-27/norma/llm"
 	actool "github.com/Autumn-27/norma/tool"
 )
@@ -51,7 +51,7 @@ func newRetestServer(t *testing.T) (*Server, int64) {
 	if err := s.seedFindingRetester(); err != nil {
 		t.Fatal(err)
 	}
-	fid, err := pg.AddFinding(0, 0, "retest-server", "复测测试", "high", "summary", "original proof", "worker", nil)
+	fid, err := pg.AddFinding(0, 0, "retest-server", "å¤æµ‹æµ‹è¯•", "high", "summary", "original proof", "worker", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,14 +177,14 @@ func TestRetestHTTPThroughConversationAndTools(t *testing.T) {
 			if !bytes.Contains(serialized, []byte("original proof")) {
 				t.Error("agent did not receive source evidence")
 			}
-			name, input = "record_finding_retest_result", `{"verdict":"inconclusive","summary":"缺少测试登录态","evidence":"已检查原证据；当前缺少有效登录态，无法确认修复状态。"}`
+			name, input = "record_finding_retest_result", `{"verdict":"inconclusive","summary":"ç¼ºå°‘æµ‹è¯•ç™»å½•æ€","evidence":"å·²æ£€æŸ¥åŽŸè¯æ®ï¼›å½“å‰ç¼ºå°‘æœ‰æ•ˆç™»å½•æ€ï¼Œæ— æ³•ç¡®è®¤ä¿®å¤çŠ¶æ€ã€‚"}`
 		}
 		if n > 2 {
-			return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("复测结论已保存")}}, "end_turn", llm.Usage{}, nil
+			return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("å¤æµ‹ç»“è®ºå·²ä¿å­˜")}}, "end_turn", llm.Usage{}, nil
 		}
 		return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{{Type: llm.BlockToolUse, ID: strconv.Itoa(int(n)), Name: name, Input: json.RawMessage(input)}}}, "tool_use", llm.Usage{}, nil
 	}})
-	w := retestRequest(s.startFindingRetest, "POST", fid, `{"notes":"仅验证原接口"}`)
+	w := retestRequest(s.startFindingRetest, "POST", fid, `{"notes":"ä»…éªŒè¯åŽŸæŽ¥å£"}`)
 	if w.Code != 202 {
 		t.Fatalf("create: %d %s", w.Code, w.Body)
 	}
@@ -232,7 +232,7 @@ func TestRetestStopsFailuresAndNoVerdict(t *testing.T) {
 				if mode == "failure" {
 					return llm.Message{}, "", llm.Usage{}, errors.New("test model failed")
 				}
-				return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("未保存结论")}}, "end_turn", llm.Usage{}, nil
+				return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("æœªä¿å­˜ç»“è®º")}}, "end_turn", llm.Usage{}, nil
 			}})
 			w := retestRequest(s.startFindingRetest, "POST", fid, `{}`)
 			if w.Code != 202 {
@@ -266,9 +266,9 @@ func TestRetestFixedUpdatesFindingThroughConversation(t *testing.T) {
 	var calls atomic.Int32
 	setRetestProvider(s, retestProvider{complete: func(context.Context, llm.CompletionRequest) (llm.Message, string, llm.Usage, error) {
 		if calls.Add(1) == 1 {
-			return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{{Type: llm.BlockToolUse, ID: "fixed-result", Name: "record_finding_retest_result", Input: json.RawMessage(`{"verdict":"fixed","summary":"修复生效","evidence":"原触发条件失效，正常对照仍可用。"}`)}}}, "tool_use", llm.Usage{}, nil
+			return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{{Type: llm.BlockToolUse, ID: "fixed-result", Name: "record_finding_retest_result", Input: json.RawMessage(`{"verdict":"fixed","summary":"ä¿®å¤ç”Ÿæ•ˆ","evidence":"åŽŸè§¦å‘æ¡ä»¶å¤±æ•ˆï¼Œæ­£å¸¸å¯¹ç…§ä»å¯ç”¨ã€‚"}`)}}}, "tool_use", llm.Usage{}, nil
 		}
-		return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("结论已保存")}}, "end_turn", llm.Usage{}, nil
+		return llm.Message{Role: llm.RoleAssistant, Content: []llm.ContentBlock{llm.TextBlock("ç»“è®ºå·²ä¿å­˜")}}, "end_turn", llm.Usage{}, nil
 	}})
 	w := retestRequest(s.startFindingRetest, "POST", fid, `{}`)
 	if w.Code != http.StatusAccepted {
@@ -292,7 +292,7 @@ func TestRetestValidationSeedingAndScope(t *testing.T) {
 		id   int64
 		body string
 		code int
-	}{{0, `{}`, 400}, {fid, `{`, 400}, {fid, `{"notes":"` + strings.Repeat("文", 4001) + `"}`, 400}, {999999999, `{}`, 404}, {fid, `{}`, 503}} {
+	}{{0, `{}`, 400}, {fid, `{`, 400}, {fid, `{"notes":"` + strings.Repeat("æ–‡", 4001) + `"}`, 400}, {999999999, `{}`, 404}, {fid, `{}`, 503}} {
 		w := retestRequest(s.startFindingRetest, "POST", tc.id, tc.body)
 		if w.Code != tc.code {
 			t.Fatalf("code=%d want=%d %s", w.Code, tc.code, w.Body)
@@ -328,3 +328,4 @@ func TestRetestValidationSeedingAndScope(t *testing.T) {
 	}
 	_, _ = s.m.pg.SavePrompt(a.ID, agent.RetesterDefaultPrompt, "restore", "test")
 }
+

@@ -8,17 +8,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/notify"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/notify"
 )
 
 // Global setting keys (stored in the settings key-value table; no table creation needed).
 const (
 	// settingNotifyEnabled is the global push toggle. Enabled by default: it is used to quickly stop the bleeding during maintenance,
-	// not as a condition for enabling the feature—the actual enabling condition is 「whether a channel is configured」.
+	// not as a condition for enabling the featureâ€”the actual enabling condition is ã€Œwhether a channel is configuredã€.
 	settingNotifyEnabled = "notify_enabled"
 	// settingNotifyPublicBaseURL is the externally accessible address used to generate links back to vulnerability details
-	// (e.g. https://artex.example.com). If empty, messages will not include a link button.
+	// (e.g. https://CAUTIOUSMEMORY.example.com). If empty, messages will not include a link button.
 	// There is no reusable external address configuration in the project, so a new setting is added here.
 	settingNotifyPublicBaseURL = "notify_public_base_url"
 	// settingNotifyDigestMinutes is the interval (in minutes) for digest mode.
@@ -27,7 +27,7 @@ const (
 
 const (
 	// notifyTick is the polling interval of the delivery engine. 3 seconds is the upper limit for the engine's real-time performance,
-	// and is also the primary source of delay between «vulnerability persisted» and «message arriving in IM».
+	// and is also the primary source of delay between Â«vulnerability persistedÂ» and Â«message arriving in IMÂ».
 	notifyTick = 3 * time.Second
 	// notifyLease is the lease duration when claiming a delivery. It must be significantly longer than the worst-case duration of a single delivery
 	// (the notify package's HTTP client timeout is 15 seconds); otherwise, the same row may be delivered by two
@@ -39,7 +39,7 @@ const (
 	// notifyDefaultDigestMinutes is the default value for the digest interval.
 	notifyDefaultDigestMinutes = 30
 	// notifyUnlimitedBurstPerTick is the per-tick delivery limit when a channel has no rate limit.
-	// It exists to prevent “one channel configured with no rate limit + thousands of vulnerabilities found in one scan” from
+	// It exists to prevent â€œone channel configured with no rate limit + thousands of vulnerabilities found in one scanâ€ from
 	// making a single loop iteration block for a long time.
 	notifyUnlimitedBurstPerTick = 50
 	// notifyMaxSendsPerChannelPerTick is the maximum number of items to deliver per channel per tick.
@@ -52,7 +52,7 @@ const (
 	//
 	// Value: 3-minute lease / 30-second per-attempt timeout = 6 would **use up the lease exactly**,
 	// leaving no margin, so it cannot be used; choose 5 to leave a 30-second margin after the worst-case 150 seconds. This relationship is
-	// locked down by TestNotifyTickBudgetFitsWithinLease—changing notifyLease,
+	// locked down by TestNotifyTickBudgetFitsWithinLeaseâ€”changing notifyLease,
 	// notifySendTimeout, or this value will cause that assertion to fail.
 	notifyMaxSendsPerChannelPerTick = 5
 	// notifySendTimeout is the timeout for a single delivery. It also determines the value of the previous constant,
@@ -72,7 +72,7 @@ var notifyBackoff = []time.Duration{
 //
 // It runs as an independent goroutine alongside Scheduler (see server.New). It deliberately does not reuse
 // Scheduler's tick: the real-time requirement for notifications (3 seconds) differs from the trigger's business cadence,
-// and failures in either do not affect the other—stalled notifications should not affect agent triggers.
+// and failures in either do not affect the otherâ€”stalled notifications should not affect agent triggers.
 type Notifier struct {
 	s  *Server
 	pg *db.DB
@@ -116,7 +116,7 @@ func (n *Notifier) Run(ctx context.Context) {
 
 // step runs one round: dispatch new events first, then deliver due tasks.
 //
-// Any failure only gets logged and does not interrupt the loop—notification system failures must never become process-level problems.
+// Any failure only gets logged and does not interrupt the loopâ€”notification system failures must never become process-level problems.
 // Each tick is independent, and the next round will retry naturally.
 func (n *Notifier) step(ctx context.Context) {
 	if !n.enabled() {
@@ -140,7 +140,7 @@ func (n *Notifier) step(ctx context.Context) {
 		// They are the same in real-time mode (one message per vulnerability); in digest mode, a whole batch of vulnerabilities is combined into
 		// one message, so only one token is consumed.
 		//
-		// Both modes check the token bucket first, then claim work up to the quota—the order must not be reversed, or deliveries blocked by rate limiting will have
+		// Both modes check the token bucket first, then claim work up to the quotaâ€”the order must not be reversed, or deliveries blocked by rate limiting will have
 		// already consumed retry attempts.
 		now := time.Now()
 		if ch.Mode == db.NotifyModeDigest {
@@ -170,8 +170,8 @@ func (n *Notifier) step(ctx context.Context) {
 // Previously, to make rate_per_min apply to digest, the per-round request budget
 // (notifyMaxSendsPerChannelPerTick, derived backward from the lease) was passed directly as the batch size.
 // As a result, a channel with rate_per_min=20 replenishes only 1 token during a 3-second tick, so each digest
-// message contains only 1 vulnerability—digest degrades into “real-time push with summary text,” and readers receive a string of
-// “1 new vulnerability in the last 30 minutes,” while db.MaxDigestBatchSize is never reached.
+// message contains only 1 vulnerabilityâ€”digest degrades into â€œreal-time push with summary text,â€ and readers receive a string of
+// â€œ1 new vulnerability in the last 30 minutes,â€ while db.MaxDigestBatchSize is never reached.
 //
 // This symptom is hard to catch in end-to-end tests (the existing cases all manually pass a sufficiently large limit to
 // stepDigest, bypassing the quota calculation in step), so keep the decision here and let
@@ -236,24 +236,24 @@ func (n *Notifier) stepDigest(ctx context.Context, ch *db.NotificationChannel, a
 		return
 	}
 	// Deliveries omitted from the message because the snapshot is invalid must be explicitly marked as failed. Otherwise, they remain
-	// outside included, neither in the message nor the failure list—and when sending succeeds, their status will be
+	// outside included, neither in the message nor the failure listâ€”and when sending succeeds, their status will be
 	// missed by the subsequent bulk update, leaving them stuck in sending until the lease expires and they are claimed repeatedly.
 	if skipped := excludeDeliveries(deliveries, included); len(skipped) > 0 {
-		reason := "事件快照无法解析，本条漏洞无法渲染成消息"
+		reason := "äº‹ä»¶å¿«ç…§æ— æ³•è§£æžï¼Œæœ¬æ¡æ¼æ´žæ— æ³•æ¸²æŸ“æˆæ¶ˆæ¯"
 		if fErr := n.pg.FailDeliveries(ctx, deliveryIDs(skipped), reason); fErr != nil {
 			log.Printf("[notify] failed to mark invalid-snapshot deliveries channel=%s ids=%v: %v", ch.Kind, deliveryIDs(skipped), fErr)
 		}
 		log.Printf("[notify] skipped %d deliveries with unparseable snapshots channel=%d", len(skipped), ch.ID)
 	}
 	// Pass only those included in the message to send: included[i] corresponds exactly to msg.Items[i],
-	// send relies on this mapping to apply “the channel response fit the first K items” to the correct delivery rows.
+	// send relies on this mapping to apply â€œthe channel response fit the first K itemsâ€ to the correct delivery rows.
 	n.send(ctx, channel, cfg, msg, included)
 }
 
 // send delivers and updates status based on the result.
 //
 // All deliveries in the same batch (possibly dozens in summary mode) share one send result: either delivered or the entire batch is retried.
-// Do not retry individual items—the summary is a single message, and resending only part of it would break batch semantics.
+// Do not retry individual itemsâ€”the summary is a single message, and resending only part of it would break batch semantics.
 //
 // The only exception is **segmentation due to the channel's length limit**: the channel response actually fit only the first K items,
 // so items starting from K+1 must be left for the next batch instead of being marked successful along with the rest. Otherwise, the omitted
@@ -266,7 +266,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 	if err == nil && delivered > 0 {
 		if delivered > len(deliveries) {
 			// The number of channel-reported messages cannot exceed the number delivered; if it does, the renderer miscalculated,
-			// so treat them all as delivered and record the problem—better than corrupting the records.
+			// so treat them all as delivered and record the problemâ€”better than corrupting the records.
 			log.Printf("[notify] Channel delivery report count %d exceeds delivery count %d channel=%s; treating all as delivered",
 				delivered, len(deliveries), channel.Kind())
 			delivered = len(deliveries)
@@ -277,7 +277,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 		}
 		if len(rest) > 0 {
 			// This message has reached the channel's length limit: immediately return the rest to the queue for the next tick.
-			// Use DeferDeliveries rather than RescheduleDeliveries—this isn't a failure,
+			// Use DeferDeliveries rather than RescheduleDeliveriesâ€”this isn't a failure,
 			// so it shouldn't consume the retry budget (claiming already optimistically added +1; it will be decremented there).
 			if err := n.pg.DeferDeliveries(ctx, deliveryIDs(rest),
 				fmt.Sprintf("This message has reached the channel length limit; only the first %d messages were delivered, the rest are left for the next batch", delivered)); err != nil {
@@ -296,8 +296,8 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 	//
 	// Previously, `if maxAttempts(deliveries) >= MaxNotifyAttempts` marked the entire batch as failed, but
 	// attempts can differ across deliveries: an older delivery that has been retried twice (attempts=2) would drag
-	// a brand-new delivery (attempts=1) in the same batch into failed too—the new webhook would be permanently lost without a single retry,
-	// exactly the opposite of the goal of “not letting old rows drag new rows down.”
+	// a brand-new delivery (attempts=1) in the same batch into failed tooâ€”the new webhook would be permanently lost without a single retry,
+	// exactly the opposite of the goal of â€œnot letting old rows drag new rows down.â€
 	permanent := notify.IsPermanent(err)
 	var failIDs, exhaustedIDs []int64
 	byDelay := map[time.Duration][]int64{}
@@ -338,7 +338,7 @@ func (n *Notifier) send(ctx context.Context, channel notify.Channel, cfg map[str
 }
 
 // excludeDeliveries returns those in all that are not in keep (compared by pointer identity).
-// Used to find deliveries that didn't make it into a message—they must be explicitly handled, not left in limbo.
+// Used to find deliveries that didn't make it into a messageâ€”they must be explicitly handled, not left in limbo.
 func excludeDeliveries(all, keep []*db.NotificationDelivery) []*db.NotificationDelivery {
 	inKeep := make(map[*db.NotificationDelivery]bool, len(keep))
 	for _, dl := range keep {
@@ -385,13 +385,13 @@ func (n *Notifier) renderSingle(ctx context.Context, dl *db.NotificationDelivery
 	return notify.Message{Items: []notify.Item{item}, HomeURL: baseURL}, nil
 }
 
-// renderBatch renders a summary message. Parse snapshots individually—if one is invalid, skip only that one,
+// renderBatch renders a summary message. Parse snapshots individuallyâ€”if one is invalid, skip only that one,
 // rather than losing the entire batch summary.
 //
-// The return value included corresponds **exactly one-to-one** with msg.Items (the i-th delivery ↔ the i-th item).
-// This correspondence is a hard requirement: callers use “the channel reports that the first K items fit” to decide which first K deliveries
+// The return value included corresponds **exactly one-to-one** with msg.Items (the i-th delivery â†” the i-th item).
+// This correspondence is a hard requirement: callers use â€œthe channel reports that the first K items fitâ€ to decide which first K deliveries
 // to mark as delivered. If we skip a bad snapshot here but don't remove the skipped delivery from included,
-// the indices will shift—the bad item that should have failed will be marked as delivered, and a good item will be mistakenly treated as undelivered.
+// the indices will shiftâ€”the bad item that should have failed will be marked as delivered, and a good item will be mistakenly treated as undelivered.
 // The caller explicitly marks bad items as failed; see stepDigest.
 func (n *Notifier) renderBatch(ctx context.Context, deliveries []*db.NotificationDelivery, baseURL string, windowMinutes int) (notify.Message, []*db.NotificationDelivery, error) {
 	items := make([]notify.Item, 0, len(deliveries))
@@ -399,8 +399,8 @@ func (n *Notifier) renderBatch(ctx context.Context, deliveries []*db.Notificatio
 	for _, dl := range deliveries {
 		snap, err := parseSnapshot(dl)
 		if err != nil {
-			// A bad snapshot goes neither into the message nor into included—handling it is the caller's responsibility
-			// (explicitly mark it as failed, rather than letting it slip through as “delivered”).
+			// A bad snapshot goes neither into the message nor into includedâ€”handling it is the caller's responsibility
+			// (explicitly mark it as failed, rather than letting it slip through as â€œdeliveredâ€).
 			log.Printf("[notify] Omitted unparseable snapshot from summary batch delivery=%d: %v", dl.ID, err)
 			continue
 		}
@@ -457,8 +457,8 @@ func (n *Notifier) itemFor(ctx context.Context, snap notify.Snapshot, baseURL st
 // return a finite but sufficiently large value to prevent a single loop from being held up by an unlimited backlog.
 //
 // This cap is necessary: without it, we can only drain the entire bucket, and the caller itself has a per-round limit,
-// so the extra tokens are unusable and disappear before the next refill—the accumulated burst capacity is forever unreachable,
-// and even “no pending deliveries this round” still incurs a charge.
+// so the extra tokens are unusable and disappear before the next refillâ€”the accumulated burst capacity is forever unreachable,
+// and even â€œno pending deliveries this roundâ€ still incurs a charge.
 func (n *Notifier) takeTokens(channelID int64, ratePerMin, want int, now time.Time) int {
 	if want <= 0 {
 		return 0
@@ -479,7 +479,7 @@ func (n *Notifier) takeTokens(channelID int64, ratePerMin, want int, now time.Ti
 		b.lastFill = now
 	}
 	// Add a tiny epsilon before rounding: the token count is accumulated as a float, and when refilling in two steps,
-	// 0.5 + 0.5 might yield 0.9999999999, which int() truncates to 0 directly—
+	// 0.5 + 0.5 might yield 0.9999999999, which int() truncates to 0 directlyâ€”
 	// the bucket is mathematically full, yet no token can be taken. 1e-9 is far less than one token and won't forgive a real deficit.
 	take := min(int(b.tokens+1e-9), want)
 	if take <= 0 {
@@ -553,3 +553,4 @@ func minF(a, b float64) float64 {
 	}
 	return b
 }
+

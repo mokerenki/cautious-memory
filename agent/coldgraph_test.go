@@ -3,7 +3,7 @@ package agent
 import (
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // helper: intent/fact node
@@ -14,11 +14,11 @@ func derived(from, to int64) cgEdge        { return cgEdge{From: from, Rel: db.R
 
 func ptr(v int64) *int64 { return &v }
 
-// §附 快照1: a→b→c, b→d, with d live (running) and c settled/inactive.
-// Expected: d/b/a hot (b kept hot by the live b→d branch); c is a cold candidate
-// but an isolated singleton → not folded.
+// Â§é™„ å¿«ç…§1: aâ†’bâ†’c, bâ†’d, with d live (running) and c settled/inactive.
+// Expected: d/b/a hot (b kept hot by the live bâ†’d branch); c is a cold candidate
+// but an isolated singleton â†’ not folded.
 func TestHotCold_AnyLiveBranchKeepsChainHot(t *testing.T) {
-	// a(intent) → b(intent) → c(fact); b → d(intent, running)
+	// a(intent) â†’ b(intent) â†’ c(fact); b â†’ d(intent, running)
 	nodes := []cgNode{intent(1, "done"), intent(2, "done"), fact(3), intent(4, "running")}
 	edges := []cgEdge{derived(1, 2), yields(2, 3), derived(2, 4)}
 	g := newColdGraph(nodes, edges)
@@ -37,7 +37,7 @@ func TestHotCold_AnyLiveBranchKeepsChainHot(t *testing.T) {
 	}
 }
 
-// §附 快照2: once d also finishes, a/b/c/d are all cold and connected → one block.
+// Â§é™„ å¿«ç…§2: once d also finishes, a/b/c/d are all cold and connected â†’ one block.
 func TestHotCold_WholeChainFoldsWhenAllSettled(t *testing.T) {
 	nodes := []cgNode{intent(1, "done"), intent(2, "done"), fact(3), intent(4, "done")}
 	edges := []cgEdge{derived(1, 2), yields(2, 3), derived(2, 4)}
@@ -59,7 +59,7 @@ func TestHotCold_WholeChainFoldsWhenAllSettled(t *testing.T) {
 	}
 }
 
-// §2.3 debounce: a freshly-cooled node (stamp too recent) is not yet eligible.
+// Â§2.3 debounce: a freshly-cooled node (stamp too recent) is not yet eligible.
 func TestDebounce_RecentlyCooledNotEligible(t *testing.T) {
 	nodes := []cgNode{intent(1, "done"), fact(2)}
 	edges := []cgEdge{yields(1, 2)}
@@ -76,12 +76,12 @@ func TestDebounce_RecentlyCooledNotEligible(t *testing.T) {
 	}
 }
 
-// §3.1: a SETTLED hub kept hot only by ancestry to a live descendant (the real
-// grap.log shape — exhausted/done intents with one live branch), whose OTHER
+// Â§3.1: a SETTLED hub kept hot only by ancestry to a live descendant (the real
+// grap.log shape â€” exhausted/done intents with one live branch), whose OTHER
 // children are flat dead leaves. Those leaves share the hot hub as parent, have
-// no cold↔cold edges, yet must group (not stay singletons). Note: were the hub
-// itself live (running), rule 1 would force its facts hot — that is a different
-// case; here the hub is exhausted and hot only via the 50→77 live branch.
+// no coldâ†”cold edges, yet must group (not stay singletons). Note: were the hub
+// itself live (running), rule 1 would force its facts hot â€” that is a different
+// case; here the hub is exhausted and hot only via the 50â†’77 live branch.
 func TestGrouping_SharedParentRescuesFlatFanout(t *testing.T) {
 	// hub(50) exhausted, hot via live descendant 77; dead cold facts 51..54.
 	nodes := []cgNode{intent(50, "exhausted"), intent(77, "running")}
@@ -102,7 +102,7 @@ func TestGrouping_SharedParentRescuesFlatFanout(t *testing.T) {
 	}
 	elig := g.eligibleCold(structCold, stamps, 100, defaultColdParams())
 	blocks := g.group(elig, defaultColdParams())
-	// rule① alone would leave 51..54 as 4 singletons; rule② groups them into 1.
+	// ruleâ‘  alone would leave 51..54 as 4 singletons; ruleâ‘¡ groups them into 1.
 	if len(blocks) != 1 {
 		t.Fatalf("expected 1 shared-parent block, got %d: %+v", len(blocks), blocks)
 	}
@@ -120,7 +120,7 @@ func TestGrouping_SharedParentRescuesFlatFanout(t *testing.T) {
 	}
 }
 
-// §3①: a lone cold child under a hot parent stays an unfolded singleton.
+// Â§3â‘ : a lone cold child under a hot parent stays an unfolded singleton.
 func TestGrouping_LoneColdChildStaysSingleton(t *testing.T) {
 	nodes := []cgNode{intent(50, "running"), intent(77, "running"), fact(51)}
 	edges := []cgEdge{derived(50, 77), yields(50, 51)}
@@ -133,22 +133,22 @@ func TestGrouping_LoneColdChildStaysSingleton(t *testing.T) {
 	}
 }
 
-// §5.3: signature is stable under reordering and changes when a member's
+// Â§5.3: signature is stable under reordering and changes when a member's
 // content_version bumps.
 func TestSignature_StableAndVersionSensitive(t *testing.T) {
 	b := block{Members: []int64{12, 28, 41}, Anchors: []int64{50}}
 	cv := map[int64]int{12: 0, 28: 0, 41: 0, 50: 0}
 	s1 := blockSignature(b, cv)
-	// same members, same versions → same signature
+	// same members, same versions â†’ same signature
 	if s1 != blockSignature(block{Members: []int64{12, 28, 41}, Anchors: []int64{50}}, cv) {
 		t.Fatalf("signature must be deterministic")
 	}
-	// bump a member version → signature changes
+	// bump a member version â†’ signature changes
 	cv2 := map[int64]int{12: 0, 28: 1, 41: 0, 50: 0}
 	if s1 == blockSignature(b, cv2) {
 		t.Fatalf("signature must change when a member content_version changes")
 	}
-	// bump anchor version → signature changes (anchor summary affects body)
+	// bump anchor version â†’ signature changes (anchor summary affects body)
 	cv3 := map[int64]int{12: 0, 28: 0, 41: 0, 50: 1}
 	if s1 == blockSignature(b, cv3) {
 		t.Fatalf("signature must change when an anchor content_version changes")
@@ -171,6 +171,7 @@ func TestStampOps(t *testing.T) {
 		t.Fatalf("node 2 already stamped, must not be re-stamped")
 	}
 	if o, ok := got[3]; !ok || o.Set {
-		t.Fatalf("node 3 revived (not cold) → stamp must be cleared, got %+v", got[3])
+		t.Fatalf("node 3 revived (not cold) â†’ stamp must be cleared, got %+v", got[3])
 	}
 }
+

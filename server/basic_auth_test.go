@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"context"
@@ -229,7 +229,7 @@ func TestBasicAuthGate(t *testing.T) {
 	if w.Code != 204 {
 		t.Fatal("must default to disabled")
 	}
-	w = saveBasicAuthForTest(s, `{"enabled":true,"username":"entry","password":"密码:test-pass"}`)
+	w = saveBasicAuthForTest(s, `{"enabled":true,"username":"entry","password":"å¯†ç :test-pass"}`)
 	if w.Code != 200 {
 		t.Fatalf("enable: %s", w.Body.String())
 	}
@@ -252,12 +252,12 @@ func TestBasicAuthGate(t *testing.T) {
 		{name: "auth API challenge", path: "/api/auth/status", want: 401},
 		{name: "check challenge", path: "/api/basic-auth/check", want: 401},
 		{name: "health challenge", path: "/api/health", want: 401},
-		{name: "health credentials", path: "/api/health", user: "entry", pass: "密码:test-pass", want: 204},
+		{name: "health credentials", path: "/api/health", user: "entry", pass: "å¯†ç :test-pass", want: 204},
 		{name: "health gate cookie", path: "/api/health", cookie: cookie, want: 204},
 		{name: "health prefix not exempt", path: "/api/health/anything", want: 401},
 		{name: "wrong password", path: "/login", user: "entry", pass: "wrong", want: 401},
-		{name: "wrong user", path: "/login", user: "wrong", pass: "密码:test-pass", want: 401},
-		{name: "correct Unicode credentials", path: "/login", user: "entry", pass: "密码:test-pass", want: 204},
+		{name: "wrong user", path: "/login", user: "wrong", pass: "å¯†ç :test-pass", want: 401},
+		{name: "correct Unicode credentials", path: "/login", user: "entry", pass: "å¯†ç :test-pass", want: 204},
 		{name: "gate cookie and bearer", path: "/api/tasks", cookie: cookie, bearer: adminJWT, want: 204},
 		{name: "admin JWT cannot bypass gate", path: "/api/tasks", bearer: adminJWT, want: 401},
 		{name: "tampered cookie", path: "/login", cookie: &http.Cookie{Name: basicAuthCookie, Value: cookie.Value + "x"}, want: 401},
@@ -377,7 +377,7 @@ func TestBasicAuthExpiredCookieAndSecureFlag(t *testing.T) {
 	cfg := s.basicAuth.snapshot()
 	for _, expires := range []*jwt.NumericDate{nil, jwt.NewNumericDate(time.Now().Add(-time.Minute))} {
 		token, _ := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-			Subject: cfg.Revision, Audience: jwt.ClaimStrings{"artex-basic-auth"}, ExpiresAt: expires,
+			Subject: cfg.Revision, Audience: jwt.ClaimStrings{"CAUTIOUSMEMORY-basic-auth"}, ExpiresAt: expires,
 		}).SignedString(s.basicAuthSigningKey())
 		r := httptest.NewRequest("GET", "/", nil)
 		r.AddCookie(&http.Cookie{Name: basicAuthCookie, Value: token})
@@ -477,7 +477,7 @@ func TestBasicAuthPostgresLoginFlow(t *testing.T) {
 	if err := restarted.basicAuth.load(m.pg); err != nil {
 		t.Fatal(err)
 	}
-	loginBody := `{"username":"ARTEX","password":"admin-password"}`
+	loginBody := `{"username":"CAUTIOUSMEMORY","password":"admin-password"}`
 	r = httptest.NewRequest("POST", "/api/auth/login", strings.NewReader(loginBody))
 	w = httptest.NewRecorder()
 	restarted.Handler().ServeHTTP(w, r)
@@ -504,3 +504,4 @@ func TestBasicAuthPostgresLoginFlow(t *testing.T) {
 		t.Fatalf("disable with gate cookie and JWT: %d %s", w.Code, w.Body.String())
 	}
 }
+

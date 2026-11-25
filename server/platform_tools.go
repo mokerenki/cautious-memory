@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -324,3 +324,4 @@ func (s *Server) toolUpdateMCP() actool.CoreTool {
 			return actool.Text(fmt.Sprintf("mcp updated: id=%d", a.ID)), nil
 		})
 }
+

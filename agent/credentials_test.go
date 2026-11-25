@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/llm"
 )
 
@@ -71,3 +71,4 @@ func TestCredentialModelIsSingleBoundedGroundedCall(t *testing.T) {
 		t.Fatal("truncated response accepted")
 	}
 }
+

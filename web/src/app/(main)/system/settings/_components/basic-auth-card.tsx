@@ -64,7 +64,7 @@ export function BasicAuthCard() {
           HTTP Basic Auth
         </CardTitle>
         <CardDescription>
-          When enabled, visitors must pass the browser's built-in username and password prompt before reaching the ARTEX login page. Disabled by default; changes take effect immediately after saving.
+          When enabled, visitors must pass the browser's built-in username and password prompt before reaching the CAUTIOUSMEMORY login page. Disabled by default; changes take effect immediately after saving.
         </CardDescription>
       </CardHeader>
       <form onSubmit={save}>
@@ -88,7 +88,7 @@ export function BasicAuthCard() {
                 required={enabled}
                 disabled={!loaded || saving}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Separate from your ARTEX login"
+                placeholder="Separate from your CAUTIOUSMEMORY login"
               />
               <FieldDescription>Cannot contain a colon; maximum 128 bytes.</FieldDescription>
             </Field>
@@ -104,7 +104,7 @@ export function BasicAuthCard() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={passwordSet ? "Set; leave blank to keep the current password" : "At least 8 characters and no more than 72 bytes"}
               />
-              <FieldDescription>Separate from your ARTEX login password. Use HTTPS for public access.</FieldDescription>
+              <FieldDescription>Separate from your CAUTIOUSMEMORY login password. Use HTTPS for public access.</FieldDescription>
             </Field>
             <FieldDescription>
               Saving will not interrupt access in this browser. Use a private window to test the authentication prompt; browsers may cache credentials. Disabling authentication preserves the username and password so you can enable it again later.

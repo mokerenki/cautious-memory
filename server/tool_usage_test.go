@@ -8,8 +8,8 @@ import (
 
 	actool "github.com/Autumn-27/norma/tool"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type recordingToolUsage struct {
@@ -71,3 +71,4 @@ func TestMeterToolFailureDoesNotBreakInvocation(t *testing.T) {
 		t.Fatalf("delegate calls: want 1, got %d", calls)
 	}
 }
+

@@ -16,8 +16,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 type Store struct {
@@ -231,7 +231,7 @@ func (s *Store) WithBinding(ctx context.Context, findingID, bindingID int64, fn 
 // the lock before returning. Callers that then stream a body to a client must
 // use this instead of WithBinding: verifyFile+io.Copy is O(body size), so a
 // large download (or a slow client) holding WithEvidenceTx would block every
-// evidence write process-wide. Reading the blob afterwards is safe — blobs are
+// evidence write process-wide. Reading the blob afterwards is safe â€” blobs are
 // content-addressed and GC only reaps unreferenced files after a 24h grace
 // period, and an already-open fd survives an unlink regardless.
 func (s *Store) Binding(ctx context.Context, findingID, bindingID int64) (db.FindingTrafficBinding, error) {
@@ -417,3 +417,4 @@ func (s *Store) RunGC(ctx context.Context) {
 		}
 	}
 }
+

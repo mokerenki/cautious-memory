@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/Autumn-27/cautiousmemory/agent"
 )
 
 func proxyTestManager(t *testing.T) *Manager {
@@ -498,3 +498,4 @@ func TestProxyReconnectSettingsSuccessGuardsGenerationZero(t *testing.T) {
 		t.Fatalf("generation-zero stale settings success wiped state: before=%+v after=%+v", before, after)
 	}
 }
+

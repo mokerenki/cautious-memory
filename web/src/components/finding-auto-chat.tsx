@@ -60,7 +60,7 @@ export function FindingAutoChat({
     .slice(0, 100);
   const conversationTitle = t("finding_auto_chat.title", { id: findingId, title: safeTitle });
   const conversationPrefix = t("finding_auto_chat.title_prefix", { id: findingId });
-  const storageKey = `artex.finding.${agentKey}-conversation.${findingId}`;
+  const storageKey = `CAUTIOUSMEMORY.finding.${agentKey}-conversation.${findingId}`;
 
   const createConversation = React.useCallback(async () => {
     setManualEmpty(false);
@@ -169,7 +169,7 @@ export function FindingAutoChat({
     if (!open || !conversation || loading || !messages.length) return;
     const viewport = chatViewportRef.current;
     if (!viewport) return;
-    const key = `artex.conversation-scroll.${conversation.id}`;
+    const key = `CAUTIOUSMEMORY.conversation-scroll.${conversation.id}`;
     const saved = window.sessionStorage.getItem(key);
     requestAnimationFrame(() => {
       if (saved != null) viewport.scrollTop = Number(saved) || 0;
@@ -364,7 +364,7 @@ export function FindingAutoChat({
           onScroll={(event) => {
             if (conversation)
               window.sessionStorage.setItem(
-                `artex.conversation-scroll.${conversation.id}`,
+                `CAUTIOUSMEMORY.conversation-scroll.${conversation.id}`,
                 String(event.currentTarget.scrollTop),
               );
           }}

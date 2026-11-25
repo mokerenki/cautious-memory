@@ -3,7 +3,7 @@ package server
 import (
 	"net/http"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // ---------- P3 agent triggers (custom agents only) ----------
@@ -136,3 +136,4 @@ func (s *Server) pgDeleteTrigger(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]any{"deleted": id})
 }
+

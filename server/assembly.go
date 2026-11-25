@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 	"github.com/Autumn-27/norma/skill"
 	actool "github.com/Autumn-27/norma/tool"
 )
@@ -21,8 +21,8 @@ import (
 // Skill meta-tool; its visible stdio MCP servers are spawned and expanded to
 // mcp__server__tool. skillDir is the root directory of all skill subdirectories.
 // hostTools, if set, returns runtime host tools (currently the traffic tools when
-// capture is on) to add to EVERY agent's base list — the DB tools table then
-// filters them per-agent binding. Empty/nil → no host tools this run (capture off).
+// capture is on) to add to EVERY agent's base list â€” the DB tools table then
+// filters them per-agent binding. Empty/nil â†’ no host tools this run (capture off).
 func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.CoreTool, map[string][]string)) {
 	agent.ToolAugment = func(ctx context.Context, agentKey string) ([]actool.CoreTool, agent.DeferredInfo, func()) {
 		a, err := pg.GetAgentByKey(agentKey)
@@ -65,10 +65,10 @@ func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.Cor
 
 		// --- mcp: connect enabled servers that are directly visible to this agent
 		// OR skill-gated (named in a visible skill's mcps field). Directly-visible
-		// and NOT gated → global (unlocked from session start). Skill-gated →
+		// and NOT gated â†’ global (unlocked from session start). Skill-gated â†’
 		// deferred until that skill is invoked (regardless of direct visibility).
 		var closers []io.Closer
-		serverTools := map[string][]string{} // server name → its tool names
+		serverTools := map[string][]string{} // server name â†’ its tool names
 		var allNames, globalNames []string
 		globalSet := map[string]bool{}
 		{
@@ -107,7 +107,7 @@ func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.Cor
 					allNames = append(allNames, t.Name())
 					serverTools[m.Name] = append(serverTools[m.Name], t.Name())
 					if directVisible && !skillGated {
-						// directly visible and not gated → available from session start
+						// directly visible and not gated â†’ available from session start
 						globalNames = append(globalNames, t.Name())
 						globalSet[t.Name()] = true
 					}
@@ -117,7 +117,7 @@ func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.Cor
 		}
 
 		// Shared call-gate: global MCP tools are unlocked from the start; skill-gated
-		// ones are unlocked when their skill loads (or replayed from history — C2).
+		// ones are unlocked when their skill loads (or replayed from history â€” C2).
 		unlock := actool.NewUnlockSet(globalNames...)
 		unlockSkill := func(skillName string) {
 			if reg == nil {
@@ -147,12 +147,12 @@ func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.Cor
 			}
 			// Attribution for the usage ledger: ToolAugment only gets (ctx, agentKey),
 			// so the run's task/session ids ride in on the ctx (agent.RunInfo). Read it
-			// once here — this closure is rebuilt per run, so the captured value always
+			// once here â€” this closure is rebuilt per run, so the captured value always
 			// belongs to this run.
 			extra = append(extra, meterSkillTool(reg.Tool(), pg, reg, a.Key, agent.RunInfoFrom(ctx)))
 		}
 
-		// host tools (traffic / orchestration / custom) — added to every agent's base;
+		// host tools (traffic / orchestration / custom) â€” added to every agent's base;
 		// ToolResolve then keeps them only for agents the tool is bound to. Custom
 		// tools flagged deferred contribute their names to the deferred wiring so
 		// their schema is withheld (SearchExtraTools/ExecuteExtraTool), same as MCP.
@@ -167,7 +167,7 @@ func wireAgentAugment(pg *db.DB, skillDir string, hostTools func() ([]actool.Cor
 				globalNames = append(globalNames, name) // advertised in the deferred block
 				globalSet[name] = true
 				if unlock != nil {
-					unlock.Add(name) // global deferred → callable from the start
+					unlock.Add(name) // global deferred â†’ callable from the start
 				}
 			}
 		}
@@ -201,7 +201,7 @@ func idSet(ids []int64) map[int64]bool {
 }
 
 // seedPrompts writes each built-in agent's code-default prompt body into
-// agent_prompts on startup — first-insert only (SeedPromptIfEmpty is a no-op once
+// agent_prompts on startup â€” first-insert only (SeedPromptIfEmpty is a no-op once
 // any version exists), so the DB becomes the authoritative editable source while
 // user edits survive restarts. Runs after seedBuiltins has created the agent rows.
 func seedPrompts(pg *db.DB) {
@@ -265,7 +265,7 @@ func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 	}
 	// bashInteractiveShellNote is appended to Bash's description ONLY for agents whose
 	// interactive_shell is on, so Bash points at shell_open for interactive programs
-	// without ever referencing a tool that isn't injected (§14.1/§14.2).
+	// without ever referencing a tool that isn't injected (Â§14.1/Â§14.2).
 	const bashInteractiveShellNote = "\n\nPrograms requiring interactive input (msfconsole / ssh interactive login / mysql, psql, python etc REPL / password or yes/no prompts / nc reverse shell) must not use Bash (no stdin, will hang); use shell_open to open an interactive session (shell_close when done). One-off non-interactive commands still use Bash."
 	agent.ToolResolve = func(ctx context.Context, agentKey string, tools []actool.CoreTool) []actool.CoreTool {
 		rows, err := pg.ListTools()
@@ -288,12 +288,12 @@ func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 		out := tools[:0:0]
 		for _, t := range tools {
 			row, known := byKey[t.Name()]
-			if !known { // MCP/skill/host tool: no row → untouched
+			if !known { // MCP/skill/host tool: no row â†’ untouched
 				out = append(out, t)
 				continue
 			}
 			if !row.Enabled || !contains(row.Agents, agentKey) {
-				continue // disabled globally or not bound to this agent → drop
+				continue // disabled globally or not bound to this agent â†’ drop
 			}
 			out = append(out, resolve(t, row))
 		}
@@ -318,7 +318,7 @@ func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 				out = append(out, resolve(inst, row))
 			}
 		}
-		// shell hints: user-defined kind="shell" tools are not callable — they are
+		// shell hints: user-defined kind="shell" tools are not callable â€” they are
 		// environment declarations that tell the model which command-line tools are
 		// installed. Collect the ones bound to this agent and append to Bash's description.
 		var shellHints []string
@@ -338,8 +338,8 @@ func wireTools(pg *db.DB, domainReg map[string]actool.CoreTool) {
 		}
 		// interactive shell: gated purely by the agent's interactive_shell flag (like
 		// web_search), NOT by tools-table binding. When on, inject the 5 shell_* tools
-		// and COUPLE the Bash description addendum so it points at shell_open — and never
-		// dangles when off. See docs/interactive_shell_design.md §14.2.
+		// and COUPLE the Bash description addendum so it points at shell_open â€” and never
+		// dangles when off. See docs/interactive_shell_design.md Â§14.2.
 		if !actool.InteractiveShellDisabled() {
 			if a, err := pg.GetAgentByKey(agentKey); err == nil && a != nil && a.InteractiveShell {
 				out = append(out, actool.ShellSessionTools()...)
@@ -364,13 +364,13 @@ func contains(ss []string, v string) bool {
 	return false
 }
 
-// buildDomainReg builds a name→CoreTool registry from a server-level ToolSet
+// buildDomainReg builds a nameâ†’CoreTool registry from a server-level ToolSet
 // (real AssetStore, nil ExplorationStore, taskID=0). Used by ToolResolve to inject
 // domain tools into agents (Auto, custom) that don't own a per-task ToolSet.
-// nil as → returns nil (no injection, graceful degradation).
+// nil as â†’ returns nil (no injection, graceful degradation).
 //
-// The nil ExplorationStore is deliberate — these instances are task-less by
-// construction — so every tool here must tolerate it. Asset/company tools do
+// The nil ExplorationStore is deliberate â€” these instances are task-less by
+// construction â€” so every tool here must tolerate it. Asset/company tools do
 // (they only need the AssetStore); the exploration-graph tools refuse with a
 // clear message via ToolSet.needExploration. Binding one of them to a task-less
 // agent in the tools table is therefore a useless tool, not a crash.
@@ -402,3 +402,4 @@ func jsonStrMap(raw json.RawMessage) map[string]string {
 	}
 	return out
 }
+

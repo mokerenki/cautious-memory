@@ -10,13 +10,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func manualScheduleTestServer(t *testing.T) (*Server, *Scheduler) {
 	t.Helper()
-	if os.Getenv("ARTEX_PG_DSN") == "" {
-		t.Skip("requires isolated ARTEX_PG_DSN")
+	if os.Getenv("CAUTIOUSMEMORY_PG_DSN") == "" {
+		t.Skip("requires isolated CAUTIOUSMEMORY_PG_DSN")
 	}
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
@@ -248,3 +248,4 @@ func TestCalendarManualDeadlineUsesNextEnd(t *testing.T) {
 		t.Fatalf("unscheduled task deadline=%v err=%v", until, err)
 	}
 }
+

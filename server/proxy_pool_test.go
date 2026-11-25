@@ -16,8 +16,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 func TestParseProxyBatchValidationAndDedup(t *testing.T) {
@@ -818,3 +818,4 @@ func TestDialHTTPConnectBlackholeHonorsContext(t *testing.T) {
 		t.Fatalf("context cancellation took %s", elapsed)
 	}
 }
+

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type scheduleRequest struct {
@@ -203,7 +203,7 @@ func (s *Server) runScheduleNow(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, "Failed to start scheduled task")
 		return
 	}
-	_ = s.m.pg.RecordScheduleHistory(id, 0, "running", true, "手动立即运行")
+	_ = s.m.pg.RecordScheduleHistory(id, 0, "running", true, "æ‰‹åŠ¨ç«‹å³è¿è¡Œ")
 	started, errors := s.runScheduleTasksNow(item)
 	writeJSON(w, 200, map[string]any{"ok": true, "started": started, "errors": errors})
 }
@@ -237,12 +237,12 @@ func (s *Server) startScheduleTasks(item *db.TaskSchedule, forceManualPause bool
 		managed, err := s.m.pg.TaskPausedBySchedule(taskID)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("Failed to read status for task #%d", taskID))
-			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "状态读取失败")
+			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "çŠ¶æ€è¯»å–å¤±è´¥")
 			continue
 		}
 		if !managed && !forceManualPause {
 			errors = append(errors, fmt.Sprintf("Task #%d was paused manually; the schedule cannot force it to resume", taskID))
-			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "人工暂停优先")
+			_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", false, "äººå·¥æš‚åœä¼˜å…ˆ")
 			continue
 		}
 		_, err = s.applyTaskControlWithCause(t, "resume", agent.AbortPausedByOrchestrator)
@@ -253,9 +253,9 @@ func (s *Server) startScheduleTasks(item *db.TaskSchedule, forceManualPause bool
 		}
 		started++
 		_ = s.m.pg.SetSchedulePaused(item.ID, taskID, false)
-		message := "手动立即运行"
+		message := "æ‰‹åŠ¨ç«‹å³è¿è¡Œ"
 		if !managed && forceManualPause {
-			message = "立即运行（显式恢复人工暂停）"
+			message = "ç«‹å³è¿è¡Œï¼ˆæ˜¾å¼æ¢å¤äººå·¥æš‚åœï¼‰"
 		}
 		_ = s.m.pg.RecordScheduleHistory(item.ID, taskID, "resume", true, message)
 	}
@@ -274,3 +274,4 @@ func scheduleRequestFromTask(raw json.RawMessage) (*scheduleRequest, error) {
 	}
 	return &req, nil
 }
+

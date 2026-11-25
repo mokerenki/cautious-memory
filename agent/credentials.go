@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/llm"
 )
 
@@ -177,3 +177,4 @@ func ExtractCredentials(ctx context.Context, prov llm.Provider, prompt, raw stri
 	out, err := ValidateCredentialAccounts(raw, response.Accounts)
 	return out, usage, err
 }
+

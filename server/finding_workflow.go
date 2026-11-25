@@ -8,9 +8,9 @@ import (
 	"log"
 	"strconv"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -19,11 +19,11 @@ func (s *Server) seedFindingWorkflowTools() {
 	if value, _, _ := s.m.pg.GetSetting(hostSearchDescriptionFlag); value != "true" {
 		// Only replace the original built-in text. A user-edited description is
 		// authoritative and must survive upgrades.
-		legacy := "查询记录代理已抓取的目标流量（必须指定 host，可再按 URL 子串或正文关键词过滤）。body_contains 会在已抓取的请求/响应头与正文中做全文搜索，支持任意子串和中文（至少 3 个字符），可用来找响应里的密码、密钥、报错、内网地址等。仅返回极轻量索引(id/method/url/status/resp_len)，不含任何响应内容。默认只返回 3 条、每页最多 10 条；结果多时用 page 翻页（page=0 起）；要看某条的请求/响应原文用 traffic_get(id)。回看已访问资源、找端点先用它，避免重复 curl 同一 URL。"
+		legacy := "æŸ¥è¯¢è®°å½•ä»£ç†å·²æŠ“å–çš„ç›®æ ‡æµé‡ï¼ˆå¿…é¡»æŒ‡å®š hostï¼Œå¯å†æŒ‰ URL å­ä¸²æˆ–æ­£æ–‡å…³é”®è¯è¿‡æ»¤ï¼‰ã€‚body_contains ä¼šåœ¨å·²æŠ“å–çš„è¯·æ±‚/å“åº”å¤´ä¸Žæ­£æ–‡ä¸­åšå…¨æ–‡æœç´¢ï¼Œæ”¯æŒä»»æ„å­ä¸²å’Œä¸­æ–‡ï¼ˆè‡³å°‘ 3 ä¸ªå­—ç¬¦ï¼‰ï¼Œå¯ç”¨æ¥æ‰¾å“åº”é‡Œçš„å¯†ç ã€å¯†é’¥ã€æŠ¥é”™ã€å†…ç½‘åœ°å€ç­‰ã€‚ä»…è¿”å›žæžè½»é‡ç´¢å¼•(id/method/url/status/resp_len)ï¼Œä¸å«ä»»ä½•å“åº”å†…å®¹ã€‚é»˜è®¤åªè¿”å›ž 3 æ¡ã€æ¯é¡µæœ€å¤š 10 æ¡ï¼›ç»“æžœå¤šæ—¶ç”¨ page ç¿»é¡µï¼ˆpage=0 èµ·ï¼‰ï¼›è¦çœ‹æŸæ¡çš„è¯·æ±‚/å“åº”åŽŸæ–‡ç”¨ traffic_get(id)ã€‚å›žçœ‹å·²è®¿é—®èµ„æºã€æ‰¾ç«¯ç‚¹å…ˆç”¨å®ƒï¼Œé¿å…é‡å¤ curl åŒä¸€ URLã€‚"
 		if _, err := s.m.pg.Exec(`UPDATE tools SET description=$1,updated_at=now() WHERE key='traffic_search' AND system AND description=$2`, traffic.TrafficSearchDescription, legacy); err != nil {
 			// Log and leave the flag unset so the next startup retries; do not
 			// return, or a transient error here would also skip the reporter
-			// migration below — the two are independent.
+			// migration below â€” the two are independent.
 			log.Printf("[evidence] upgrade traffic_search description: %v", err)
 		} else {
 			_ = s.m.pg.SetSetting(hostSearchDescriptionFlag, "true")
@@ -54,7 +54,7 @@ func (s *Server) seedFindingWorkflowTools() {
 		props := objectProperty(schema, "properties")
 		if key == "report_finding" {
 			if _, exists := props["evidence_hint_id"]; !exists {
-				props["evidence_hint_id"] = map[string]any{"type": "integer", "description": "可选：本任务中对应此漏洞的 hint ID；读取该提示保存的 traffic_refs 一并绑定，无提示时省略"}
+				props["evidence_hint_id"] = map[string]any{"type": "integer", "description": "å¯é€‰ï¼šæœ¬ä»»åŠ¡ä¸­å¯¹åº”æ­¤æ¼æ´žçš„ hint IDï¼›è¯»å–è¯¥æç¤ºä¿å­˜çš„ traffic_refs ä¸€å¹¶ç»‘å®šï¼Œæ— æç¤ºæ—¶çœç•¥"}
 			}
 		} else {
 			if _, exists := props["traffic_refs"]; !exists {
@@ -69,7 +69,7 @@ func (s *Server) seedFindingWorkflowTools() {
 				items["type"] = "object"
 			}
 			itemProps := objectProperty(items, "properties")
-			for name, value := range map[string]any{"text": strParam("提示内容"), "asset_ids": map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}, "traffic_refs": agent.HintTrafficSchema()} {
+			for name, value := range map[string]any{"text": strParam("æç¤ºå†…å®¹"), "asset_ids": map[string]any{"type": "array", "items": map[string]any{"type": "integer"}}, "traffic_refs": agent.HintTrafficSchema()} {
 				if _, exists := itemProps[name]; !exists {
 					itemProps[name] = value
 				}
@@ -148,8 +148,8 @@ func (s *Server) agentFindingTrafficAccess(ctx context.Context, id int64, write 
 }
 
 func (s *Server) toolBindFindingTraffic() actool.CoreTool {
-	return wrTool("bind_finding_traffic", "为已登记漏洞补绑经核实的真实 HTTP 流量。finding_id 使用独立漏洞记录 ID；不要传探索节点 ID。同批引用全部成功或全部失败，重复引用不覆盖已有说明。补绑会使已有报告标记待更新；不要为补包重新探测或重复创建漏洞。",
-		objSchema(map[string]any{"finding_id": strParam("独立漏洞记录 ID，从 list_task_findings / get_task_node_detail 的 finding_id 字段读取"), "traffic_refs": agent.HintTrafficSchema()}, "finding_id", "traffic_refs"),
+	return wrTool("bind_finding_traffic", "ä¸ºå·²ç™»è®°æ¼æ´žè¡¥ç»‘ç»æ ¸å®žçš„çœŸå®ž HTTP æµé‡ã€‚finding_id ä½¿ç”¨ç‹¬ç«‹æ¼æ´žè®°å½• IDï¼›ä¸è¦ä¼ æŽ¢ç´¢èŠ‚ç‚¹ IDã€‚åŒæ‰¹å¼•ç”¨å…¨éƒ¨æˆåŠŸæˆ–å…¨éƒ¨å¤±è´¥ï¼Œé‡å¤å¼•ç”¨ä¸è¦†ç›–å·²æœ‰è¯´æ˜Žã€‚è¡¥ç»‘ä¼šä½¿å·²æœ‰æŠ¥å‘Šæ ‡è®°å¾…æ›´æ–°ï¼›ä¸è¦ä¸ºè¡¥åŒ…é‡æ–°æŽ¢æµ‹æˆ–é‡å¤åˆ›å»ºæ¼æ´žã€‚",
+		objSchema(map[string]any{"finding_id": strParam("ç‹¬ç«‹æ¼æ´žè®°å½• IDï¼Œä»Ž list_task_findings / get_task_node_detail çš„ finding_id å­—æ®µè¯»å–"), "traffic_refs": agent.HintTrafficSchema()}, "finding_id", "traffic_refs"),
 		func(ctx context.Context, raw json.RawMessage) (actool.Result, error) {
 			if !s.m.pg.GetBool(settingAgentTrafficBinding, false) {
 				return actool.Errorf("Automatic traffic binding is disabled; enable it in system settings or bind traffic manually in the UI."), nil
@@ -175,3 +175,4 @@ func (s *Server) toolBindFindingTraffic() actool.CoreTool {
 			return jsonResult(trafficSummary(list))
 		})
 }
+

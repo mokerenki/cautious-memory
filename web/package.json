@@ -1,5 +1,5 @@
-{
-  "name": "artex-web",
+﻿{
+  "name": "CAUTIOUSMEMORY-web",
   "version": "2.2.0",
   "private": true,
   "scripts": {
@@ -89,3 +89,4 @@
     "typescript": "^5.9.3"
   }
 }
+

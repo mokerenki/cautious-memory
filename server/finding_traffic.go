@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/evidence"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/evidence"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -276,7 +276,7 @@ func readEvidencePreview(store *evidence.Store, snapshot db.TrafficEvidenceSnaps
 	if out.Binary {
 		out.Content = fmt.Sprintf("[Binary body, %d bytes; please download to view]", total)
 	} else {
-		out.Content = string(bytes.ToValidUTF8(raw, []byte("�")))
+		out.Content = string(bytes.ToValidUTF8(raw, []byte("ï¿½")))
 	}
 	return out, nil
 }
@@ -366,7 +366,7 @@ func (s *Server) getFindingTrafficBody(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) toolGetFindingTraffic() actool.CoreTool {
-	return roTool("get_finding_traffic", "Read real traffic evidence bound to a finding, independent of capture switch. finding_id uses the independent finding record ID returned by report_finding JSON (not the first exploration node ID). Omit binding_id first to get the list and version; empty list is normal—TCP and other non-HTTP vulnerabilities or uncollected traffic can still be reported based on text/command evidence, binding not required. When bound, read body in segments by binding_id, side(request/response), offset. When writing a report, pass the read version as evidence_version to update_finding_report; that call still uses the exploration node ID as finding_id.",
+	return roTool("get_finding_traffic", "Read real traffic evidence bound to a finding, independent of capture switch. finding_id uses the independent finding record ID returned by report_finding JSON (not the first exploration node ID). Omit binding_id first to get the list and version; empty list is normalâ€”TCP and other non-HTTP vulnerabilities or uncollected traffic can still be reported based on text/command evidence, binding not required. When bound, read body in segments by binding_id, side(request/response), offset. When writing a report, pass the read version as evidence_version to update_finding_report; that call still uses the exploration node ID as finding_id.",
 		objSchema(map[string]any{"finding_id": strParam("Independent finding record ID"), "binding_id": strParam("Binding ID from the list, omitted returns the list"), "side": strParam("request or response, defaults to response"), "offset": map[string]any{"type": "integer"}, "length": map[string]any{"type": "integer"}}, "finding_id"),
 		func(ctx context.Context, in json.RawMessage) (actool.Result, error) {
 			var a struct {
@@ -412,3 +412,4 @@ func (s *Server) toolGetFindingTraffic() actool.CoreTool {
 			return jsonResult(result)
 		})
 }
+

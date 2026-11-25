@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Overview "Constraint Management" manual CRUD API + injection scope switch parsing.
 // Operation constraints (allow/deny) share the same task_constraints table as the agent-side
 // set_constraints tool; here humans directly CRUD via UI. Constraints are only prompt
-// context — changes do NOT notify planner; next planning round reads DB naturally (per product decision).
+// context â€” changes do NOT notify planner; next planning round reads DB naturally (per product decision).
 // Every change handler goes through beginTaskOperation/decInflight to avoid races with task deletion
 // (consistent with target/intent CRUD).
 
@@ -178,3 +178,4 @@ func constraintDTOs(in []db.Constraint) []ConstraintDTO {
 	}
 	return out
 }
+

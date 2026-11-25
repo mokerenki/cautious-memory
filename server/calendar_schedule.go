@@ -7,8 +7,8 @@ import (
 	"time"
 	_ "time/tzdata"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type scheduleWindow struct {
@@ -346,3 +346,4 @@ func (sc *Scheduler) fireTaskSchedulesAt(now time.Time) {
 		}
 	}
 }
+

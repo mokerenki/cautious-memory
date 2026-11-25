@@ -7,8 +7,8 @@ import (
 
 	actool "github.com/Autumn-27/norma/tool"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type toolUsageRecorder interface {
@@ -46,3 +46,4 @@ func (m *meteredTool) Call(ctx context.Context, input json.RawMessage, tc *actoo
 	}
 	return m.CoreTool.Call(ctx, input, tc)
 }
+

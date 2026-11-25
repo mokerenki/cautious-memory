@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/llmrec"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 	"github.com/Autumn-27/norma/transcript"
 )
 
@@ -99,7 +99,7 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 	result := *item.Credentials
 	conversationID := result.ConversationID
 	if conversationID == 0 {
-		if c, err := s.m.pg.CreateConversation(db.CredentialAgentKey, "Credential review · "+firstLine(item.Title, 42), nil); err == nil {
+		if c, err := s.m.pg.CreateConversation(db.CredentialAgentKey, "Credential review Â· "+firstLine(item.Title, 42), nil); err == nil {
 			conversationID = c.ID
 			result.ConversationID = c.ID
 			_, _ = s.m.pg.AppendConvActivity(c.ID, db.Activity{Worker: db.CredentialAgentKey, Kind: "user", Summary: "Credential report received; review started", Detail: item.Content})
@@ -211,7 +211,7 @@ func (s *Server) processCredentialJob(parent context.Context, item *db.Intellige
 
 func intPtr(v int) *int { return &v }
 
-var credentialURLs = regexp.MustCompile(`https?://[^\s<>"'，；）)]+`)
+var credentialURLs = regexp.MustCompile(`https?://[^\s<>"'ï¼Œï¼›ï¼‰)]+`)
 var credentialTrafficIDs = regexp.MustCompile(`\b[0-9]{8,}-[0-9]{3,}\b`)
 
 func (s *Server) credentialHosts(item *db.Intelligence) map[string]bool {
@@ -482,3 +482,4 @@ func (s *Server) credentialTrafficDetail(w http.ResponseWriter, r *http.Request)
 	}
 	writeJSON(w, 200, map[string]any{"reference": ref, "req": req, "resp": resp, "unavailable": false})
 }
+

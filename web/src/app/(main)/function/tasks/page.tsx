@@ -331,9 +331,9 @@ const TASK_SORT_FIELDS: readonly TaskSortField[] = [
   "duration",
   "status",
 ];
-const TASK_SORT_PREFERENCE_KEY = "artex_task_list_sort";
-const TASK_FILTER_PREFERENCE_KEY = "artex_task_list_filters";
-const TASK_COLUMNS_PREFERENCE_KEY = "artex_task_list_columns";
+const TASK_SORT_PREFERENCE_KEY = "CAUTIOUSMEMORY_task_list_sort";
+const TASK_FILTER_PREFERENCE_KEY = "CAUTIOUSMEMORY_task_list_filters";
+const TASK_COLUMNS_PREFERENCE_KEY = "CAUTIOUSMEMORY_task_list_columns";
 type TaskColumnKey =
   | "id"
   | "name"

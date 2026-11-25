@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 )
@@ -25,7 +25,7 @@ func jsonResult(v any) (actool.Result, error) {
 	return actool.Text(string(b)), nil
 }
 
-// This file implements P2 “cross-task orchestration tools” (see the orchestration design document, section 2). These are host tools—they need
+// This file implements P2 â€œcross-task orchestration toolsâ€ (see the orchestration design document, section 2). These are host toolsâ€”they need
 // access to Manager (any task's Store), Engine (for pausing), and the task creation flow, so they live in the server layer.
 // Read tools redirect existing per-task tools to run against the target task's store (create a temporary ToolSet
 // and Call its corresponding tool), thereby reusing exactly the same logic; control tools (spawn/pause) call Manager/Engine directly.
@@ -48,7 +48,7 @@ func (s *Server) hostTools() ([]actool.CoreTool, map[string][]string) {
 		return tools, nil
 	}
 	tools = append(tools, custom...)
-	// deferred custom tools → name -> its bound agent keys. ToolAugment turns a
+	// deferred custom tools â†’ name -> its bound agent keys. ToolAugment turns a
 	// name into a deferred entry only for agents it's actually bound to (so we don't
 	// advertise a tool the per-agent binding will drop from the callable set).
 	deferred := map[string][]string{}
@@ -62,7 +62,7 @@ func (s *Server) hostTools() ([]actool.CoreTool, map[string][]string) {
 }
 
 // orchestrationTools returns the cross-task tool set. Bound per-agent via the
-// tools table (default: no binding — opt-in for orchestration agents).
+// tools table (default: no binding â€” opt-in for orchestration agents).
 func (s *Server) orchestrationTools() []actool.CoreTool {
 	return append([]actool.CoreTool{
 		s.toolListTasks(),
@@ -145,7 +145,7 @@ func wrTool(name, desc string, schema map[string]any, run func(context.Context, 
 }
 
 // delegateToTask resolves the `task_id` in the input, builds a ToolSet bound to
-// that task's store, strips task_id, and calls the chosen per-task tool — so the
+// that task's store, strips task_id, and calls the chosen per-task tool â€” so the
 // cross-task read reuses the exact in-task logic against another task.
 func (s *Server) delegateToTask(ctx context.Context, in json.RawMessage, pick func(*agent.ToolSet) actool.CoreTool) (actool.Result, error) {
 	var head struct {
@@ -168,7 +168,7 @@ func (s *Server) delegateToTask(ctx context.Context, in json.RawMessage, pick fu
 		tsx.SetAssetStore(s.m.Assets(), s.m.Assets().Companies())
 	}
 	tsx.SetNotify(t.Notify)         // Generic wake-up (write operations without a dedicated callback use this; read tools are no-ops)
-	tsx.SetNotifyHint(t.NotifyHint) // add_hint → record “A person added N strategic hints:…” and trigger/wake the planner
+	tsx.SetNotifyHint(t.NotifyHint) // add_hint â†’ record â€œA person added N strategic hints:â€¦â€ and trigger/wake the planner
 	return pick(tsx).Call(ctx, inner, nil)
 }
 
@@ -463,7 +463,7 @@ func (s *Server) toolUpdateFindingReport() actool.CoreTool {
 				Report          string          `json:"report"`
 			}
 			_ = json.Unmarshal(in, &a)
-			nodeID := parseProfileID(a.FindingID) // Reuse parsing for “numbers or numeric strings”
+			nodeID := parseProfileID(a.FindingID) // Reuse parsing for â€œnumbers or numeric stringsâ€
 			if nodeID <= 0 {
 				return actool.Errorf("finding_id is invalid"), nil
 			}
@@ -512,7 +512,7 @@ func (s *Server) deriveTaskStatus(t *Task) string {
 }
 
 // orchestrationToolSeeds seeds the cross-task tools into the tools table so they
-// are bindable per-agent (default: bound to nobody — opt-in for orchestration
+// are bindable per-agent (default: bound to nobody â€” opt-in for orchestration
 // agents). First-insert only, like the traffic seeds.
 func (s *Server) seedOrchestrationTools() {
 	// task-op + platform tools default-bind to the built-in Auto agent (it is inherently intended for
@@ -539,9 +539,9 @@ func (s *Server) seedOrchestrationTools() {
 	s.seedWorkerReadbackRebind()  // Fix accidental deletion in an old migration: bind search_all_worker_traces/get_worker_trace/node_detail back to worker (one-time)
 	s.seedAutoReportFindingBinding()
 	s.unbindGoalMetDefault()
-	s.reseedGoalsPrompt()             // Add an “extract operational constraints” step to the goals prompt → append a new default to old databases (one-time)
-	s.reseedMainAgentPrompt()         // Add “after a goal is achieved, use add_intent to ask whether to create a goal” to the mainagent prompt (one-time)
-	s.reseedPlannerPrompt()           // planner prompt: rewrite the valid reasons for “0 intents” + add a quantitative acceptance check (one-time)
+	s.reseedGoalsPrompt()             // Add an â€œextract operational constraintsâ€ step to the goals prompt â†’ append a new default to old databases (one-time)
+	s.reseedMainAgentPrompt()         // Add â€œafter a goal is achieved, use add_intent to ask whether to create a goalâ€ to the mainagent prompt (one-time)
+	s.reseedPlannerPrompt()           // planner prompt: rewrite the valid reasons for â€œ0 intentsâ€ + add a quantitative acceptance check (one-time)
 	s.reseedWorkerPrompt()            // worker prompt: add an evidence threshold for negative conclusions (one-time)
 	s.seedReporterAgent()             // Preinstall the report-writing agent + tool bindings + finding trigger (one-time)
 	s.upgradeReporterTriggerMessage() // Migrate older databases: have reporter return evidence_version (one-time)
@@ -556,7 +556,7 @@ func (s *Server) seedOrchestrationTools() {
 	s.seedFindingTrafficTools() // Add optional evidence parameters and a read-only evidence tool; preserve user configuration
 	s.seedFindingWorkflowTools()
 	s.seedFindingCaseTools()
-	// Note: pentest's default tool bindings require no migration—BuiltinToolSeeds already ensures that on fresh initialization
+	// Note: pentest's default tool bindings require no migrationâ€”BuiltinToolSeeds already ensures that on fresh initialization
 	// list_assets/insert_assets/report_finding/list_findings/list_companies along with
 	// pentest have been seeded (the project has no legacy database, so no migration is needed).
 }
@@ -617,8 +617,8 @@ func (s *Server) migrateReporterWorkflow() {
 }
 
 // refreshBuiltinToolSchemas propagates code schema/description changes on the
-// orchestration + platform tools into already-seeded rows ONCE per version flag —
-// SeedTool is first-insert-only, so a new parameter (e.g. spawn_task’s llm_profile) never
+// orchestration + platform tools into already-seeded rows ONCE per version flag â€”
+// SeedTool is first-insert-only, so a new parameter (e.g. spawn_taskâ€™s llm_profile) never
 // reaches an old DB otherwise. Preserves each tool's agent binding + enabled flag.
 // Bump the flag whenever these tools' schemas/descriptions change in code.
 func (s *Server) refreshBuiltinToolSchemas() {
@@ -634,8 +634,8 @@ func (s *Server) refreshBuiltinToolSchemas() {
 		}
 	}
 	// Also reset some built-in agent tools to their code defaults:
-	//   - goal_met: the seeded description in old databases misleadingly said “end this planning round,” which could make the planner treat it as a way to
-	//     “end an empty round” and mistakenly mark the entire task complete right after it starts.
+	//   - goal_met: the seeded description in old databases misleadingly said â€œend this planning round,â€ which could make the planner treat it as a way to
+	//     â€œend an empty roundâ€ and mistakenly mark the entire task complete right after it starts.
 	//   - insert_assets: add the related argument (marks whether an asset is related to the current task and determines whether it counts toward coverage),
 	//     SeedTool inserts only on first seed; otherwise, schemas already seeded in existing databases won't receive this new parameter.
 	//   - list_facts: switch to pagination and add limit/before/q arguments; otherwise, empty schemas already seeded in existing databases
@@ -656,8 +656,8 @@ func (s *Server) refreshBuiltinToolSchemas() {
 
 // unbindGoalMetDefault removes goal_met's default "planner" binding ONCE (guarded by
 // a settings flag), so existing DBs match the new default of NO agent. goal_met bypasses
-// per-goal prove_goal to declare the whole task done — powerful/risky and redundant with
-// the prove_goal→auto-complete path — so it ships unbound; users can re-bind it per agent
+// per-goal prove_goal to declare the whole task done â€” powerful/risky and redundant with
+// the prove_goalâ†’auto-complete path â€” so it ships unbound; users can re-bind it per agent
 // in the UI. A user's own binding to another agent is untouched (we only strip planner).
 func (s *Server) unbindGoalMetDefault() {
 	const flag = "goal_met_unbind_default_v1"
@@ -671,10 +671,10 @@ func (s *Server) unbindGoalMetDefault() {
 	_ = s.m.pg.SetSetting(flag, "true")
 }
 
-// reseedGoalsPrompt refreshes the goals decomposer prompt to 【current code default】—because the default text now adds
-// the step 「extract operational constraints (set_constraints) first, then decompose goals」, and SeedPromptIfEmpty only inserts on first seed, existing
-// version 1 won't get this step. Here, use version management to 【append a new version】 and switch to it (ResetPromptToDefault),
-// old versions remain in history, so users who customized the prompt can restore it from the version history. settings flag guard → only once;
+// reseedGoalsPrompt refreshes the goals decomposer prompt to ã€current code defaultã€‘â€”because the default text now adds
+// the step ã€Œextract operational constraints (set_constraints) first, then decompose goalsã€, and SeedPromptIfEmpty only inserts on first seed, existing
+// version 1 won't get this step. Here, use version management to ã€append a new versionã€‘ and switch to it (ResetPromptToDefault),
+// old versions remain in history, so users who customized the prompt can restore it from the version history. settings flag guard â†’ only once;
 // If the default changes again later, bump this flag. New databases need no handling (SeedPromptIfEmpty has seeded the latest default).
 func (s *Server) reseedGoalsPrompt() {
 	const flag = "goals_prompt_constraint_step_v1"
@@ -690,7 +690,7 @@ func (s *Server) reseedGoalsPrompt() {
 	if tmpl == "" {
 		return
 	}
-	// New databases: seedPrompts has seeded the latest default → the current version already matches the code default, so there is no need to append a duplicate version.
+	// New databases: seedPrompts has seeded the latest default â†’ the current version already matches the code default, so there is no need to append a duplicate version.
 	if cur, err := s.m.pg.CurrentPrompt(a.ID); err == nil && cur == tmpl {
 		return
 	}
@@ -701,10 +701,10 @@ func (s *Server) reseedGoalsPrompt() {
 	log.Printf("[prompts] Appended new default version of goals prompt (added an operation-constraint extraction step, one-time)")
 }
 
-// reseedMainAgentPrompt refreshes the mainagent prompt to 【the current code default】—the default body now includes the guidance 「after all
-// goals are achieved, when directly submitting an intent with add_intent, ask the person whether to register it as an official goal」. SeedPromptIfEmpty inserts
-// only on first insert, so existing versions in old databases won't receive it. Use version management to 【append a new version】 and switch to it (ResetPromptToDefault); old versions are still
-// kept in history, so users who customized one can recover it from the version history. settings flag guard → run only once. New databases need no handling
+// reseedMainAgentPrompt refreshes the mainagent prompt to ã€the current code defaultã€‘â€”the default body now includes the guidance ã€Œafter all
+// goals are achieved, when directly submitting an intent with add_intent, ask the person whether to register it as an official goalã€. SeedPromptIfEmpty inserts
+// only on first insert, so existing versions in old databases won't receive it. Use version management to ã€append a new versionã€‘ and switch to it (ResetPromptToDefault); old versions are still
+// kept in history, so users who customized one can recover it from the version history. settings flag guard â†’ run only once. New databases need no handling
 // (SeedPromptIfEmpty has seeded the latest default). Exactly parallel to reseedGoalsPrompt.
 func (s *Server) reseedMainAgentPrompt() {
 	const flag = "mainagent_prompt_goalless_intent_v1"
@@ -720,7 +720,7 @@ func (s *Server) reseedMainAgentPrompt() {
 	if tmpl == "" {
 		return
 	}
-	// New databases: seedPrompts has seeded the latest default → the current version already matches the code default, so there is no need to append a duplicate version.
+	// New databases: seedPrompts has seeded the latest default â†’ the current version already matches the code default, so there is no need to append a duplicate version.
 	if cur, err := s.m.pg.CurrentPrompt(a.ID); err == nil && cur == tmpl {
 		return
 	}
@@ -731,11 +731,11 @@ func (s *Server) reseedMainAgentPrompt() {
 	log.Printf("[prompts] Appended new default version of mainagent prompt (ask about creating goals after goals are achieved, one-time)")
 }
 
-// reseedPlannerPrompt updates the planner prompt to the 【current code default】—the default body has been streamlined and refactored, and 「restraint」 has been downgraded to
-// deduplication only; adds 「depth over coverage」 and 「hard rule: if the goal is not achieved and no intent is running, one must be produced」; adds an upper bound to reviews of negative conclusions.
+// reseedPlannerPrompt updates the planner prompt to the ã€current code defaultã€‘â€”the default body has been streamlined and refactored, and ã€Œrestraintã€ has been downgraded to
+// deduplication only; adds ã€Œdepth over coverageã€ and ã€Œhard rule: if the goal is not achieved and no intent is running, one must be producedã€; adds an upper bound to reviews of negative conclusions.
 // Whenever the default changes materially, bump the flag below (currently v2) to reseed existing databases once. SeedPromptIfEmpty only inserts initially; existing databases won't receive updates, so use version management
-// 【append a new version】and switch to it (ResetPromptToDefault); old versions remain in history, so users who customized theirs can retrieve them from the version history
-// settings flag guard → run only once. No action is needed for a fresh database (SeedPromptIfEmpty has already seeded the latest default). Same structure as
+// ã€append a new versionã€‘and switch to it (ResetPromptToDefault); old versions remain in history, so users who customized theirs can retrieve them from the version history
+// settings flag guard â†’ run only once. No action is needed for a fresh database (SeedPromptIfEmpty has already seeded the latest default). Same structure as
 // reseedGoalsPrompt.
 func (s *Server) reseedPlannerPrompt() {
 	const flag = "planner_prompt_compact_realistic_v2"
@@ -751,7 +751,7 @@ func (s *Server) reseedPlannerPrompt() {
 	if tmpl == "" {
 		return
 	}
-	// A fresh database has already seeded the latest default via seedPrompts → the current version already matches the code default, so there is no need to append a duplicate version.
+	// A fresh database has already seeded the latest default via seedPrompts â†’ the current version already matches the code default, so there is no need to append a duplicate version.
 	if cur, err := s.m.pg.CurrentPrompt(a.ID); err == nil && cur == tmpl {
 		return
 	}
@@ -762,11 +762,11 @@ func (s *Server) reseedPlannerPrompt() {
 	log.Printf("[prompts] Appended new default version of planner prompt (streamlined refactor + restrained fallback deduplication + depth-first + upper bound for negative review, one-time)")
 }
 
-// reseedWorkerPrompt updates the worker prompt to the 【current code default】—the default body’s record_fact section has removed 「negative conclusions
-// Write the entire 「observations + exploratory reading」 sentence, and decouple confidence(observed/inferred) from 「whether the means for this intent have been exhausted」 (these can mislead planners),
-// At the same time, tighten the facts array into a very small number of exceptions that are 「completely independent of each other and cannot be consolidated」. Bump flag to v3 to refresh existing old databases once more.
-// SeedPromptIfEmpty only inserts on first use; existing databases won't receive it, so use version management to 【append a new version】 and switch to it; the old version remains in history and can be retrieved.
-// settings flag guard → run only once. No action is needed for a brand-new database. Exactly parallel to reseedGoalsPrompt.
+// reseedWorkerPrompt updates the worker prompt to the ã€current code defaultã€‘â€”the default bodyâ€™s record_fact section has removed ã€Œnegative conclusions
+// Write the entire ã€Œobservations + exploratory readingã€ sentence, and decouple confidence(observed/inferred) from ã€Œwhether the means for this intent have been exhaustedã€ (these can mislead planners),
+// At the same time, tighten the facts array into a very small number of exceptions that are ã€Œcompletely independent of each other and cannot be consolidatedã€. Bump flag to v3 to refresh existing old databases once more.
+// SeedPromptIfEmpty only inserts on first use; existing databases won't receive it, so use version management to ã€append a new versionã€‘ and switch to it; the old version remains in history and can be retrieved.
+// settings flag guard â†’ run only once. No action is needed for a brand-new database. Exactly parallel to reseedGoalsPrompt.
 func (s *Server) reseedWorkerPrompt() {
 	const flag = "worker_prompt_compact_v4"
 	if v, _, _ := s.m.pg.GetSetting(flag); v == "true" {
@@ -781,7 +781,7 @@ func (s *Server) reseedWorkerPrompt() {
 	if tmpl == "" {
 		return
 	}
-	// For a brand-new database, seedPrompts has already seeded the latest default → the current version already matches the code default, so there's no need to append a duplicate version.
+	// For a brand-new database, seedPrompts has already seeded the latest default â†’ the current version already matches the code default, so there's no need to append a duplicate version.
 	if cur, err := s.m.pg.CurrentPrompt(a.ID); err == nil && cur == tmpl {
 		return
 	}
@@ -793,10 +793,10 @@ func (s *Server) reseedWorkerPrompt() {
 }
 
 // reporterToolCallMessage must unconditionally require calling get_finding_traffic once before writing the report.
-// This tool is read-only and 「does not depend on the capture switch」; it can read manually bound evidence regardless of whether automatic binding is on or off. If this is
-// written as 「read only when automatic binding is enabled」, reporter won't pass evidence_version with the default-off configuration,
+// This tool is read-only and ã€Œdoes not depend on the capture switchã€; it can read manually bound evidence regardless of whether automatic binding is on or off. If this is
+// written as ã€Œread only when automatic binding is enabledã€, reporter won't pass evidence_version with the default-off configuration,
 // SetFindingReportVersionByNodeID then writes -1 with legacy semantics, leaving the vulnerability details and Markdown export
-// permanently stuck at “evidence changed, report needs updating,” with no UI entry point to clear it.
+// permanently stuck at â€œevidence changed, report needs updating,â€ with no UI entry point to clear it.
 const reporterToolCallMessage = "A vulnerability was just recorded by report_finding. Read finding_id (independent finding record ID) and finding_node_id (exploration node ID) from the returned JSON, " +
 	"first call get_finding_traffic(finding_id) to read the current evidence list and its version (an empty list is normal; still write the report); " +
 	"if run guidance enables auto-binding, verify and associate traffic for this finding before reading. Use finding_node_id for node details. " +
@@ -810,7 +810,7 @@ const reporterToolCallMessageV1 = "A vulnerability was just recorded by report_f
 
 // upgradeReporterTriggerMessage updates reporter trigger messages in old databases that still contain the default text to the new version.
 // seedReporterAgent is guarded by reporter_agent_seed_v1 and writes the trigger only when creating a new agent, so
-// upgraded databases don't get the new text — the tool schema was supplemented with
+// upgraded databases don't get the new text â€” the tool schema was supplemented with
 // evidence_version by seedFindingTrafficTools, but nothing tells the reporter to use it. One-time, and only overwrites unchanged text.
 func (s *Server) upgradeReporterTriggerMessage() {
 	const flag = "reporter_trigger_evidence_version_v1"
@@ -836,9 +836,9 @@ func (s *Server) upgradeReporterTriggerMessage() {
 	}
 }
 
-// seedReporterAgent pre-seeds a custom “report writer” agent (builtin=false, editable/deletable in the UI):
-// Bind update_finding_report + task query tools, and attach a “report_finding call triggers”
-// trigger — wake it to write a detailed report for each finding recorded. One-time (settings flag guard): do not recreate if the user deletes it.
+// seedReporterAgent pre-seeds a custom â€œreport writerâ€ agent (builtin=false, editable/deletable in the UI):
+// Bind update_finding_report + task query tools, and attach a â€œreport_finding call triggersâ€
+// trigger â€” wake it to write a detailed report for each finding recorded. One-time (settings flag guard): do not recreate if the user deletes it.
 // Dependency: the orchestration tool was seeded into the database with SeedTool above this function, so it can be bound.
 func (s *Server) seedReporterAgent() {
 	const flag = "reporter_agent_seed_v1"
@@ -848,7 +848,7 @@ func (s *Server) seedReporterAgent() {
 	defer func() { _ = s.m.pg.SetSetting(flag, "true") }() // Try only once, whether it succeeds or not
 
 	if exist, _ := s.m.pg.GetAgentByKey("reporter"); exist != nil {
-		return // key is already occupied (created manually by the user)—do not overwrite
+		return // key is already occupied (created manually by the user)â€”do not overwrite
 	}
 	a, err := s.m.pg.CreateAgent("reporter", "Report Writing",
 		"Detailed vulnerability report writing: auto-triggered when a finding is discovered; fetch evidence and execution traces, then write and persist a Markdown report.")
@@ -859,7 +859,7 @@ func (s *Server) seedReporterAgent() {
 	if err := s.m.pg.SeedPromptIfEmpty(a.ID, agent.ReporterDefaultPrompt); err != nil {
 		log.Printf("[reporter] failed to seed prompt: %v", err)
 	}
-	// Trigger execution strategy: parallel + none — one report per vulnerability, with multiple findings concurrently writing their own.
+	// Trigger execution strategy: parallel + none â€” one report per vulnerability, with multiple findings concurrently writing their own.
 	// merge must be none: otherwise (default all) a batch of findings will be merged into one run, making parallelism pointless.
 	// maxParallel=5: at most 5 report sessions at once, to avoid too many LLM calls at once.
 	if err := s.m.pg.SetAgentTriggerBehavior("reporter", "parallel", "none", 5); err != nil {
@@ -884,7 +884,7 @@ func (s *Server) seedReporterAgent() {
 	}); err != nil {
 		log.Printf("[reporter] failed to create trigger: %v", err)
 	}
-	log.Printf("[reporter] Preconfigured 「report writing」 agent + finding trigger")
+	log.Printf("[reporter] Preconfigured ã€Œreport writingã€ agent + finding trigger")
 }
 
 // seedAutoReportFindingBinding adds "auto" to report_finding's binding ONCE so
@@ -902,8 +902,8 @@ func (s *Server) seedAutoReportFindingBinding() {
 }
 
 // seedPlannerDefaultBindings adds "planner" to report_finding's binding ONCE
-// (guarded by a settings flag), so existing DBs — whose report_finding row was
-// seeded as worker-only — also let the planner record findings. Fresh DBs already
+// (guarded by a settings flag), so existing DBs â€” whose report_finding row was
+// seeded as worker-only â€” also let the planner record findings. Fresh DBs already
 // get it via PlannerTools(); this only backfills without overriding a user unbind.
 func (s *Server) seedPlannerDefaultBindings() {
 	const flag = "planner_report_finding_v1"
@@ -918,8 +918,8 @@ func (s *Server) seedPlannerDefaultBindings() {
 }
 
 // seedPlannerListAssetsBinding adds "planner" to list_assets's binding ONCE
-// (guarded by a settings flag), so existing DBs — whose list_assets row was seeded
-// as auto/pentest-only — also let the planner query the asset store by DSL. Fresh
+// (guarded by a settings flag), so existing DBs â€” whose list_assets row was seeded
+// as auto/pentest-only â€” also let the planner query the asset store by DSL. Fresh
 // DBs already get it via PlannerTools(); this only backfills without overriding a
 // user unbind.
 func (s *Server) seedPlannerListAssetsBinding() {
@@ -936,7 +936,7 @@ func (s *Server) seedPlannerListAssetsBinding() {
 
 // seedCompanyScopeRebind changes add_company_scope's default binding ONCE on
 // existing DBs (guarded by a settings flag): the tool moves off worker and onto
-// planner — defining a company's asset scope is a planning/main/auto concern, not
+// planner â€” defining a company's asset scope is a planning/main/auto concern, not
 // something a worker does mid-exploration. Fresh DBs already get planner via
 // PlannerTools() and lack worker via WorkerTools(); this only backfills old rows.
 // One-shot + flag-guarded so a user who later re-binds worker isn't overridden.
@@ -958,14 +958,14 @@ func (s *Server) seedCompanyScopeRebind() {
 
 // seedWorkerReadToolsUnbind strips the read-context tools off worker's default
 // binding ONCE on existing DBs (guarded by a settings flag): a worker executes one
-// intent and writes back — reading facts/companies and listing all workers' traces is
+// intent and writes back â€” reading facts/companies and listing all workers' traces is
 // a planning/main concern, not the executor's. Fresh DBs already lack these via
 // WorkerTools(); this only backfills old rows without overriding a user who
 // deliberately re-binds worker. Each RemoveAgentFromTool is per-tool +
 // membership-guarded, so planner/mainagent bindings of the same tool are untouched.
 //
 // NOTE: search_all_worker_traces / get_worker_trace / node_detail are intentionally NOT
-// unbound — worker owns them for cross-work look-back + node drill-down (see WorkerTools).
+// unbound â€” worker owns them for cross-work look-back + node drill-down (see WorkerTools).
 // They used to be in this list back when worker lacked them; seedWorkerReadbackRebind
 // repairs DBs whose old run stripped them.
 func (s *Server) seedWorkerReadToolsUnbind() {
@@ -1006,7 +1006,7 @@ func (s *Server) seedWorkerReadbackRebind() {
 
 // seedAutoDefaultBindings adds "auto" to the task-op + platform tools' bindings
 // ONCE (guarded by a settings flag), so existing DBs whose tool rows were seeded
-// before Auto existed still give Auto its default toolset — without re-adding it
+// before Auto existed still give Auto its default toolset â€” without re-adding it
 // after a user deliberately unbinds.
 func (s *Server) seedAutoDefaultBindings() {
 	const flag = "auto_default_bindings_v3" // v3: replace the old asset tool names and add insert_assets/add_company_scope
@@ -1026,3 +1026,4 @@ func (s *Server) seedAutoDefaultBindings() {
 	}
 	_ = s.m.pg.SetSetting(flag, "true")
 }
+

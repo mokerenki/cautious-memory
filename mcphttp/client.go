@@ -1,11 +1,11 @@
-// Package mcphttp contains remote Streamable HTTP and legacy SSE MCP clients.
+﻿// Package mcphttp contains remote Streamable HTTP and legacy SSE MCP clients.
 //
 // The core mcp package only speaks stdio; this adapts an HTTP/JSON-RPC MCP server
 // to the same tool.CoreTool shape (mcp__server__tool) WITHOUT touching the SDK.
 // It implements the MCP "Streamable HTTP" transport: JSON-RPC over HTTP POST, with
 // the server free to answer either as application/json or a text/event-stream (SSE)
 // carrying the response. Custom headers (e.g. Authorization) come from the MCP
-// row's env map, so a bearer token is configured as {"Authorization":"Bearer …"}.
+// row's env map, so a bearer token is configured as {"Authorization":"Bearer â€¦"}.
 package mcphttp
 
 import (
@@ -93,7 +93,7 @@ func normalizeHeaders(headers map[string]string) (map[string]string, error) {
 }
 
 // New connects to a remote MCP endpoint and performs the initialize handshake.
-// headers are sent on every request (Authorization, custom API keys, …).
+// headers are sent on every request (Authorization, custom API keys, â€¦).
 // When insecure is true, TLS certificate verification is skipped so servers that
 // present a self-signed certificate can still be reached (issue #108).
 func New(ctx context.Context, server, url string, headers map[string]string, insecure bool) (*Client, error) {
@@ -247,7 +247,7 @@ func (c *Client) initialize(ctx context.Context) error {
 	if _, err := c.call(ctx, "initialize", map[string]any{
 		"protocolVersion": version,
 		"capabilities":    map[string]any{},
-		"clientInfo":      map[string]any{"name": "artex", "version": "0.2"},
+		"clientInfo":      map[string]any{"name": "CAUTIOUSMEMORY", "version": "0.2"},
 	}); err != nil {
 		return err
 	}
@@ -315,7 +315,7 @@ func (c *Client) wrap(rt remoteTool) actool.CoreTool {
 			for _, blk := range res.Content {
 				text += blk.Text
 			}
-			// Consistent with built-in/custom tools: long output goes through Capture —
+			// Consistent with built-in/custom tools: long output goes through Capture â€”
 			// truncate per-session MaxOutputChars (default 30000), spill full output to
 			// disk when ToolOutputDir is configured, leaving only head + pointer, to
 			// avoid blowing up context with entire MCP results.
@@ -326,7 +326,7 @@ func (c *Client) wrap(rt remoteTool) actool.CoreTool {
 
 // Call invokes one tool and returns the concatenated text of its content blocks
 // (ScopeSentry answers with a single JSON text block). Unlike the CoreTool wrapper
-// from Tools(), this bypasses the agent permission (AskUser) layer — it is meant
+// from Tools(), this bypasses the agent permission (AskUser) layer â€” it is meant
 // for backend batch jobs (e.g. asset sync) that call MCP tools programmatically.
 func (c *Client) Call(ctx context.Context, tool string, args any) (string, error) {
 	raw, err := c.call(ctx, "tools/call", map[string]any{"name": tool, "arguments": args})
@@ -465,7 +465,7 @@ func (c *Client) roundTrip(ctx context.Context, body rpcRequest, expectResp bool
 		return nil, fmt.Errorf("mcp http %d: %s", resp.StatusCode, readSnippet(resp.Body))
 	}
 	if !expectResp {
-		return nil, nil // notification — no JSON-RPC body to parse
+		return nil, nil // notification â€” no JSON-RPC body to parse
 	}
 	if strings.HasPrefix(resp.Header.Get("Content-Type"), "text/event-stream") {
 		return parseSSE(resp.Body, body.ID)
@@ -577,3 +577,4 @@ func readSnippet(r io.Reader) string {
 	b, _ := io.ReadAll(io.LimitReader(r, 2048))
 	return strings.TrimSpace(string(b))
 }
+

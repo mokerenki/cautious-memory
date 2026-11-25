@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"crypto/rand"
@@ -22,7 +22,7 @@ const (
 	jwtTTL         = 7 * 24 * time.Hour
 	keyChars       = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
-	// Lower bound matches setup page frontend validation — validation only in frontend
+	// Lower bound matches setup page frontend validation â€” validation only in frontend
 	// equals no validation, API can bypass directly. Upper bound is bcrypt's hard limit:
 	// exceeding 72 bytes makes GenerateFromPassword return ErrPasswordTooLong; blocking
 	// early is better than giving users an opaque "password encryption failed".
@@ -48,7 +48,7 @@ func validatePassword(pw string) string {
 
 // loadOrCreateJWTKey reads the 32-byte signing key from keyDir/jwt.key. keyDir is
 // the project base dir (next to the executable), NOT the browsable workspace root
-// (dataDir) — the signing key must never be listable/downloadable via the file
+// (dataDir) â€” the signing key must never be listable/downloadable via the file
 // manager. Legacy installs kept it at dataDir/jwt.key; if present there and not yet
 // at the new location, it is migrated (key preserved, so sessions stay valid) and
 // the old file removed so it disappears from the workspace. On first run a random
@@ -84,10 +84,10 @@ func loadOrCreateJWTKey(keyDir, dataDir string) ([]byte, error) {
 	return buf, nil
 }
 
-// signJWT issues a 7-day HS256 token for user ARTEX.
+// signJWT issues a 7-day HS256 token for user CAUTIOUSMEMORY.
 func signJWT(key []byte) (string, error) {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-		Subject:   "ARTEX",
+		Subject:   "CAUTIOUSMEMORY",
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(jwtTTL)),
 		IssuedAt:  jwt.NewNumericDate(time.Now()),
 	}).SignedString(key)
@@ -105,12 +105,12 @@ func verifyJWT(tokenStr string, key []byte) bool {
 }
 
 // extractToken reads the JWT from Authorization: Bearer header,
-// artex_token cookie, or ?token= query param (for SSE connections).
+// CAUTIOUSMEMORY_token cookie, or ?token= query param (for SSE connections).
 func extractToken(r *http.Request) string {
 	if h := r.Header.Get("Authorization"); strings.HasPrefix(h, "Bearer ") {
 		return strings.TrimPrefix(h, "Bearer ")
 	}
-	if c, err := r.Cookie("artex_token"); err == nil && c.Value != "" {
+	if c, err := r.Cookie("CAUTIOUSMEMORY_token"); err == nil && c.Value != "" {
 		return c.Value
 	}
 	return r.URL.Query().Get("token")
@@ -138,7 +138,7 @@ func (s *Server) requireAuth(h http.Handler) http.Handler {
 	})
 }
 
-// GET /api/auth/status — reports whether the admin password has been initialised.
+// GET /api/auth/status â€” reports whether the admin password has been initialised.
 // Read failure must return 503, not initialized:false: frontend sends user to /setup
 // to set password when initialized:false (login/page.tsx); wrapping DB failure as 200
 // would push user toward overwriting existing password.
@@ -155,7 +155,7 @@ func (s *Server) authStatus(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"initialized": hash != ""})
 }
 
-// POST /api/auth/init — sets the password for the first time; rejected if already set.
+// POST /api/auth/init â€” sets the password for the first time; rejected if already set.
 func (s *Server) authInit(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -207,7 +207,7 @@ func (s *Server) authInit(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"token": tok})
 }
 
-// POST /api/auth/change-password — changes the admin password. Requires a valid
+// POST /api/auth/change-password â€” changes the admin password. Requires a valid
 // token (this route is under /api/auth/* which requireAuth exempts, so the token
 // is validated here) AND the current password.
 func (s *Server) authChangePassword(w http.ResponseWriter, r *http.Request) {
@@ -260,7 +260,7 @@ func (s *Server) authChangePassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// POST /api/auth/login — validates username/password and returns a JWT.
+// POST /api/auth/login â€” validates username/password and returns a JWT.
 func (s *Server) authLogin(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -274,7 +274,7 @@ func (s *Server) authLogin(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "Invalid request format")
 		return
 	}
-	if req.Username != "ARTEX" {
+	if req.Username != "CAUTIOUSMEMORY" {
 		writeErr(w, 401, "Incorrect username or password")
 		return
 	}
@@ -298,3 +298,4 @@ func (s *Server) authLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]any{"token": tok})
 }
+

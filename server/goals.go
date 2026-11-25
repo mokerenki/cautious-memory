@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type goalSpec struct {
@@ -23,7 +23,7 @@ type goalSpec struct {
 //  1. Seed the root asset and feed it to the event-driven loop;
 //  2. Optionally seed an intent so the worker can start immediately without waiting for the first planner run;
 //  3. Decompose goals asynchronously in the background (emit the "round 0 goal decomposition" round + LLM decomposition steps + individual goals, visible on the page),
-//     then call engine.Run after decomposition — the engine starts only when the goal node is ready, avoiding a race where the planner runs before the goal.
+//     then call engine.Run after decomposition â€” the engine starts only when the goal node is ready, avoiding a race where the planner runs before the goal.
 //
 // Runs asynchronously (goroutine), so the caller returns immediately. Both paths behave the same: create the task instantly, decompose goals in the background.
 func (s *Server) launchTask(t *Task, seedText string, seedFirstIntent bool) {
@@ -46,7 +46,7 @@ func (s *Server) startTaskEngine(t *Task) {
 		return
 	}
 	s.engine.emitActivity(t, db.Activity{Worker: "planner", Kind: "round",
-		Summary: "第 0 轮目标拆解"})
+		Summary: "ç¬¬ 0 è½®ç›®æ ‡æ‹†è§£"})
 	goals := s.createGoals(ctx, t, func(r db.Activity) {
 		s.engine.emitActivity(t, r)
 	})
@@ -230,8 +230,8 @@ func (s *Server) admitTaskWhenScheduledWithGenerationChecked(t *Task, mode strin
 	// this ordering, its already-running worker loops can claim the newly-opened
 	// intent in the gap between status=running and queued=true.
 	if shouldQueue || wasTerminal || wasPaused || wasQueued {
-		s.engine.Pause(t.ID, agent.Causef("queued_for_admission", "任务等待运行准入",
-			"任务正在等待并发队列或准入状态提交，本次执行已停止；只有获得运行槽后才会重新领取意图"))
+		s.engine.Pause(t.ID, agent.Causef("queued_for_admission", "ä»»åŠ¡ç­‰å¾…è¿è¡Œå‡†å…¥",
+			"ä»»åŠ¡æ­£åœ¨ç­‰å¾…å¹¶å‘é˜Ÿåˆ—æˆ–å‡†å…¥çŠ¶æ€æäº¤ï¼Œæœ¬æ¬¡æ‰§è¡Œå·²åœæ­¢ï¼›åªæœ‰èŽ·å¾—è¿è¡Œæ§½åŽæ‰ä¼šé‡æ–°é¢†å–æ„å›¾"))
 	}
 
 	status := lifecycle.Status
@@ -257,7 +257,7 @@ func (s *Server) admitTaskWhenScheduledWithGenerationChecked(t *Task, mode strin
 			case !ready:
 				summary = "Queued: no runnable LLM configuration available, will automatically start when configuration recovers"
 			case readyBacklog:
-				summary = "已排队：已有更早的任务等待运行，将按 FIFO 顺序自动开始"
+				summary = "å·²æŽ’é˜Ÿï¼šå·²æœ‰æ›´æ—©çš„ä»»åŠ¡ç­‰å¾…è¿è¡Œï¼Œå°†æŒ‰ FIFO é¡ºåºè‡ªåŠ¨å¼€å§‹"
 			}
 			s.engine.emitActivity(t, db.Activity{Worker: "system", Kind: "text", Summary: summary})
 		}
@@ -324,15 +324,15 @@ func (s *Server) reconcileConcurrency() {
 				continue
 			}
 			mode := s.resumeAdmissionMode(task)
-			s.engine.Pause(task.ID, agent.Causef("llm_unavailable_queued", "LLM 不可用，任务进入等待队列",
-				"任务当前无法解析可运行的 Planner/Worker LLM，已释放并发槽；配置恢复后按队列顺序继续"))
+			s.engine.Pause(task.ID, agent.Causef("llm_unavailable_queued", "LLM ä¸å¯ç”¨ï¼Œä»»åŠ¡è¿›å…¥ç­‰å¾…é˜Ÿåˆ—",
+				"ä»»åŠ¡å½“å‰æ— æ³•è§£æžå¯è¿è¡Œçš„ Planner/Worker LLMï¼Œå·²é‡Šæ”¾å¹¶å‘æ§½ï¼›é…ç½®æ¢å¤åŽæŒ‰é˜Ÿåˆ—é¡ºåºç»§ç»­"))
 			if err := s.m.EnqueueTask(task.ID, mode); err != nil {
 				s.engine.Resume(task)
 				log.Printf("[concurrency] task %s: failed to queue because the LLM is unavailable: %v", task.ID, err)
 				continue
 			}
 			s.engine.emitActivity(task, db.Activity{Worker: "system", Kind: "text",
-				Summary: "已排队：当前没有可运行的 LLM 配置，配置恢复后自动开始"})
+				Summary: "å·²æŽ’é˜Ÿï¼šå½“å‰æ²¡æœ‰å¯è¿è¡Œçš„ LLM é…ç½®ï¼Œé…ç½®æ¢å¤åŽè‡ªåŠ¨å¼€å§‹"})
 		}
 	}
 
@@ -408,7 +408,7 @@ func (s *Server) reconcileConcurrency() {
 // unpauses it, and (re)starts the engine loop + wakes it. For a task already running and not paused, only one
 // Notify in Run remains, with virtually no side effects. Used for goals added by the main agent via set_goals and for rerunning blocked intents.
 //
-// Why explicit revival is required: the terminal gate in the planner/worker loop (engine.go) swallows ordinary notifications—just changing the
+// Why explicit revival is required: the terminal gate in the planner/worker loop (engine.go) swallows ordinary notificationsâ€”just changing the
 // graph + Notify cannot wake a task already marked complete; after a restart, the goroutine for a terminal task may also be gone, so Run is needed too.
 func (s *Server) reviveTask(t *Task) {
 	if t == nil {
@@ -421,7 +421,7 @@ func (s *Server) reviveTask(t *Task) {
 
 // createGoals materializes the goal node(s) under the task root (rel objective).
 // Decomposition is done ENTIRELY by the LLM (the project requires an LLM). There is
-// no rule-based fallback splitter — it only ever produced garbage (shredded URLs,
+// no rule-based fallback splitter â€” it only ever produced garbage (shredded URLs,
 // meaningless 2-way splits). If the LLM yields nothing (an error), the raw task goal
 // is used verbatim as a single goal so the task still has something to judge against.
 // Returns the seeded specs so callers can emit activity records for them.
@@ -431,7 +431,7 @@ func (s *Server) createGoals(ctx context.Context, t *Task, emit func(db.Activity
 		return nil
 	}
 	// Use the SAME LLM the task runs on (its pinned profile, else the active profile),
-	// NOT agent.FromEnv() — the LLM is configured via the UI (DB profile), not env vars,
+	// NOT agent.FromEnv() â€” the LLM is configured via the UI (DB profile), not env vars,
 	// so FromEnv returned empty and every task silently fell back to the crude rule
 	// splitter (which shredded URLs / made meaningless 2-way splits).
 	var specs []goalSpec
@@ -452,7 +452,7 @@ func (s *Server) createGoals(ctx context.Context, t *Task, emit func(db.Activity
 	if len(specs) == 0 {
 		// No decomposed goals (LLM error / no provider): use the raw task goal verbatim
 		// as a single goal so the task still has something to judge against. This is the
-		// only path that writes here — decomposed goals are already persisted by the tool.
+		// only path that writes here â€” decomposed goals are already persisted by the tool.
 		if g := strings.TrimSpace(t.Goal); g != "" {
 			log.Printf("[goals] task %s: LLM goal decomposition produced no output; falling back to \"original goal as a single goal\"", t.ID)
 			origin, _ := t.Store.OriginFactID()
@@ -465,3 +465,4 @@ func (s *Server) createGoals(ctx context.Context, t *Task, emit func(db.Activity
 	}
 	return specs
 }
+

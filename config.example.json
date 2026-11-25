@@ -1,23 +1,24 @@
 {
-  "_comment": "Copy to config.json (or set ARTEX_CONFIG to use a different path). This file only contains database and skill_dir; all other configuration such as LLM settings comes from environment variables or in-app settings, not from this file.",
+  "_comment": "Copy to config.json (or set CAUTIOUSMEMORY_CONFIG to use a different path). This file only contains database and skill_dir; all other configuration such as LLM settings comes from environment variables or in-app settings, not from this file.",
 
-  "_comment_database": "PostgreSQL connection. Priority: ARTEX_PG_DSN environment variable > database in this file. Choose one of two forms: (A) fill the individual fields below; (B) set only database.dsn to a full connection string.",
+  "_comment_database": "PostgreSQL connection. Priority: CAUTIOUSMEMORY_PG_DSN environment variable > database in this file. Choose one of two forms: (A) fill the individual fields below; (B) set only database.dsn to a full connection string.",
   "database": {
     "host": "127.0.0.1",
     "port": 5433,
-    "user": "artex",
+    "user": "cautiousmemory",
     "password": "",
-    "dbname": "artex",
+    "dbname": "cautiousmemory",
     "sslmode": "disable"
   },
 
   "_comment_database_dsn": "Form (B): remove the database block above and use a full DSN instead. When dsn is non-empty, the individual fields are ignored.",
   "_example_database_dsn": {
     "database": {
-      "dsn": "postgres://user:pass@db.example.com:5432/artex?sslmode=require"
+      "dsn": "postgres://user:pass@db.example.com:5432/cautiousmemory?sslmode=require"
     }
   },
 
-  "_comment_skill_dir": "Root directory for skills (each subdirectory is one skill containing SKILL.md). Priority: ARTEX_SKILL_DIR environment variable > this field > default (skills/ next to the executable). Leave empty or remove this field to use the default. Relative paths are resolved relative to the current working directory.",
-  "skill_dir": "/opt/artex/skills"
+  "_comment_skill_dir": "Root directory for skills (each subdirectory is one skill containing SKILL.md). Priority: CAUTIOUSMEMORY_SKILL_DIR environment variable > this field > default (skills/ next to the executable). Leave empty or remove this field to use the default. Relative paths are resolved relative to the current working directory.",
+  "skill_dir": "/opt/cautiousmemory/skills"
 }
+

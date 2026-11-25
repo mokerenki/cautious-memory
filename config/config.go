@@ -1,4 +1,4 @@
-// Package config loads runtime configuration from a JSON file, with environment
+﻿// Package config loads runtime configuration from a JSON file, with environment
 // variables taking precedence. Currently it carries the PostgreSQL connection.
 package config
 
@@ -33,11 +33,11 @@ type Config struct {
 // BaseDir is the directory that anchors all runtime artifacts (config.json and
 // the data/ store). It is the directory the running binary lives in, so a
 // distributed executable keeps its files next to itself on any OS (Windows,
-// Linux, …) regardless of the working directory it is launched from.
+// Linux, â€¦) regardless of the working directory it is launched from.
 //
 // When launched via `go run`, the binary is throwaway: it sits either in a temp
-// build dir (cache miss → fresh link) OR straight inside the Go build cache
-// (cache hit → run from $GOCACHE/.../...-d). We detect both and fall back to the
+// build dir (cache miss â†’ fresh link) OR straight inside the Go build cache
+// (cache hit â†’ run from $GOCACHE/.../...-d). We detect both and fall back to the
 // current working directory so dev artifacts (data/, transcripts) and config
 // resolve against the project dir, not the throwaway binary's location.
 func BaseDir() string {
@@ -47,14 +47,14 @@ func BaseDir() string {
 	}
 	dir := filepath.Dir(exe)
 	if isGoRunDir(dir) {
-		return "." // throwaway `go run` binary → use CWD
+		return "." // throwaway `go run` binary â†’ use CWD
 	}
 	return dir
 }
 
 // isGoRunDir reports whether dir is where `go run` parked its executable: under
 // the system temp dir (cache miss), or anywhere inside a Go build cache
-// (…/go-build/…, the cache-hit case — NOT under os.TempDir(), which is why the
+// (â€¦/go-build/â€¦, the cache-hit case â€” NOT under os.TempDir(), which is why the
 // old temp-only check failed intermittently). In both cases the binary is
 // throwaway, so config/data must resolve against the CWD.
 func isGoRunDir(dir string) bool {
@@ -72,15 +72,15 @@ func isGoRunDir(dir string) bool {
 }
 
 // Path returns the config file path. Resolution order:
-//  1. env ARTEX_CONFIG (explicit override)
+//  1. env CAUTIOUSMEMORY_CONFIG (explicit override)
 //  2. ./config.json in the current working directory (running from the project
-//     dir — robust no matter where `go run` placed the temp/cached binary)
+//     dir â€” robust no matter where `go run` placed the temp/cached binary)
 //  3. config.json next to the executable (a distributed binary keeps it beside)
 //
 // The first existing file wins. If none exist, the CWD path is returned so the
 // "not found" message points at the project dir the user most likely expected.
 func Path() string {
-	if v := strings.TrimSpace(os.Getenv("ARTEX_CONFIG")); v != "" {
+	if v := strings.TrimSpace(os.Getenv("CAUTIOUSMEMORY_CONFIG")); v != "" {
 		return v
 	}
 	var candidates []string
@@ -110,12 +110,12 @@ func Load() Config {
 
 // SkillDir returns the skill root directory with precedence:
 //
-//	env ARTEX_SKILL_DIR  >  config file (skill_dir)  >  BaseDir()/skills
+//	env CAUTIOUSMEMORY_SKILL_DIR  >  config file (skill_dir)  >  BaseDir()/skills
 //
 // The directory is created if it does not exist.
 func SkillDir() string {
 	var d string
-	if v := strings.TrimSpace(os.Getenv("ARTEX_SKILL_DIR")); v != "" {
+	if v := strings.TrimSpace(os.Getenv("CAUTIOUSMEMORY_SKILL_DIR")); v != "" {
 		d = v
 	} else if v := strings.TrimSpace(Load().SkillDir); v != "" {
 		d = v
@@ -128,15 +128,15 @@ func SkillDir() string {
 
 // PostgresDSN resolves the connection string with precedence:
 //
-//	env ARTEX_PG_DSN  >  config file (database.dsn, or assembled from fields)
+//	env CAUTIOUSMEMORY_PG_DSN  >  config file (database.dsn, or assembled from fields)
 //
 // There is NO built-in fallback: when neither source supplies a database config,
 // it returns an error naming the config path it inspected, so startup fails loudly
 // instead of silently connecting to a wrong default. source describes where the
 // DSN came from (for startup logging).
 func PostgresDSN() (dsn, source string, err error) {
-	if v := strings.TrimSpace(os.Getenv("ARTEX_PG_DSN")); v != "" {
-		return v, "environment variable ARTEX_PG_DSN", nil
+	if v := strings.TrimSpace(os.Getenv("CAUTIOUSMEMORY_PG_DSN")); v != "" {
+		return v, "environment variable CAUTIOUSMEMORY_PG_DSN", nil
 	}
 	db := Load().Database
 	if d := strings.TrimSpace(db.DSN); d != "" {
@@ -145,7 +145,7 @@ func PostgresDSN() (dsn, source string, err error) {
 	if db.Host != "" || db.DBName != "" || db.User != "" {
 		return db.buildDSN(), "config file " + Path() + " (database fields)", nil
 	}
-	return "", "", fmt.Errorf("database config not found: environment variable ARTEX_PG_DSN not set, and config file %s does not provide database (dsn or host/user/dbname). Create the config file or set the environment variable and retry", Path())
+	return "", "", fmt.Errorf("database config not found: environment variable CAUTIOUSMEMORY_PG_DSN not set, and config file %s does not provide database (dsn or host/user/dbname). Create the config file or set the environment variable and retry", Path())
 }
 
 func (d Database) buildDSN() string {
@@ -190,3 +190,4 @@ func Redact(dsn string) string {
 	}
 	return fmt.Sprintf("%s", u.String())
 }
+

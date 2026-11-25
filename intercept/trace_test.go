@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestTraceExactCorrelationAndSnapshot(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTraceExactCorrelationAndSnapshot(t *testing.T) {
 
 // A rule allow is logged for auditability but must not carry the replay
 // snapshot: with the fallback judge on those rows are emitted per tool call, and
-// keeping 24×8KiB of context plus a 32KiB prompt each would put hundreds of MB
+// keeping 24Ã—8KiB of context plus a 32KiB prompt each would put hundreds of MB
 // into intercept_pending (and from there into the task archive). Decision
 // metadata and correlation must survive so the execution result still binds.
 func TestAuditAllowDropsSnapshot(t *testing.T) {
@@ -95,9 +95,9 @@ func TestTraceSequentialIdenticalCallsAndRunIsolation(t *testing.T) {
 }
 
 func TestTraceBoundsAndMissingResult(t *testing.T) {
-	ctx, trace := WithTrace(context.Background(), strings.Repeat("中文", promptLimit), nil)
+	ctx, trace := WithTrace(context.Background(), strings.Repeat("ä¸­æ–‡", promptLimit), nil)
 	for range contextLimit + 5 {
-		trace.Append(db.InterceptContextEntry{Kind: "text", Text: strings.Repeat("中", entryLimit)})
+		trace.Append(db.InterceptContextEntry{Kind: "text", Text: strings.Repeat("ä¸­", entryLimit)})
 	}
 	trace.Start("a", "Read", []byte(`{}`))
 	a := auditFor(WithCall(ctx, "Read", []byte(`{}`)), Decision{}, nil, "pending")
@@ -133,3 +133,4 @@ func TestTraceConcurrentDistinctCalls(t *testing.T) {
 	}
 	wg.Wait()
 }
+

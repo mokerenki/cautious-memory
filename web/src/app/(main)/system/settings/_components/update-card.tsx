@@ -118,7 +118,7 @@ export function UpdateCard() {
   // 携带管理员 JWT 轮询 /api/version 直到版本号变化。
   //
   // 判据必须是"版本变了"而不是"能连上了"：换装过程中旧版本会短暂地重新起来一次
-  // （那一次只负责把 artex.new 换上去然后立刻退出），只看连通性会误判成功。
+  // （那一次只负责把 CAUTIOUSMEMORY.new 换上去然后立刻退出），只看连通性会误判成功。
   const waitForNewVersion = React.useCallback(async (fromVersion: string) => {
     setRestarting(true);
     const deadline = Date.now() + RESTART_TIMEOUT_MS;
@@ -138,7 +138,7 @@ export function UpdateCard() {
     }
     setRestarting(false);
     setBusy(false);
-    toast.error("Waiting for service restart timed out. Please check backend logs, or confirm artex is started via start.sh / start.bat.");
+    toast.error("Waiting for service restart timed out. Please check backend logs, or confirm CAUTIOUSMEMORY is started via start.sh / start.bat.");
   }, []);
 
   // 订阅更新进度。SSE 不走 Next 的 /api 重写（那层会缓冲，事件推不出来）。
@@ -358,7 +358,7 @@ export function UpdateCard() {
               Docker updates only replace the program itself, do not update playwright / nmap etc. toolchains in the image, and
               <span className="font-mono"> docker compose up -d </span>
               after container rebuild reverts to image's bundled version. To upgrade the image together, run
-              <span className="font-mono"> docker compose pull artex &amp;&amp; docker compose up -d artex</span>。
+              <span className="font-mono"> docker compose pull CAUTIOUSMEMORY &amp;&amp; docker compose up -d CAUTIOUSMEMORY</span>。
           </p>
         )}
 
@@ -414,7 +414,7 @@ export function UpdateCard() {
         </div>
 
           <p className="text-xs text-muted-foreground">
-            One-click update relies on the guardian script to restart the program. Please start ARTEX via <span className="font-mono">start.sh</span> (Windows: <span className="font-mono">start.bat</span>); running artex directly, the program won't be automatically restarted after exit.
+            One-click update relies on the guardian script to restart the program. Please start CAUTIOUSMEMORY via <span className="font-mono">start.sh</span> (Windows: <span className="font-mono">start.bat</span>); running CAUTIOUSMEMORY directly, the program won't be automatically restarted after exit.
         </p>
       </CardContent>
     </Card>

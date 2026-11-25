@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/selfupdate"
+	"github.com/Autumn-27/cautiousmemory/selfupdate"
 )
 
 // HTTP handler for one-click update. The actual download/verify/swap logic
@@ -59,7 +59,7 @@ func requestRestart() { restartOnce.Do(func() { close(restartCh) }) }
 // releaseCache caches GitHub latest-release query results.
 //
 // The "update available" top-bar hint queries on every full page load, while
-// unauthenticated GitHub API allows 60 req/hr/IP — without caching, opening a
+// unauthenticated GitHub API allows 60 req/hr/IP â€” without caching, opening a
 // few tabs or refreshing a few times would exhaust the quota, making actual
 // updates fail to query. Explicit "check update" clicks can force bypass the cache.
 type releaseCache struct {
@@ -134,7 +134,7 @@ type updateProgress struct {
 //
 // running also acts as a mutex: re-POSTing /api/update/apply during an upgrade
 // returns 409 directly, preventing two goroutines from writing to the same
-// artex.new simultaneously.
+// CAUTIOUSMEMORY.new simultaneously.
 type updateHub struct {
 	mu      sync.Mutex
 	running bool
@@ -181,7 +181,7 @@ func (h *updateHub) publish(ph selfupdate.Phase, pct int, msg string) {
 }
 
 // fanout must be called with h.mu held. Subscriber channels are buffered;
-// full = drop — progress is disposable ephemeral data, never let a stuck SSE
+// full = drop â€” progress is disposable ephemeral data, never let a stuck SSE
 // connection block the upgrade itself.
 func (h *updateHub) fanout(p updateProgress) {
 	for ch := range h.subs {
@@ -219,7 +219,7 @@ func (h *updateHub) subscribe() (<-chan updateProgress, func()) {
 // The frontend also hits api.github.com directly (GitHub CORS is *), but **this
 // endpoint is authoritative**: download is done by the backend, so only backend
 // GitHub reachability matters. Browser can connect but server cannot (common
-// when server is internal or proxy only configured in browser) — then clicking
+// when server is internal or proxy only configured in browser) â€” then clicking
 // update would definitely fail, better to error honestly at check time.
 func (s *Server) updateCheck(w http.ResponseWriter, r *http.Request) {
 	current := BuildVersion
@@ -339,7 +339,7 @@ func (s *Server) updateApply(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 202, map[string]any{"ok": true, "target": rel.TagName})
 }
 
-// updateRollback actively rolls back to the previous version (the artex.old
+// updateRollback actively rolls back to the previous version (the CAUTIOUSMEMORY.old
 // backup from before the swap).
 func (s *Server) updateRollback(w http.ResponseWriter, r *http.Request) {
 	if _, running := updHub.snapshot(); running {
@@ -400,3 +400,4 @@ func (s *Server) updateStream(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+

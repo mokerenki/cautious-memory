@@ -22,7 +22,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // ctxKey is the unexported context key type to avoid collisions.
@@ -115,7 +115,7 @@ func (p *pendingManager) remove(id int64) {
 }
 
 // Reviewer runs the LLM fallback judge for one tool call and returns its verdict
-// as a Decision (Action ∈ allow|ask|deny; empty Action means the reply could not
+// as a Decision (Action âˆˆ allow|ask|deny; empty Action means the reply could not
 // be parsed). It is injected by the server layer so the intercept package stays
 // free of any llm dependency. profileID == 0 means "use the active/default profile".
 type Reviewer func(ctx context.Context, profileID int64, prompt string, input ReviewInput) (Decision, error)
@@ -299,7 +299,7 @@ type Decision struct {
 
 // --- LLM fallback judge ---
 
-// Judge settings keys (stored in the settings KV table). See docs §3.
+// Judge settings keys (stored in the settings KV table). See docs Â§3.
 const (
 	settingJudgeEnabled          = "llm_judge_enabled"
 	settingJudgeProfileID        = "llm_judge_profile_id"
@@ -343,7 +343,7 @@ type JudgeConfig struct {
 }
 
 // judgeConfig reads the judge configuration from settings, applying defaults for
-// missing/invalid keys. Read fresh on each fallback judgement — the LLM call that
+// missing/invalid keys. Read fresh on each fallback judgement â€” the LLM call that
 // follows dwarfs a few KV reads, and freshness avoids a cache-invalidation path.
 func (i *Interceptor) judgeConfig() JudgeConfig {
 	c := JudgeConfig{
@@ -622,7 +622,7 @@ func defaultMessage(action, name string) string {
 
 // Log records an allow/deny rule or model decision into intercept_pending as an ALREADY-decided
 // row (status = "allowed" | "denied"), for observability. Unlike HandleAsk it does NOT
-// block and needs no user action — it makes explicit review decisions visible on the history
+// block and needs no user action â€” it makes explicit review decisions visible on the history
 // page (GET /api/intercept/history) and the task's intercept list. Best-effort: a DB
 // error is swallowed so logging never changes the tool call's outcome. The pending list
 // (status='pending') is unaffected, so it still shows only asks awaiting a decision.
@@ -642,7 +642,7 @@ func (i *Interceptor) Log(ctx context.Context, convID int64, dec Decision, toolN
 // convID == 0 means no active conversation (background pentest task). The
 // pending record is still created (conversation_id = NULL) so the approvals
 // page shows it and the sidebar badge lights up. The worker thread blocks just
-// like in a chat session — the user must visit the approvals page to unblock it.
+// like in a chat session â€” the user must visit the approvals page to unblock it.
 func (i *Interceptor) HandleAsk(ctx context.Context, convID int64, dec Decision, toolName string, input []byte) bool {
 	ruleID := dec.RuleID
 	taskID, agentName := taskInfoFromCtx(ctx)
@@ -749,3 +749,4 @@ func (i *Interceptor) Decide(pendingID int64, allowed bool) error {
 	i.pending.resolve(pendingID, allowed)
 	return nil
 }
+

@@ -10,17 +10,17 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxChatMentions = 10
 
 // The visible token survives drafts, uploads, retries and conversation history.
 // Labels are only for display: the server trusts only the type and numeric ID.
-var chatMentionPattern = regexp.MustCompile(`@\[(漏洞|资产|企业|接口|IP|应用|域名|子域名|服务)#([0-9]+)(?: [^\]\r\n]*)?\]`)
+var chatMentionPattern = regexp.MustCompile(`@\[(æ¼æ´ž|èµ„äº§|ä¼ä¸š|æŽ¥å£|IP|åº”ç”¨|åŸŸå|å­åŸŸå|æœåŠ¡)#([0-9]+)(?: [^\]\r\n]*)?\]`)
 var chatMentionKinds = map[string]string{
-	"漏洞": "finding", "资产": "asset", "企业": "company", "接口": "endpoint",
-	"IP": "ip", "应用": "app", "域名": "root_domain", "子域名": "subdomain", "服务": "service",
+	"æ¼æ´ž": "finding", "èµ„äº§": "asset", "ä¼ä¸š": "company", "æŽ¥å£": "endpoint",
+	"IP": "ip", "åº”ç”¨": "app", "åŸŸå": "root_domain", "å­åŸŸå": "subdomain", "æœåŠ¡": "service",
 }
 
 type chatMentionRef struct {
@@ -229,3 +229,4 @@ func boundChatMentionValue(value any) any {
 	}
 	return value
 }
+

@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -268,7 +268,7 @@ func (s *Server) findingCaseTools() []actool.CoreTool {
 		{"search_finding_duplicates", "Read-only search for candidate summaries and assets from the same task. Results are ranked by score and include score, tier, and hit_reasons: strong means the finding type and assets both overlap; weak means they do not both overlap. Review hit_reasons; results are suggestions only. Different severity levels may still be duplicates. Supports pagination; read details as needed.", []string{"finding_id"}},
 		{"get_finding_record", "Read the complete original evidence and report for a standalone finding. Returns the exploration node ID for tracing execution records.", []string{"finding_id"}},
 		{"merge_finding_records", "Merge records only when evidence clearly establishes the same defect. Preserve every original record. Do not merge across tasks or change original severity, and never override a human rejection.", []string{"task_id", "finding_ids", "title", "reason"}},
-		{"suggest_finding_merge", "When evidence shows a specific commonality but lacks key proof, submit one suspected-duplicate group of 2–20 records from the same task for human review. Include all suspected members in one group; do not split them into pairwise suggestions. This does not merge them automatically. Matching types or assets alone is insufficient.", []string{"task_id", "finding_ids", "title", "reason"}},
+		{"suggest_finding_merge", "When evidence shows a specific commonality but lacks key proof, submit one suspected-duplicate group of 2â€“20 records from the same task for human review. Include all suspected members in one group; do not split them into pairwise suggestions. This does not merge them automatically. Matching types or assets alone is insufficient.", []string{"task_id", "finding_ids", "title", "reason"}},
 		{"get_finding_case", "Read a finding group and its paginated members. Record the version first, then read each member's original report, evidence, and traffic. If the version changes, read the group again.", []string{"case_id"}},
 		{"update_finding_case_report", "Save the unified report and severity rationale. The version must come from an actual read. Preserve each original report and do not create new findings.", []string{"case_id", "version", "title", "report", "severity", "severity_reason"}},
 	}
@@ -386,7 +386,7 @@ func idParam(desc string) map[string]any {
 	return map[string]any{"type": "integer", "description": desc}
 }
 func (s *Server) seedFindingCaseTools() {
-	_, _ = s.m.pg.Exec(`UPDATE finding_case_review_runs SET state='failed',error='服务重启中断，请重新提交整理' WHERE state IN ('queued','running')`)
+	_, _ = s.m.pg.Exec(`UPDATE finding_case_review_runs SET state='failed',error='æœåŠ¡é‡å¯ä¸­æ–­ï¼Œè¯·é‡æ–°æäº¤æ•´ç†' WHERE state IN ('queued','running')`)
 	a, err := s.m.pg.GetAgentByKey("reporter")
 	if err != nil || a == nil {
 		return
@@ -425,7 +425,7 @@ func (s *Server) seedFindingCaseTools() {
 	_ = s.m.pg.SetSetting(flag, "true")
 }
 
-const findingCaseReviewTaskMessage = "Human-selected finding review (read-only original records): the selected finding_ids for this task are %s. Read each existing report and determine only whether findings share the same underlying cause; merge them directly only when the common cause is clear. Submit one suspected-duplicate group of 2–20 records from the same task only when evidence shows a specific commonality, such as the same endpoint, handler/backend component, parameter, or missing check, but lacks key proof of a shared root cause. Do not split the group into pairwise suggestions. Matching types or assets alone is insufficient. If there is no specific commonality, mark the records independent; do not submit a suggestion merely because the evidence is uncertain. Findings from different code paths may be marked independent. Make a reasonable effort to update the unified report for existing or newly created groups; a missing or outdated unified report does not block complete_finding_case_review and may be completed in a later run or by a human. Do not create or overwrite original reports, change severity or status, attach evidence, merge unselected records, or probe targets. Honor human rejections. Before finishing, call complete_finding_case_review with a decision for each selected finding and pass its validation."
+const findingCaseReviewTaskMessage = "Human-selected finding review (read-only original records): the selected finding_ids for this task are %s. Read each existing report and determine only whether findings share the same underlying cause; merge them directly only when the common cause is clear. Submit one suspected-duplicate group of 2â€“20 records from the same task only when evidence shows a specific commonality, such as the same endpoint, handler/backend component, parameter, or missing check, but lacks key proof of a shared root cause. Do not split the group into pairwise suggestions. Matching types or assets alone is insufficient. If there is no specific commonality, mark the records independent; do not submit a suggestion merely because the evidence is uncertain. Findings from different code paths may be marked independent. Make a reasonable effort to update the unified report for existing or newly created groups; a missing or outdated unified report does not block complete_finding_case_review and may be completed in a later run or by a human. Do not create or overwrite original reports, change severity or status, attach evidence, merge unselected records, or probe targets. Honor human rejections. Before finishing, call complete_finding_case_review with a decision for each selected finding and pass its validation."
 
 func (s *Server) reviewFindingCases(w http.ResponseWriter, r *http.Request) {
 	var a findingCaseRequest
@@ -493,7 +493,7 @@ func (s *Server) reviewFindingCases(w http.ResponseWriter, r *http.Request) {
 		taskContext := taskContexts[taskID]
 		raw, _ := json.Marshal(fids)
 		msg := fmt.Sprintf(findingCaseReviewTaskMessage, raw)
-		item := triggeredRun{agentKey: "reporter", title: "Finding review · task#" + i64s(taskID), message: msg, taskID: taskID, taskDesc: taskContext.taskDesc, taskGoal: taskContext.taskGoal, conversationID: reservation.ConversationID}
+		item := triggeredRun{agentKey: "reporter", title: "Finding review Â· task#" + i64s(taskID), message: msg, taskID: taskID, taskDesc: taskContext.taskDesc, taskGoal: taskContext.taskGoal, conversationID: reservation.ConversationID}
 		cfg := s.readTriggerBehavior("reporter")
 		s.queueMu.Lock()
 		s.triggerCfg["reporter"] = cfg
@@ -585,3 +585,4 @@ func (s *Server) checkCaseReviewScope(ctx context.Context, name string, a findin
 	}
 	return nil
 }
+

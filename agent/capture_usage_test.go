@@ -6,7 +6,7 @@ import (
 	"iter"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/llm"
 )
@@ -33,7 +33,7 @@ func (p captureUsageProvider) Complete(ctx context.Context, req llm.CompletionRe
 func TestCaptureRunPersistsUsageOnProviderFailure(t *testing.T) {
 	wantErr := errors.New("provider failed after reporting usage")
 	provider := captureUsageProvider{stream: func(_ context.Context, yield func(llm.StreamEvent, error) bool) {
-		// 遵守迭代器协议:yield 返回 false 后立即停止,不再调用它。
+		// éµå®ˆè¿­ä»£å™¨åè®®:yield è¿”å›ž false åŽç«‹å³åœæ­¢,ä¸å†è°ƒç”¨å®ƒã€‚
 		if !yield(llm.StreamEvent{Type: llm.SEMessageStart, Usage: llm.Usage{InputTokens: 11, CacheReadTokens: 3}}, nil) {
 			return
 		}
@@ -59,7 +59,7 @@ func TestCaptureRunPersistsUsageOnProviderFailure(t *testing.T) {
 func TestCaptureRunPersistsUsageOnCancellation(t *testing.T) {
 	started := make(chan struct{})
 	provider := captureUsageProvider{stream: func(ctx context.Context, yield func(llm.StreamEvent, error) bool) {
-		// 遵守迭代器协议:yield 返回 false 后立即停止,不再调用它。
+		// éµå®ˆè¿­ä»£å™¨åè®®:yield è¿”å›ž false åŽç«‹å³åœæ­¢,ä¸å†è°ƒç”¨å®ƒã€‚
 		if !yield(llm.StreamEvent{Type: llm.SEMessageStart, Usage: llm.Usage{InputTokens: 13, CacheReadTokens: 5}}, nil) {
 			return
 		}
@@ -110,3 +110,4 @@ func assertCapturedResultUsage(t *testing.T, activities []db.Activity, input, ou
 		t.Fatalf("result activity count=%d, activities=%+v", results, activities)
 	}
 }
+

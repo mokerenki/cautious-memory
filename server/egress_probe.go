@@ -1,10 +1,10 @@
 package server
 
-// egress_probe.go — global egress proxy connectivity probe.
+// egress_probe.go â€” global egress proxy connectivity probe.
 //
 // settings.global_proxy only validates format on save, sends zero bytes, so a dead
-// proxy can still be saved. Here we actually send probe requests: ① direct egress IP,
-// ② egress IP via this proxy. ②'s target is decided by egressTarget — the only
+// proxy can still be saved. Here we actually send probe requests: â‘  direct egress IP,
+// â‘¡ egress IP via this proxy. â‘¡'s target is decided by egressTarget â€” the only
 // place in this file that needs judgment.
 
 import (
@@ -24,7 +24,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 const settingEgressProbeURL = "egress_probe_url"
@@ -54,8 +54,8 @@ func (m *Manager) egressProbes() []string {
 // validateProbeURL only allows absolute http(s) URLs targeting "non-localhost, non-link-local" addresses.
 //
 // This endpoint requires auth but still blocks: agents could be tricked by a target page into
-// calling it, and "localhost" in a container IS ARTEX itself (admin port, cloud metadata
-// 169.254.169.254). **RFC1918 addresses are deliberately allowed** — custom probe services'
+// calling it, and "localhost" in a container IS CAUTIOUSMEMORY itself (admin port, cloud metadata
+// 169.254.169.254). **RFC1918 addresses are deliberately allowed** â€” custom probe services'
 // main use case is intranet echo; blocking 192.168/10/172.16 would break that function.
 func validateProbeURL(raw string) (string, error) {
 	raw = strings.TrimSpace(raw)
@@ -81,7 +81,7 @@ func probeCheckRedirect(next *http.Request, via []*http.Request) error {
 		return errors.New("too many redirects")
 	}
 	if len(via) > 0 && next.URL.Host != via[0].URL.Host {
-		return fmt.Errorf("Rejected cross-host redirect (%s → %s)", via[0].URL.Host, next.URL.Host)
+		return fmt.Errorf("Rejected cross-host redirect (%s â†’ %s)", via[0].URL.Host, next.URL.Host)
 	}
 	return probeCheckURL(next.URL)
 }
@@ -174,7 +174,7 @@ type egressCheck struct {
 
 // egressReport is the response body for POST /api/settings/proxy/test.
 type egressReport struct {
-	OK         bool          `json:"ok"`          // based on "② via global proxy"; if no proxy, use "① direct"
+	OK         bool          `json:"ok"`          // based on "â‘¡ via global proxy"; if no proxy, use "â‘  direct"
 	Capture    bool          `json:"capture"`     // whether traffic capture is currently enabled
 	Configured string        `json:"configured"`  // global_proxy from form
 	AgentProxy string        `json:"agent_proxy"` // actual ProxyAddr() return value
@@ -222,7 +222,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 		if err != nil {
 			a.Error = maskSecrets(err.Error())
 			// Only annotate cert errors; otherwise "can't reach proxy" gets irrelevant CA note.
-			// Must go in probes[].error — UI renders that, not result.error.
+			// Must go in probes[].error â€” UI renders that, not result.error.
 			if caErr != nil && strings.Contains(a.Error, "certificate") {
 				a.Error = "Traffic capture CA unavailable (" + caErr.Error() + "): certificate errors may result from this." + a.Error
 			}
@@ -256,7 +256,7 @@ func probeEgress(ctx context.Context, proxyRaw, caPEMPath string, probes []strin
 	}
 }
 
-// schemeLabel translates protocol to human label ("http" → "HTTP proxy").
+// schemeLabel translates protocol to human label ("http" â†’ "HTTP proxy").
 func schemeLabel(scheme string) string {
 	switch strings.ToLower(scheme) {
 	case "http":
@@ -281,7 +281,7 @@ func buildProbeTransport(proxyURL *url.URL, caPEMPath string) (*http.Transport, 
 		tr.Proxy = http.ProxyURL(proxyURL)
 	} else {
 		// For direct, re-validate at dial: block "domain resolves to 127.0.0.1" (DNS rebinding).
-		// For proxy, skip it — we dial the proxy address, and user configuring localhost proxy is allowed.
+		// For proxy, skip it â€” we dial the proxy address, and user configuring localhost proxy is allowed.
 		tr.DialContext = (&net.Dialer{Timeout: 10 * time.Second, Control: probeBlockSensitiveDial}).DialContext
 	}
 	// If CA unavailable, don't panic; propagate reason so failure shows real cause, not just x509.
@@ -305,7 +305,7 @@ func probeOne(ctx context.Context, client *http.Client, target string) (string, 
 	if err != nil {
 		return "", err
 	}
-	req.Header.Set("User-Agent", "artex-egress-probe/1.0")
+	req.Header.Set("User-Agent", "CAUTIOUSMEMORY-egress-probe/1.0")
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -339,9 +339,9 @@ body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
 	return "", fmt.Errorf("Unable to parse IP from response (received %d bytes, possibly an anti-scrape page or proxy error page)", len(body))
 }
 
-// egressTarget decides where ② sends the request:
+// egressTarget decides where â‘¡ sends the request:
 //
-//	capture off → form value; capture on + saved → MITM; capture on + unsaved → form value (skip MITM)
+//	capture off â†’ form value; capture on + saved â†’ MITM; capture on + unsaved â†’ form value (skip MITM)
 //
 // Third case can't use MITM: MITM upstream only updated by SetGlobalProxy, can't read request body's
 // new value; using it would only test old proxy. viaMITM lets caller relax timeout.
@@ -402,7 +402,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(configuredProxy, "***") || strings.Contains(configuredProxy, "******") {
 		configuredProxy = s.m.GlobalProxy()
 	}
-// When form value != saved value, ② still tests form value but agent uses saved — must warn.
+// When form value != saved value, â‘¡ still tests form value but agent uses saved â€” must warn.
 // Normalize before compare: trailing slash doesn't count as "unsaved".
 	pending := normalizeProxy(configuredProxy) != normalizeProxy(savedProxy)
 	rep := egressReport{
@@ -413,7 +413,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 
 	rep.Checks = append(rep.Checks, egressCheck{
 		Key:    "direct",
-		Label:  "① Direct IP (not via proxy)",
+		Label:  "â‘  Direct IP (not via proxy)",
 		Result: s.runProxyProbe(ctx, "", "", probes, 10*time.Second),
 	})
 
@@ -425,7 +425,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 		}
 		rep.Checks = append(rep.Checks, egressCheck{
 			Key:   "global",
-			Label: "② Exit IP via global proxy",
+			Label: "â‘¡ Exit IP via global proxy",
 			// Path is the actual probe address (8788 when via MITM), shown for troubleshooting.
 			Path:   maskSecrets(probeAddr),
 			Result: s.runProxyProbe(ctx, probeAddr, probeCA, probes, timeout),
@@ -438,7 +438,7 @@ func (s *Server) testEgressProxy(w http.ResponseWriter, r *http.Request) {
 		}
 		rep.Checks = append(rep.Checks, egressCheck{
 			Key:        "global",
-			Label:      "② Exit IP via global proxy",
+			Label:      "â‘¡ Exit IP via global proxy",
 			Skipped:    true,
 			SkipReason: skipReason,
 			Result:     egressProbeResult{Probes: []egressAttempt{}},
@@ -461,7 +461,7 @@ func normalizeProxy(raw string) string {
 	return strings.TrimRight(strings.TrimSpace(raw), "/")
 }
 
-// judgeEgress uses ② as primary; falls back to ① only if ② skipped. Not "any row passes = success".
+// judgeEgress uses â‘¡ as primary; falls back to â‘  only if â‘¡ skipped. Not "any row passes = success".
 func judgeEgress(rep egressReport) bool {
 	for _, c := range rep.Checks {
 		if c.Key == "global" && !c.Skipped {
@@ -509,14 +509,14 @@ func egressWarnings(rep egressReport, pending bool, savedProxy string) []string 
 		}
 	}
 
-	// W2: check saved value; only warn when ② passes — if it fails, "works here ≠ works there" is moot.
+	// W2: check saved value; only warn when â‘¡ passes â€” if it fails, "works here â‰  works there" is moot.
 	if !rep.Capture && proxyOK && strings.HasPrefix(strings.ToLower(savedProxy), "socks5") {
 		out = append(out, "Currently \"capture off + socks5\": this test uses a Go client (always respects proxy),"+
-			" but agent tools may not—curl works, python urllib will error directly."+
+			" but agent tools may notâ€”curl works, python urllib will error directly."+
 			" So this passing does not mean all tools work; enable traffic capture (MITM dials directly) for stable effect.")
 	}
 
-	// W3: both rows same IP → proxy may be ineffective, or just transparent forwarding.
+	// W3: both rows same IP â†’ proxy may be ineffective, or just transparent forwarding.
 	if directIP != "" && proxyIP != "" && directIP == proxyIP {
 		out = append(out, fmt.Sprintf("Direct and proxy egress IP are the same (%s): proxy may not be effective, or just transparent forwarding, "+
 			"or the jump host and local machine are behind the same NAT (egress IP is naturally the same). "+
@@ -531,7 +531,7 @@ func egressWarnings(rep egressReport, pending bool, savedProxy string) []string 
 	// W5: 127.0.0.1 in container = container itself, can't reach host proxy.
 	if isLoopbackProxy(rep.Configured) {
 		out = append(out, "Proxy address is a loopback address (127.0.0.1 / localhost)."+
-			" If ARTEX runs in a container, this 127.0.0.1 refers to the container itself, cannot reach the host proxy;"+
+			" If CAUTIOUSMEMORY runs in a container, this 127.0.0.1 refers to the container itself, cannot reach the host proxy;"+
 			" please use a reachable host IP (e.g. http://192.168.x.x:port).")
 	}
 
@@ -550,3 +550,4 @@ func isLoopbackProxy(raw string) bool {
 	ip := net.ParseIP(h)
 	return ip != nil && ip.IsLoopback()
 }
+

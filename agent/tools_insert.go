@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -123,7 +123,7 @@ func (t *ToolSet) insertAssets() actool.CoreTool {
 	return writeTool(
 		"insert_assets",
 		"bulk register newly discovered assets, multiple types allowed in one call (see type enum).\n"+
-			"required fields per type: root_domain→domain; ip→ip (must be IPv4/IPv6, not hostname); subdomain→domain; app→app_name; service(HTTP)→url; service(non-HTTP)→service_name+port (ip/domain at least one); endpoint→url+method. other fields per their descriptions.\n"+
+			"required fields per type: root_domainâ†’domain; ipâ†’ip (must be IPv4/IPv6, not hostname); subdomainâ†’domain; appâ†’app_name; service(HTTP)â†’url; service(non-HTTP)â†’service_name+port (ip/domain at least one); endpointâ†’url+method. other fields per their descriptions.\n"+
 			"auth/technologies/params are append-merge, don't overwrite existing.\n"+
 			"returns: {results:[{index,id,type}], errors:[{index,error}]}",
 		obj(map[string]any{
@@ -433,7 +433,7 @@ func (t *ToolSet) addCompanyScope() actool.CoreTool {
 	)
 }
 
-// addTaskScope lets the plan agent add test scope to THE CURRENT TASK — the coverage
+// addTaskScope lets the plan agent add test scope to THE CURRENT TASK â€” the coverage
 // denominator and the task's authorization edge. Worker discoveries are auto-scoped
 // (precise host) by insertAssets; this tool is for DELIBERATELY WIDENING: pull a whole
 // root domain or whole company into scope, or add a specific subdomain / ip.
@@ -655,7 +655,7 @@ func (t *ToolSet) WorkerTools() []actool.CoreTool {
 		// list_findings is kept: check confirmed findings for this task before reporting to avoid duplicate reports.
 		t.listFindings(),
 		t.addFinding(), t.recordFact(), t.recordIntelligence(),
-		// asset management (handlers guard nil store internally)。
+		// asset management (handlers guard nil store internally)ã€‚
 		// add_company_scope is not given to workers: defining company asset scope is the responsibility of planning/control/Auto; workers only perform exploration.
 		t.insertAssets(), t.listAssets(),
 		// Cross-work review: workers can also reuse observations from other work to avoid duplicate effort.
@@ -673,7 +673,7 @@ func (t *ToolSet) WorkerTools() []actool.CoreTool {
 func (t *ToolSet) MainAgentTools() []actool.CoreTool {
 	return []actool.CoreTool{
 		t.graphOverview(), t.listFindings(), t.listFacts(), t.nodeDetail(),
-		t.expandDigest(), // cold-digest §6.1
+		t.expandDigest(), // cold-digest Â§6.1
 		t.getWorkerOutput(), t.getWorkerTrace(), t.searchAllWorkerTraces(), t.addHint(), t.addIntent(),
 		// steer_work: allows a human to inject real-time corrective instructions into a running intent (work) without interrupting or losing progress.
 		t.steerWorkTool(),
@@ -706,3 +706,4 @@ func (t *ToolSet) AllDomainTools() []actool.CoreTool {
 	}
 	return out
 }
+

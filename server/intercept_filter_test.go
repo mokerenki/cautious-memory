@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 )
 
 func TestInterceptSearchFilterParams(t *testing.T) {
@@ -68,11 +68,11 @@ func TestInterceptFilterHTTP(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, state := range []string{"pending", "allowed", "denied", "timeout"} {
-		if _, err := d.CreateDecidedIntercept(0, 0, scope, "test", "Bash", []byte(`{}`), state, "[模型] fixture"); err != nil {
+		if _, err := d.CreateDecidedIntercept(0, 0, scope, "test", "Bash", []byte(`{}`), state, "[æ¨¡åž‹] fixture"); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if _, err := d.CreateDecidedIntercept(0, 0, scope+"-other", "test", "Bash", []byte(`{}`), "denied", "[模型] fixture"); err != nil {
+	if _, err := d.CreateDecidedIntercept(0, 0, scope+"-other", "test", "Bash", []byte(`{}`), "denied", "[æ¨¡åž‹] fixture"); err != nil {
 		t.Fatal(err)
 	}
 	do := func(path string, auth bool) *httptest.ResponseRecorder {
@@ -144,3 +144,4 @@ func TestInterceptFilterHTTP(t *testing.T) {
 		}
 	}
 }
+

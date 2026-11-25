@@ -1042,7 +1042,7 @@ export default function SystemSettingsPage() {
                           ) : c.result.ok ? (
                             <span className="font-mono">
                               <span title="Egress IP as seen by the external service">{c.result.exit_ip}</span> ·{" "}
-                              <span title="Full round-trip time from ARTEX sending the request to receiving the response, including the proxy hop when used">
+                              <span title="Full round-trip time from CAUTIOUSMEMORY sending the request to receiving the response, including the proxy hop when used">
                                 {c.result.latency_ms}ms
                               </span>
                               {c.result.via && c.result.via !== "direct" && !viaCapture && (
@@ -1520,7 +1520,7 @@ export default function SystemSettingsPage() {
                       Uses DeepSeek's separate Search and Fetch APIs for search and page extraction. The selected Agent model generates queries and summarizes results.
                     </p>
                     <p className="text-muted-foreground text-xs leading-relaxed">
-                      Search requests are sent from the ARTEX server to DeepSeek and can use the separate egress proxy above. The API key is stored in server settings and is never displayed.
+                      Search requests are sent from the CAUTIOUSMEMORY server to DeepSeek and can use the separate egress proxy above. The API key is stored in server settings and is never displayed.
                     </p>
                     <div className="flex items-center gap-2">
                       <Input

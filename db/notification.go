@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/notify"
+	"github.com/Autumn-27/cautiousmemory/notify"
 )
 
 // This file handles IM notification channel configuration and events. Delivery claiming and state transitions are in
-// db/notification_delivery.go。
+// db/notification_delivery.goã€‚
 //
 // Preserve these two invariants when changing this file:
 //
@@ -57,7 +57,7 @@ type NotificationChannel struct {
 	Mode   string          `json:"mode"`
 	Config json.RawMessage `json:"config"`
 	Filter json.RawMessage `json:"filter"`
-	// Enabled is a pointer to distinguish an omitted field from an explicit false value—
+	// Enabled is a pointer to distinguish an omitted field from an explicit false valueâ€”
 	// the frontend toggle submits only fields that were changed.
 	Enabled    *bool     `json:"enabled,omitempty"`
 	RatePerMin int       `json:"rate_per_min"`
@@ -122,20 +122,20 @@ func (d *DB) NotificationChannelByID(ctx context.Context, id int64) (*Notificati
 // SaveNotificationChannel creates or updates a channel.
 //
 // On update, only fields explicitly provided by the caller (non-nil/non-empty) are overwritten, so the frontend can submit a partial
-// edit form without returning fields hidden in config—returning them could otherwise cause
+// edit form without returning fields hidden in configâ€”returning them could otherwise cause
 // a masked value to overwrite the actual secret.
 func (d *DB) SaveNotificationChannel(ctx context.Context, c *NotificationChannel) (int64, error) {
 	if c.Mode == "" {
 		c.Mode = NotifyModeRealtime
 	}
-	// Deliberately do **not** alter 0 here: it is a valid setting meaning “unlimited rate.”
+	// Deliberately do **not** alter 0 here: it is a valid setting meaning â€œunlimited rate.â€
 	//
-	// This used to be `if c.RatePerMin <= 0 { c.RatePerMin = default }`, intended to mean “use a safe default when omitted,”
-	// but it also swallowed an explicitly configured 0—even though the docs, UI hint, and
+	// This used to be `if c.RatePerMin <= 0 { c.RatePerMin = default }`, intended to mean â€œuse a safe default when omitted,â€
+	// but it also swallowed an explicitly configured 0â€”even though the docs, UI hint, and
 	// takeTokens all interpret 0 as unlimited, this code silently changed it to 20 (DingTalk/WeCom/Telegram)
 	// or 100 (Lark), leaving operators rate-limited without warning when they expected no limit.
 	//
-	// Only the caller knows the difference between “omitted” and “explicitly 0” (field absent vs. set to 0 in the request),
+	// Only the caller knows the difference between â€œomittedâ€ and â€œexplicitly 0â€ (field absent vs. set to 0 in the request),
 	// so the server layer supplies defaults only when the field is omitted; see notifyCreateChannel.
 	if c.RatePerMin < 0 {
 		return 0, errors.New("Rate limit cannot be negative")
@@ -184,7 +184,7 @@ func (d *DB) SetNotificationChannelEnabled(ctx context.Context, id int64, enable
 		if !enabled {
 			if _, err := tx.ExecContext(ctx, `UPDATE notification_deliveries SET state=$2, last_error=$3
 WHERE channel_id=$1 AND state IN ($4,$5)`,
-				id, NotifyStateSkipped, "渠道已停用", NotifyStatePending, NotifyStateSending); err != nil {
+				id, NotifyStateSkipped, "æ¸ é“å·²åœç”¨", NotifyStatePending, NotifyStateSending); err != nil {
 				return err
 			}
 		}
@@ -214,8 +214,8 @@ func (d *DB) DeleteNotificationChannel(ctx context.Context, id int64) error {
 // Neither of these two key design choices is incidental:
 //
 //  1. **Why use a SAVEPOINT**: in PostgreSQL, any statement error puts the whole transaction into
-//     an aborted state, after which every statement (including COMMIT) fails. Thus “ignore this INSERT error
-//     and let the caller continue committing” is impossible in PG unless a savepoint isolates the error to
+//     an aborted state, after which every statement (including COMMIT) fails. Thus â€œignore this INSERT error
+//     and let the caller continue committingâ€ is impossible in PG unless a savepoint isolates the error to
 //     this statement. Without a savepoint, the only option is to roll back the entire transaction.
 //
 //  2. **Why rolling back everything is wrong**: notifications are a convenience; finding records are the product. A notification-table
@@ -247,7 +247,7 @@ func RecordNotificationEventTx(ctx context.Context, tx *sql.Tx, kind string, fin
 }
 
 // AddNotificationEvent is the standalone-transaction version of InsertNotificationEventTx, for call sites outside
-// an existing transaction (for example, a channel “send test message,” which has no real finding).
+// an existing transaction (for example, a channel â€œsend test message,â€ which has no real finding).
 func (d *DB) AddNotificationEvent(ctx context.Context, kind string, findingID int64, snap notify.Snapshot) (int64, error) {
 	raw, err := json.Marshal(snap)
 	if err != nil {
@@ -280,7 +280,7 @@ func (d *DB) FanOutPendingEvents(ctx context.Context, limit int) (eventCount, de
 	if err != nil {
 		return 0, 0, err
 	}
-	defer tx.Rollback() //nolint:errcheck // 提交成功后是 no-op
+	defer tx.Rollback() //nolint:errcheck // æäº¤æˆåŠŸåŽæ˜¯ no-op
 
 	channels, err := listEnabledNotificationChannelsTx(ctx, tx)
 	if err != nil {
@@ -426,7 +426,7 @@ func (d *DB) NotificationAssetNames(ctx context.Context, ids []int64) ([]string,
 
 // assetDisplayName selects the most recognizable identifier for the asset type.
 // The fallback is an empty string; the caller decides how to display an asset with no name. This function does not invent a placeholder,
-// which could add noise such as “asset #42” to notifications and be mistaken for a real domain.
+// which could add noise such as â€œasset #42â€ to notifications and be mistaken for a real domain.
 func assetDisplayName(typ, domain, ip, url, appName, bundleID string) string {
 	pick := func(vals ...string) string {
 		for _, v := range vals {
@@ -473,7 +473,7 @@ func (d *DB) SetFindingStatusWithNotify(ctx context.Context, id int64, status st
 // SetFindingStatusTx updates a finding status and records its status-change notification event within the **caller's transaction**.
 //
 // This transaction-level helper gives every status-changing path the same semantics. Previously only
-// patchFinding used the notification-aware version; when a **retest verdict was “fixed”** (in finding_retests
+// patchFinding used the notification-aware version; when a **retest verdict was â€œfixedâ€** (in finding_retests
 // the `UPDATE findings SET status=...`) the database was updated directly, so channels configured for
 // `on_status_change` received no notification for that transition: the status changed silently in the UI,
 // and operators did not notice until they opened the platform.
@@ -532,7 +532,7 @@ type NotificationStats struct {
 }
 
 // NotificationStatsSnapshot summarizes notification-system health.
-// BacklogAgeMS is the clearest indicator that notifications may be stuck—more useful than the pending count,
+// BacklogAgeMS is the clearest indicator that notifications may be stuckâ€”more useful than the pending count,
 // since a backlog of three may have been waiting anywhere from 3 seconds to 3 hours.
 func (d *DB) NotificationStatsSnapshot(ctx context.Context) (*NotificationStats, error) {
 	var s NotificationStats
@@ -549,3 +549,4 @@ func (d *DB) NotificationStatsSnapshot(ctx context.Context) (*NotificationStats,
 	}
 	return &s, nil
 }
+

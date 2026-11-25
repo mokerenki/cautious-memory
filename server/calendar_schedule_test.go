@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestEvaluateScheduleWindowWeeklyCrossMidnight(t *testing.T) {
@@ -60,3 +60,4 @@ func TestEvaluateScheduleWindowOnceDateRange(t *testing.T) {
 		t.Fatal("date-range one-shot should complete at its end date and time")
 	}
 }
+

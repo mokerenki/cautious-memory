@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxFindingFollowUpRunes = 4000
@@ -32,7 +32,7 @@ func findingFilterFromQuery(q url.Values) db.FindingFilter {
 		Severity:  normFilter(q.Get("severity")),
 		Status:    normFilter(q.Get("status")),
 		VulnClass: normFilter(q.Get("vulnclass")),
-		// task_id (independent of the task parameter that switches to the「by task node」branch): filter the global table by task.
+		// task_id (independent of the task parameter that switches to theã€Œby task nodeã€branch): filter the global table by task.
 		TaskID:        normFilter(q.Get("task_id")),
 		Query:         q.Get("q"),
 		Sort:          q.Get("sort"),
@@ -43,7 +43,7 @@ func findingFilterFromQuery(q url.Values) db.FindingFilter {
 	}
 }
 
-// findingAssetTree serves the「by asset」view's left-hand tree: every asset that
+// findingAssetTree serves theã€Œby assetã€view's left-hand tree: every asset that
 // carries at least one matching finding, plus the ancestors needed to place it.
 func (s *Server) findingAssetTree(w http.ResponseWriter, r *http.Request) {
 	tree, err := s.m.pg.BuildFindingAssetTree(findingFilterFromQuery(r.URL.Query()))
@@ -148,7 +148,7 @@ func (s *Server) deepenFinding(w http.ResponseWriter, r *http.Request) {
 	audit := db.Activity{
 		Worker:  "system",
 		Kind:    "text",
-		Summary: "人工提交漏洞深入利用意图",
+		Summary: "äººå·¥æäº¤æ¼æ´žæ·±å…¥åˆ©ç”¨æ„å›¾",
 		Detail:  description,
 	}
 	intentID, audit, err := t.Store.AddFindingFollowUpIntent(id, *finding.NodeID, description, audit)
@@ -187,3 +187,4 @@ func (s *Server) deepenFinding(w http.ResponseWriter, r *http.Request) {
 		"queued":    queued,
 	})
 }
+

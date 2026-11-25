@@ -1,4 +1,4 @@
-﻿// Package report renders a deliverable Markdown report from the exploration
+// Package report renders a deliverable Markdown report from the exploration
 // graph: confirmed findings (with severity/evidence) (docs §15 P5).
 package report
 
@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Input bundles what the report needs.

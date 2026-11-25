@@ -22,10 +22,10 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept/jev"
-	"github.com/Autumn-27/artex/llmhttp"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept/jev"
+	"github.com/Autumn-27/cautiousmemory/llmhttp"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/skill"
 )
@@ -238,7 +238,7 @@ func (s *Server) pgListAgents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dtos := agentDTOs(ags)
-	// overlay per-agent binding counts (mcp/skill by id, tools by key) — best-effort.
+	// overlay per-agent binding counts (mcp/skill by id, tools by key) â€” best-effort.
 	if mcp, skill, tools, err := pg.AgentBindingCounts(); err == nil {
 		for i := range dtos {
 			dtos[i].McpCount = mcp[ags[i].ID]
@@ -567,8 +567,8 @@ func (s *Server) pgResetPrompt(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"version": ver})
 }
 
-// pgSaveWrapup stores an agent's wrap-up (settlement) prompt — the text injected on
-// timeout / step-exhaustion. Empty body clears the override → built-in default.
+// pgSaveWrapup stores an agent's wrap-up (settlement) prompt â€” the text injected on
+// timeout / step-exhaustion. Empty body clears the override â†’ built-in default.
 func (s *Server) pgSaveWrapup(w http.ResponseWriter, r *http.Request) {
 	pg, a, ok := s.agentByKey(w, r)
 	if !ok {
@@ -623,7 +623,7 @@ func (s *Server) pgResetWrapup(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgSaveTaskTimeoutWrapup stores an agent's TASK-TIMEOUT wrap-up prompt + turn budget
-// (worker/planner only). Empty prompt / 0 turns clear the override → built-in default.
+// (worker/planner only). Empty prompt / 0 turns clear the override â†’ built-in default.
 func (s *Server) pgSaveTaskTimeoutWrapup(w http.ResponseWriter, r *http.Request) {
 	pg, a, ok := s.agentByKey(w, r)
 	if !ok {
@@ -651,7 +651,7 @@ func (s *Server) pgSaveTaskTimeoutWrapup(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// pgResetTaskTimeoutWrapup clears the task-timeout wrap-up override → built-in default.
+// pgResetTaskTimeoutWrapup clears the task-timeout wrap-up override â†’ built-in default.
 func (s *Server) pgResetTaskTimeoutWrapup(w http.ResponseWriter, r *http.Request) {
 	pg, a, ok := s.agentByKey(w, r)
 	if !ok {
@@ -782,7 +782,7 @@ func (s *Server) pgListTools(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgUpdateTool saves the page-editable fields of a built-in tool: description,
-// parameter schema (structure is expected unchanged — only per-param description/
+// parameter schema (structure is expected unchanged â€” only per-param description/
 // default move), agent binding, and enabled. key is taken from the path and never
 // changes (it is welded to the Go handler).
 func (s *Server) pgUpdateTool(w http.ResponseWriter, r *http.Request) {
@@ -819,7 +819,7 @@ func (s *Server) pgUpdateTool(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgResetTool overwrites a tool row with its code-defined defaults (description,
-// schema, agent binding) and re-enables it — the explicit "restore defaults" action, since
+// schema, agent binding) and re-enables it â€” the explicit "restore defaults" action, since
 // startup seeding is first-insert-only and never overwrites edits.
 func (s *Server) pgResetTool(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
@@ -840,7 +840,7 @@ func (s *Server) pgResetTool(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, map[string]any{"ok": true})
 		return
 	}
-	// orchestration/platform tools (auto agent) — default-bind to "auto".
+	// orchestration/platform tools (auto agent) â€” default-bind to "auto".
 	autoAgents, _ := json.Marshal([]string{"auto"})
 	for _, t := range append(s.orchestrationTools(), s.platformTools()...) {
 		if t.Name() != key {
@@ -980,7 +980,7 @@ type skillFileNode struct {
 	MCPs          []string `json:"mcps,omitempty"`
 	Files         []string `json:"files"`
 	// Usage ledger (db/skill_usage.go). Calls is 0 and LastUsed nil for a skill that
-	// was never invoked — the ledger only has rows for skills agents actually loaded.
+	// was never invoked â€” the ledger only has rows for skills agents actually loaded.
 	Calls    int        `json:"calls"`
 	Tasks    int        `json:"tasks"`
 	Agents   []string   `json:"usage_agents"`
@@ -1060,7 +1060,7 @@ func (s *Server) fsSkillUsage(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"calls": calls})
 }
 
-// fsMissingSkills lists skill names agents asked for that do not exist — the gap
+// fsMissingSkills lists skill names agents asked for that do not exist â€” the gap
 // list, i.e. which procedures are worth writing next.
 func (s *Server) fsMissingSkills(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
@@ -1209,7 +1209,7 @@ func rewriteSkillFrontmatter(content []byte, mcps *[]string, description, licens
 	if fmEnd < 0 {
 		return nil, fmt.Errorf("SKILL.md frontmatter is not closed")
 	}
-	// Collect existing key → value from frontmatter (preserve unknown keys)
+	// Collect existing key â†’ value from frontmatter (preserve unknown keys)
 	type kv struct{ k, v string }
 	var pairs []kv
 	for _, l := range lines[1:fmEnd] {
@@ -1329,7 +1329,7 @@ func (s *Server) fsUploadSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// locate the shallowest SKILL.md → its directory is the skill root inside the zip.
+	// locate the shallowest SKILL.md â†’ its directory is the skill root inside the zip.
 	var skillMD *skillZipEntry
 	for i := range entriesAll {
 		e := &entriesAll[i]
@@ -1377,7 +1377,7 @@ func (s *Server) fsUploadSkill(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// extract into a temp dir first, then atomically swap in — a bad entry aborts
+	// extract into a temp dir first, then atomically swap in â€” a bad entry aborts
 	// the whole upload without leaving a half-written skill.
 	_ = os.MkdirAll(s.skillDir, 0o755)
 	tmp, err := os.MkdirTemp(s.skillDir, ".upload-*")
@@ -1490,7 +1490,7 @@ func (s *Server) fsDeleteSkill(w http.ResponseWriter, r *http.Request) {
 
 // skillPathBlocked lists the ASCII characters a skill-relative path may not contain.
 // '\' is a Windows separator; '%' keeps double-URL-encoding tricks from surviving
-// (Go's net/http URL-decodes PathValue once — %2F→/ %2e→. — so an attacker sending
+// (Go's net/http URL-decodes PathValue once â€” %2Fâ†’/ %2eâ†’. â€” so an attacker sending
 // %252e%252e arrives here as the literal "%2e%2e" and is rejected on the '%'); '#'
 // and '?' would truncate the path when it travels back through a URL; the rest are
 // reserved on Windows filesystems.
@@ -1522,7 +1522,7 @@ const maxSkillPathLen = 512
 // Validation order matters: character check first (before Clean) so encoding tricks
 // can't survive normalization.
 func skillRelPath(file string) (string, string) {
-	// 1. Character check — before normalization. Defeats null bytes, backslash,
+	// 1. Character check â€” before normalization. Defeats null bytes, backslash,
 	//    '%', control characters and unicode look-alikes; CJK names pass through.
 	if file == "" || len(file) > maxSkillPathLen {
 		return "", "invalid path: empty or too long"
@@ -1546,7 +1546,7 @@ func skillRelPath(file string) (string, string) {
 		return "", "invalid path: must be relative with no empty segments"
 	}
 	// 4. Normalize as a URL/API path, not as a host filesystem path. API paths
-	//    always use '/', including when ARTEX runs on Windows. Filesystem calls
+	//    always use '/', including when CAUTIOUSMEMORY runs on Windows. Filesystem calls
 	//    below accept this canonical form through filepath.Join.
 	clean := path.Clean(file)
 	if clean == "." || path.IsAbs(clean) || strings.HasPrefix(clean, "..") {
@@ -1816,7 +1816,7 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	// read; accept it here via a sibling field for create/update. Streaming is a
 	// *bool shadowing the embedded json:"streaming": an absent field must default
 	// to streaming (true), which a plain bool zero value (false = non-streaming)
-	// would get wrong — legacy/partial clients that never send it stay streaming.
+	// would get wrong â€” legacy/partial clients that never send it stay streaming.
 	var body struct {
 		db.LLMProfile
 		APIKey    string `json:"api_key"`
@@ -1830,7 +1830,7 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	p.APIKey = body.APIKey
 	p.Streaming = body.Streaming == nil || *body.Streaming
 	// Output limit: negative values are meaningless, so normalize to zero (= do not send this field). The field-name switch is only useful for Chat Completions
-	// —anthropic and openai-responses each have fixed field names; storing it would only mislead later readers,
+	// â€”anthropic and openai-responses each have fixed field names; storing it would only mislead later readers,
 	// so clear it for all non-openai formats. Clear unknown values as well, to avoid exposing DB CHECK errors to users.
 	if p.MaxTokens < 0 {
 		p.MaxTokens = 0
@@ -1858,8 +1858,8 @@ func (s *Server) pgSaveProfile(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"id": id})
 }
 
-// pgGetLLMRetryPolicy returns the global retry policy (attempts + intervals for each of the five layers). Never configured → all zeros,
-// the frontend displays zero as “default”.
+// pgGetLLMRetryPolicy returns the global retry policy (attempts + intervals for each of the five layers). Never configured â†’ all zeros,
+// the frontend displays zero as â€œdefaultâ€.
 func (s *Server) pgGetLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	pg := s.pg(w)
 	if pg == nil {
@@ -1868,7 +1868,7 @@ func (s *Server) pgGetLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, pg.LLMRetryPolicy())
 }
 
-// pgSaveLLMRetryPolicy saves the global retry policy. The three layers that “follow the endpoint” (connection setup/empty response/same
+// pgSaveLLMRetryPolicy saves the global retry policy. The three layers that â€œfollow the endpointâ€ (connection setup/empty response/same
 // provider safety window) are provider construction parameters or call parameters; after changes, the cached provider must
 // Rebuild; circuit-breaker parameters are pushed directly to the process-level Registry.
 func (s *Server) pgSaveLLMRetryPolicy(w http.ResponseWriter, r *http.Request) {
@@ -1971,7 +1971,7 @@ func (s *Server) pgActivateProfile(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgLLMPoolStatus reports the failover ("polling") switches, the resolved chain order
-// and every profile's circuit-breaker state — what the LLM page renders as the
+// and every profile's circuit-breaker state â€” what the LLM page renders as the
 // "polling order" strip and the per-card health badges.
 func (s *Server) pgLLMPoolStatus(w http.ResponseWriter, r *http.Request) {
 	if s.pg(w) == nil {
@@ -2058,7 +2058,7 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 
 	// Candidate endpoints to try in order. Some Anthropic-compatible providers
 	// (e.g. DeepSeek) implement /v1/messages under an /anthropic path but expose
-	// the model list only on their OpenAI-format path — so for anthropic we fall
+	// the model list only on their OpenAI-format path â€” so for anthropic we fall
 	// back to the OpenAI endpoint at the stripped root.
 	type candidate struct {
 		url string
@@ -2151,7 +2151,7 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, 200, map[string]any{"ok": true, "models": models})
 			return
 		}
-		emptyOK = true // 200 but no model ids — keep trying other candidates
+		emptyOK = true // 200 but no model ids â€” keep trying other candidates
 	}
 	if emptyOK {
 		writeJSON(w, 200, map[string]any{"ok": true, "models": []string{}})
@@ -2168,7 +2168,7 @@ func (s *Server) pgListModels(w http.ResponseWriter, r *http.Request) {
 // globalPromptVars are runtime variables available to EVERY agent (built-in and
 // custom) regardless of its per-agent catalog. Each agent's render path fills them
 // (see agent.nowStr, rendered fresh each turn), so a prompt may always reference
-// {{.Now}} — e.g. subtract it from a fixed start stamp to reason about elapsed time.
+// {{.Now}} â€” e.g. subtract it from a fixed start stamp to reason about elapsed time.
 var globalPromptVars = []db.PromptVar{
 	{Name: "Now", Description: "Current server time, refreshed for each run. Subtract a fixed start time to calculate elapsed time.", Example: "2026-08-11 14:30:00 CST", Source: "runtime"},
 	{Name: "DataDir", Description: "Server data root containing all task and session artifacts. Each Agent writes to a subdirectory, such as <DataDir>/<taskID>.", Example: "/app/data", Source: "runtime"},
@@ -2282,3 +2282,4 @@ func templateFields(t *template.Template) []string {
 	}
 	return out
 }
+

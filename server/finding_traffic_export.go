@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/evidence"
-	"github.com/Autumn-27/artex/report"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/evidence"
+	"github.com/Autumn-27/cautiousmemory/report"
 )
 
 type exportedScreenshot struct {
@@ -242,3 +242,4 @@ func resolveExportScreenshot(workspaceDir, raw string) (string, bool) {
 	}
 	return newest, newest != ""
 }
+

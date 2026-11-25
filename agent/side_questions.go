@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/sidequestion"
+	"github.com/Autumn-27/cautiousmemory/sidequestion"
 	"github.com/Autumn-27/norma/agentcore"
 )
 
@@ -21,3 +21,4 @@ func attachSideCapture(ctx context.Context, opts *agentcore.Options) context.Con
 	ctx, opts.Deps = sidequestion.Attach(ctx, p, opts.Deps, opts.Provider)
 	return ctx
 }
+

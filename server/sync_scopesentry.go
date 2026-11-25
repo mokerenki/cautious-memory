@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/mcphttp"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/mcphttp"
 )
 
 // Asset synchronization (ScopeSentry data source).
 //
-// ScopeSentry is an ASM asset mapping platform. Through its MCP interface, it fetches assets such as subdomains, Web applications, and services across two dimensions, 【projects】/【tasks】,
-// and maps them to ARTEX's company + asset model. The data source itself is
+// ScopeSentry is an ASM asset mapping platform. Through its MCP interface, it fetches assets such as subdomains, Web applications, and services across two dimensions, ã€projectsã€‘/ã€tasksã€‘,
+// and maps them to CAUTIOUSMEMORY's company + asset model. The data source itself is
 // An HTTP transport MCP entry named "ScopeSentry" (url + X-API-Key header stored in mcp_servers).
 //
 // Unlike the agent tool layer, this directly calls MCP tools via mcphttp.Client.Call to get raw JSON,
@@ -419,7 +419,7 @@ func (s *Server) ssPageAll(ctx context.Context, cl *mcphttp.Client, ssType strin
 	return items, truncated, nil
 }
 
-// ssIngest maps one ScopeSentry asset JSON to the ARTEX asset store and upserts it.
+// ssIngest maps one ScopeSentry asset JSON to the CAUTIOUSMEMORY asset store and upserts it.
 // Returns a non-empty error string on failure. synced is incremented per kind.
 func (s *Server) ssIngest(as *db.AssetStore, assetType string, raw json.RawMessage, synced map[string]int) string {
 	switch assetType {
@@ -511,3 +511,4 @@ func queryInt(r *http.Request, key string, def int) int {
 	}
 	return def
 }
+

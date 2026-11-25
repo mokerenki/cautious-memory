@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type taskLLMResolution struct {
@@ -121,3 +121,4 @@ func (s *Server) taskLLMResolutionHandler(w http.ResponseWriter, r *http.Request
 	}
 	writeJSON(w, http.StatusOK, roles)
 }
+

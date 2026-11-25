@@ -9,13 +9,13 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // maxChatUpload caps a single chat-attachment upload request (memory + spill).
 const maxChatUpload = 128 << 20 // 128 MiB
 
-// safeChatID guards the {id} path segment against traversal — task ids are numeric,
+// safeChatID guards the {id} path segment against traversal â€” task ids are numeric,
 // session ids are alnum/_/- ; anything with "/" or ".." is rejected.
 var safeChatID = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
 
@@ -40,9 +40,9 @@ type chatAttachment struct {
 // (repeatable). Returns {attachments:[{name,path,size,abs}]}. Target dir mirrors the
 // agent CWD layout:
 //
-//	scope=task    → <workDir>/tasks/<id>/uploads/
-//	scope=session → <workDir>/sessions/<id>/uploads/
-//	scope=staging → <workDir>/drafts/<id>/uploads/   (pre-task staging: task has no ID yet,
+//	scope=task    â†’ <workDir>/tasks/<id>/uploads/
+//	scope=session â†’ <workDir>/sessions/<id>/uploads/
+//	scope=staging â†’ <workDir>/drafts/<id>/uploads/   (pre-task staging: task has no ID yet,
 //	                files land here first; frontend writes returned abs path into task description)
 func (s *Server) chatUpload(w http.ResponseWriter, r *http.Request) {
 	var sub string
@@ -107,7 +107,7 @@ func (s *Server) chatUpload(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"attachments": out})
 }
 
-// uniqueUploadPath returns dir/name, or dir/name-1, dir/name-2… when it already exists,
+// uniqueUploadPath returns dir/name, or dir/name-1, dir/name-2â€¦ when it already exists,
 // so re-uploading the same filename never clobbers a prior attachment.
 func uniqueUploadPath(dir, name string) string {
 	dest := filepath.Join(dir, name)
@@ -163,3 +163,4 @@ func humanBytes(n int64) string {
 		return fmt.Sprintf("%d B", n)
 	}
 }
+

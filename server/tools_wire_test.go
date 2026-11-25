@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -24,11 +24,11 @@ func names(tools []actool.CoreTool) map[string]actool.CoreTool {
 func TestWireTools(t *testing.T) {
 	dsn, _, err := db.DSN()
 	if err != nil {
-		t.Skipf("no database config (%v) — skipping", err)
+		t.Skipf("no database config (%v) â€” skipping", err)
 	}
 	pg, err := db.Open(dsn)
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	defer pg.Close()
 
@@ -56,15 +56,15 @@ func TestWireTools(t *testing.T) {
 	if _, ok := worker["record_fact"]; !ok {
 		t.Error("worker lost record_fact")
 	}
-	// SDK generic tools aren't seeded → ToolResolve passes them through unchanged
-	// (same object, original description — not decorated). No startup prune touches
+	// SDK generic tools aren't seeded â†’ ToolResolve passes them through unchanged
+	// (same object, original description â€” not decorated). No startup prune touches
 	// non-catalog rows, so future user-defined custom tools survive too.
 	if bash, ok := worker["Bash"]; !ok {
 		t.Error("worker lost Bash (should pass through)")
 	} else if bash.Description() != actool.NewBash().Description() {
 		t.Error("Bash should pass through undecorated, but description changed")
 	}
-	// planner is not bound to record_fact → resolving a base that contains it drops it.
+	// planner is not bound to record_fact â†’ resolving a base that contains it drops it.
 	planner := names(agent.ToolResolve(ctx, "planner", base))
 	if _, ok := planner["record_fact"]; ok {
 		t.Error("planner should not get record_fact (not bound)")
@@ -93,7 +93,7 @@ func TestWireTools(t *testing.T) {
 	if got.Description() != "EDITED DESC" {
 		t.Errorf("description = %q, want EDITED DESC", got.Description())
 	}
-	// Default injection: omit confidence → handler input should carry the default.
+	// Default injection: omit confidence â†’ handler input should carry the default.
 	// We can't run the real handler (nil store), but InputSchema must show the default.
 	sc := got.InputSchema()
 	props := sc["properties"].(map[string]any)
@@ -107,3 +107,4 @@ func mustJSON(v any) json.RawMessage {
 	b, _ := json.Marshal(v)
 	return b
 }
+

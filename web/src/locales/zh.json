@@ -25,7 +25,7 @@
     "systemSettings": "系统配置"
   },
   "meta": {
-    "title": "ARTEX — 自主渗透测试控制台",
+    "title": "CAUTIOUSMEMORY — 自主渗透测试控制台",
     "description": "LLM 驱动的自主渗透测试系统控制台"
   },
   "common": {
@@ -921,7 +921,7 @@
   "auth": {
     "login": {
       "title": "登录",
-      "welcome": "欢迎回来，请输入密码以继续使用 ARTEX",
+      "welcome": "欢迎回来，请输入密码以继续使用 CAUTIOUSMEMORY",
       "username": "用户名",
       "password": "密码",
       "password_placeholder": "请输入密码",
@@ -938,7 +938,7 @@
       "title": "初始化密码",
       "status_unavailable_desc": "后端或数据库暂时不可用。为避免覆盖实例上已有的密码，初始化入口已临时关闭——请恢复服务后重试。",
       "connection_failed": "无法连接到后端服务",
-      "description": "首次使用 ARTEX，请为账户设置一个登录密码（至少 8 位）",
+      "description": "首次使用 CAUTIOUSMEMORY，请为账户设置一个登录密码（至少 8 位）",
       "retry": "重试",
       "new_password": "新密码",
       "min_password_placeholder": "至少 8 位",
@@ -951,12 +951,12 @@
       "submit": "设置密码并登录"
     },
     "terms": {
-      "title": "ARTEX 使用须知与免责声明",
+      "title": "CAUTIOUSMEMORY 使用须知与免责声明",
       "version": "版本 v1.0 · 生效日期 2026-09-18 · 请在登录前完整阅读以下全部条款",
-      "intro": "本《使用须知与免责声明》（以下简称“本声明”）是您与 ARTEX 项目作者及贡献者之间就使用本软件所达成的约定。请您在使用前审慎阅读、充分理解各条款内容，特别是以粗体或色块标注的免责、责任限制及禁止性条款。",
+      "intro": "本《使用须知与免责声明》（以下简称“本声明”）是您与 CAUTIOUSMEMORY 项目作者及贡献者之间就使用本软件所达成的约定。请您在使用前审慎阅读、充分理解各条款内容，特别是以粗体或色块标注的免责、责任限制及禁止性条款。",
       "intro_emphasis": " 一旦您下载、安装、访问或以任何方式使用本软件，即视为您已阅读、理解并同意接受本声明的全部约束。",
       "section_1_title": "第一条 · 定义与开源许可",
-      "section_1_body": "本软件（ARTEX）是一款基于 GNU Affero General Public License v3.0（AGPL-3.0）发布的开源程序。您可依据该协议自由使用、复制、修改和分发本软件；但任何衍生作品（包括通过网络向第三方提供的在线服务）均须同样以 AGPL-3.0 协议开源并向使用者公开对应的完整源代码。AGPL-3.0 完整条款以随附的 LICENSE 文件为准。",
+      "section_1_body": "本软件（CAUTIOUSMEMORY）是一款基于 GNU Affero General Public License v3.0（AGPL-3.0）发布的开源程序。您可依据该协议自由使用、复制、修改和分发本软件；但任何衍生作品（包括通过网络向第三方提供的在线服务）均须同样以 AGPL-3.0 协议开源并向使用者公开对应的完整源代码。AGPL-3.0 完整条款以随附的 LICENSE 文件为准。",
       "section_2_title": "第二条 · 授权使用范围",
       "section_2_body": "本软件仅供个人学习、代码研究、安全技术原理探讨，以及在您自行搭建的本地隔离环境中进行技术验证之用，适用于学习、学术研究、代码审阅等非攻击性、非破坏性用途。除本条明确许可的情形外，您不得将本软件用于任何其他目的。",
       "section_3_title": "第三条 · 禁止行为",
@@ -1239,7 +1239,7 @@
     "password_updated": "密码已修改",
     "password_change_failed": "修改失败：{{error}}",
     "password_dialog_title": "修改密码",
-    "password_dialog_description": "用户名固定为 ARTEX。需先输入当前密码验证；修改后已签发的登录 token 仍有效直至过期。",
+    "password_dialog_description": "用户名固定为 CAUTIOUSMEMORY。需先输入当前密码验证；修改后已签发的登录 token 仍有效直至过期。",
     "current_password": "当前密码",
     "new_password": "新密码",
     "confirm_new_password": "确认新密码",

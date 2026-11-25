@@ -12,7 +12,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 )
 
 func TestBuildRequestMapsReviewInputAndChoiceCriteria(t *testing.T) {
@@ -324,3 +324,4 @@ func TestTruncateUTF8AlwaysHonorsByteLimit(t *testing.T) {
 		}
 	}
 }
+

@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // --- asset intercept rule CRUD ---
 //
-// Global asset blocklist: exact/fuzzy domain·ip·url + CIDR. This layer only
+// Global asset blocklist: exact/fuzzy domainÂ·ipÂ·url + CIDR. This layer only
 // persists rules; the actual match/enforcement logic lives elsewhere.
 
 func (s *Server) assetInterceptListRules(w http.ResponseWriter, r *http.Request) {
@@ -154,3 +154,4 @@ func validateAssetInterceptRuleReq(req *assetInterceptRuleReq) error {
 	}
 	return nil
 }
+

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/Autumn-27/cautiousmemory/agent"
 )
 
 func TestPauseCancelsWithNamedCause(t *testing.T) {
@@ -220,3 +220,4 @@ func TestBootstrapAdmissionClearsQueuedPauseBarrier(t *testing.T) {
 		t.Fatal("bootstrap admission left the queued task behind the pause barrier")
 	}
 }
+

@@ -16,12 +16,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	pgdb "github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/enrich"
-	"github.com/Autumn-27/artex/guard"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	pgdb "github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/enrich"
+	"github.com/Autumn-27/cautiousmemory/guard"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -318,7 +318,7 @@ const (
 	settingWorkers      = "workers"
 	settingWorkerPools  = "worker_pools"
 	settingLLMRecord    = "llm_record"
-	// LLM round-robin (failover). Disabled by default—when enabled, an agent using the 「global active configuration」 in the current configuration
+	// LLM round-robin (failover). Disabled by defaultâ€”when enabled, an agent using the ã€Œglobal active configurationã€ in the current configuration
 	// automatically switches to the next configuration when unavailable (insufficient balance/invalid key/rate limited/service error).
 	// settingLLMPoolBindFallback only matters when round-robin is enabled: disabled by default, meaning an agent/task explicitly
 	// bound to a configuration uses only that configuration and fails if it fails; when enabled, a failed bound configuration also falls back to the round-robin chain.
@@ -327,7 +327,7 @@ const (
 	// Task concurrency limit: toggle + limit. Off by default; default limit is 5 when enabled (see defaultConcurrencyLimit).
 	settingConcurrencyOn    = "task_concurrency_enabled"
 	settingConcurrencyLimit = "task_concurrency_limit"
-	// Experimental feature: noa model-driven context compression (norma v0.4.0). Off by default—when enabled, the four platform-integrated
+	// Experimental feature: noa model-driven context compression (norma v0.4.0). Off by defaultâ€”when enabled, the four platform-integrated
 	// agents (planner/worker/main agent/conversation) have noa handle context compression, replacing built-in compaction.
 	// Read once per run; toggling only affects subsequently started runs.
 	settingNoaCompaction = "noa_compaction"
@@ -555,11 +555,11 @@ func (m *Manager) Enrich() *enrich.Engine { return m.enrich }
 // traffic-recording proxy. PostgreSQL is required (it is the single data source).
 func NewManager(dir, proxyAddr string) (*Manager, error) {
 	// Resolve the data dir to an ABSOLUTE path up front. Every data path derives
-	// from it — notably the MITM CA cert, whose path is injected into worker shells
+	// from it â€” notably the MITM CA cert, whose path is injected into worker shells
 	// (SSL_CERT_FILE/CURL_CA_BUNDLE) and read by WebFetch. A relative path (the
 	// default is "./data" under `go run`) only resolves when the current working
 	// directory happens to match, so curl/WebFetch in a different CWD fail to load
-	// the CA → TLS to the proxy breaks (curl 000 / EOF). Absolute makes it CWD-proof.
+	// the CA â†’ TLS to the proxy breaks (curl 000 / EOF). Absolute makes it CWD-proof.
 	if abs, err := filepath.Abs(dir); err == nil {
 		dir = abs
 	}
@@ -634,7 +634,7 @@ func NewManager(dir, proxyAddr string) (*Manager, error) {
 			}()
 		}
 	}
-	// Asset auto-completion engine (§5): HTTP probes routed through the recording
+	// Asset auto-completion engine (Â§5): HTTP probes routed through the recording
 	// proxy (via m.ProxyAddr, which honors the traffic-capture toggle).
 	m.trafficOn = pg.GetBool(settingTrafficCapture, false)
 	// LLM recording toggle (off by default). The recorder reads this flag on each call.
@@ -709,7 +709,7 @@ func (m *Manager) LLMRecordEnabled() bool {
 }
 
 // SetLLMRecordEnabled persists and applies the LLM-record toggle. Effective at
-// once — no applyLLM needed, since the recorder reads the flag on every call.
+// once â€” no applyLLM needed, since the recorder reads the flag on every call.
 func (m *Manager) SetLLMRecordEnabled(on bool) error {
 	if err := m.pg.SetBool(settingLLMRecord, on); err != nil {
 		return err
@@ -727,7 +727,7 @@ func (m *Manager) NoaCompactionEnabled() bool {
 	return m.pg.GetBool(settingNoaCompaction, false)
 }
 
-// SetNoaCompaction persists the noa toggle. Effective on the next agent run —
+// SetNoaCompaction persists the noa toggle. Effective on the next agent run â€”
 // the resolver reads it per run, so no rebuild is needed.
 func (m *Manager) SetNoaCompaction(on bool) error {
 	return m.pg.SetBool(settingNoaCompaction, on)
@@ -735,7 +735,7 @@ func (m *Manager) SetNoaCompaction(on bool) error {
 
 // LLMPoolEnabled reports whether LLM failover ("round-robin") is on (off by default;
 // settings.llm_pool_enabled). Read when the provider chain is built (applyLLM),
-// so a change requires a rebuild — putSettings does that.
+// so a change requires a rebuild â€” putSettings does that.
 func (m *Manager) LLMPoolEnabled() bool {
 	if m.pg == nil {
 		return false
@@ -858,9 +858,9 @@ func (m *Manager) SetWebSearch(on bool, backend string, braveKey, tavilyKey, pro
 const browserMCPName = "browser"
 
 // syncBrowserMCPProxy reconciles the seeded browser MCP's proxy args + CA env with
-// the current traffic-capture state: capture on → route Playwright through the
+// the current traffic-capture state: capture on â†’ route Playwright through the
 // recording proxy (--proxy-server) and trust its MITM CA (NODE_EXTRA_CA_CERTS);
-// capture off → strip both. Idempotent, and a no-op if the user deleted/renamed the
+// capture off â†’ strip both. Idempotent, and a no-op if the user deleted/renamed the
 // MCP. Must be called WITHOUT m.mu held (ProxyAddr/ProxyCACert take the lock).
 func (m *Manager) syncBrowserMCPProxy() {
 	servers, err := m.pg.ListMCP()
@@ -876,7 +876,7 @@ func (m *Manager) syncBrowserMCPProxy() {
 		}
 	}
 	if srv == nil {
-		return // user removed/renamed it — leave it alone
+		return // user removed/renamed it â€” leave it alone
 	}
 
 	proxy := m.ProxyAddr()  // "" when capture off
@@ -1021,9 +1021,9 @@ func (m *Manager) PG() *pgdb.DB              { return m.pg }
 func (m *Manager) Traffic() *traffic.Traffic { return m.traffic }
 
 // ProxyAddr returns the egress proxy address agents route target traffic through:
-//   - capture ON  → the recording MITM proxy (which itself exits via the global
+//   - capture ON  â†’ the recording MITM proxy (which itself exits via the global
 //     proxy when one is set); agents also get its CA (see ProxyCACert).
-//   - capture OFF → the global egress proxy directly (empty CA — real target
+//   - capture OFF â†’ the global egress proxy directly (empty CA â€” real target
 //     certs), or "" when no global proxy is set (direct, no recording).
 //
 // So the global proxy takes effect in both modes: at the MITM's upstream when
@@ -1361,7 +1361,7 @@ func (m *Manager) DeleteCompanyWithAssets(id int64, deleteAssets bool) (int64, e
 }
 
 // ReplaceTaskLLMProfiles resets a task's ordered provider chain and mirrors the
-// committed state onto the live task handle. Terminal tasks are editable too —
+// committed state onto the live task handle. Terminal tasks are editable too â€”
 // their primary Agent conversation keeps running on the chain after the task finishes.
 func (m *Manager) ReplaceTaskLLMProfiles(id string, profileIDs []int64, activeProfileID int64) (int64, error) {
 	n, err := strconv.ParseInt(id, 10, 64)
@@ -1381,7 +1381,7 @@ func (m *Manager) ReplaceTaskLLMProfiles(id string, profileIDs []int64, activePr
 	}
 	m.mu.Unlock()
 	// Don't reopen quota-blocked intents for terminal tasks: no workers are running for the task anymore, so reopening them would only move them from
-	// blocked to open—where no one can execute them, and they no longer meet the rerunnable condition for a “rerun intent,”
+	// blocked to openâ€”where no one can execute them, and they no longer meet the rerunnable condition for a â€œrerun intent,â€
 	// leaving them in a dead state. To continue a terminal task, use a rerun intent or add a target; that path will admit the task back
 	// to the running state.
 	if pgdb.IsTerminal(pt.Status) {
@@ -1927,7 +1927,7 @@ func (m *Manager) StampTaskFirstRun(id string) (int64, error) {
 }
 
 // SetTaskStatusGuarded sets a TERMINAL status only if the task isn't already terminal
-// (resolves the completed↔timeout race — first terminal writer wins). Reflects the
+// (resolves the completedâ†”timeout race â€” first terminal writer wins). Reflects the
 // won status on the live handle. won=false means another terminal already stuck.
 func (m *Manager) SetTaskStatusGuarded(id, status string) (won bool, err error) {
 	m.taskStateMu.Lock()
@@ -2344,7 +2344,7 @@ func (t *Task) NotifyDone(intentID int64) {
 }
 
 // NotifyFinding records that a worker reported a finding on intentID (summary),
-// then wakes the planner — so the round spells out which intent found what.
+// then wakes the planner â€” so the round spells out which intent found what.
 func (t *Task) NotifyFinding(intentID int64, summary string) {
 	t.trigMu.Lock()
 	t.pendingTriggers = append(t.pendingTriggers, agent.TriggerEvent{Kind: "finding", IntentID: intentID, Detail: summary})
@@ -2352,10 +2352,10 @@ func (t *Task) NotifyFinding(intentID int64, summary string) {
 	t.Notify()
 }
 
-// NotifyGoal records that one OR MORE goals were added in a single set_goals call —
-// by the human via the main agent — then wakes the planner, so the next round spells
-// out "human added N goals:…" instead of the planner having to spot new open goals in
-// the overview. One call → one trigger event (one bulk set_goals call counts as one, not one per item).
+// NotifyGoal records that one OR MORE goals were added in a single set_goals call â€”
+// by the human via the main agent â€” then wakes the planner, so the next round spells
+// out "human added N goals:â€¦" instead of the planner having to spot new open goals in
+// the overview. One call â†’ one trigger event (one bulk set_goals call counts as one, not one per item).
 // The event survives an early-returning terminal round (drain happens after the gate),
 // so a set_goals that revives a done task still surfaces it once the task is running.
 func (t *Task) NotifyGoal(texts []string) {
@@ -2368,11 +2368,11 @@ func (t *Task) NotifyGoal(texts []string) {
 	t.Notify()
 }
 
-// NotifyHint records that one OR MORE hints were added in a single add_hint call —
-// by the human via the main agent, or by cross-task orchestration — then wakes the
-// planner, so the next round is told "human added N strategic hints:…" and looks at them
+// NotifyHint records that one OR MORE hints were added in a single add_hint call â€”
+// by the human via the main agent, or by cross-task orchestration â€” then wakes the
+// planner, so the next round is told "human added N strategic hints:â€¦" and looks at them
 // directly instead of having to spot the new hint folded into the graph overview.
-// One call → one trigger event (a batched add_hint counts as one, not one per hint).
+// One call â†’ one trigger event (a batched add_hint counts as one, not one per hint).
 func (t *Task) NotifyHint(texts []string) {
 	if len(texts) == 0 {
 		return
@@ -2398,7 +2398,7 @@ func (t *Task) NotifyGoalDeleted(text string) {
 }
 
 // NotifyGoalEdited records that the human edited a goal (via the overview goal manager), then wakes
-// the planner so the next round spells out the old→new change. The event survives an
+// the planner so the next round spells out the oldâ†’new change. The event survives an
 // early-returning terminal round (drain happens after the gate).
 func (t *Task) NotifyGoalEdited(oldText, newText string) {
 	oldText, newText = strings.TrimSpace(oldText), strings.TrimSpace(newText)
@@ -2413,7 +2413,7 @@ func (t *Task) NotifyGoalEdited(oldText, newText string) {
 
 // NotifyCancelled records that the human deleted intentID (reason = deletion reason), then
 // wakes the planner so the next round spells out which intent was removed and why.
-// summary is the intent's text captured before deletion — needed for hard delete,
+// summary is the intent's text captured before deletion â€” needed for hard delete,
 // where the node is gone by the time the planner reads the trigger. Applies to both
 // soft (state='deleted') and hard (physical cascade) delete.
 func (t *Task) NotifyCancelled(intentID int64, summary, reason string) {
@@ -2433,3 +2433,4 @@ func (t *Task) drainTriggers() []agent.TriggerEvent {
 	t.pendingTriggers = nil
 	return ev
 }
+

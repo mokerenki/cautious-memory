@@ -12,9 +12,9 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -246,3 +246,4 @@ func (s *Server) finishRetest(id int64, status, reason string) {
 		log.Printf("[retest %d] finish: %v", id, err)
 	}
 }
+

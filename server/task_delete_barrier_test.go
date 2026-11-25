@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/Autumn-27/cautiousmemory/agent"
 )
 
 func TestEngineDeleteBarrierRejectsNewTaskOperations(t *testing.T) {
@@ -120,7 +120,7 @@ func TestTaskLifecycleRechecksDeleteBarrierAfterConcLock(t *testing.T) {
 		t.Fatal("install delete barrier")
 	}
 	s.concMu.Unlock()
-	if err := <-pauseDone; err == nil || !strings.Contains(err.Error(), "正在删除") {
+	if err := <-pauseDone; err == nil || !strings.Contains(err.Error(), "æ­£åœ¨åˆ é™¤") {
 		t.Fatalf("pause passed a delete barrier installed while waiting for concMu: %v", err)
 	}
 	s.engine.AbortDelete(task.ID, false)
@@ -362,3 +362,4 @@ func TestCommittedTaskDeleteReturnsSuccessWithCleanupWarning(t *testing.T) {
 		t.Fatalf("unexpected response: %+v", got)
 	}
 }
+

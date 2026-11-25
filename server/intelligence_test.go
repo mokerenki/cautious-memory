@@ -3,7 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"strings"
 	"testing"
 )
@@ -85,3 +85,4 @@ func TestIntelligenceHTTPSettingsAndScope(t *testing.T) {
 		t.Fatal("disable hid saved records")
 	}
 }
+

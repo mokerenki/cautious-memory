@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -97,3 +97,4 @@ func intelligenceWorkflow(ctx context.Context, tools []actool.CoreTool) ([]actoo
 	}
 	return out, guide
 }
+

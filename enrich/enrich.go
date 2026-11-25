@@ -1,9 +1,9 @@
 // Package enrich is the engine-side (non-AI) asset auto-completion layer described
-// in docs/asset-model-and-auto-linking-design.md §5: an async worker pool that resolves domains
+// in docs/asset-model-and-auto-linking-design.md Â§5: an async worker pool that resolves domains
 // (dnsx) and probes web assets (HTTP, through the recording proxy) and writes the
 // results back into the asset graph -- creating IP/port nodes, resolves/exposes
 // edges, and filling attrs.dns / attrs.http. DNS is ungated; HTTP probing is gated
-// by RoE (§5.2).
+// by RoE (Â§5.2).
 package enrich
 
 import (
@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 
 	"github.com/miekg/dns"
 	"github.com/projectdiscovery/dnsx/libs/dnsx"
@@ -90,7 +90,7 @@ func New(as *db.AssetStore, proxy func() string, workers int) *Engine {
 // buildClient returns an HTTP client that dials via the recording proxy (resolved
 // per-request via proxy(), so the traffic-capture toggle applies live) and skips
 // TLS verification (the proxy re-signs with its MITM CA; targets are often
-// self-signed — this is a pentest probe).
+// self-signed â€” this is a pentest probe).
 func buildClient(proxy func() string) *http.Client {
 	tr := &http.Transport{
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: true},
@@ -230,7 +230,7 @@ func (e *Engine) doHTTP(id int64, rawURL string) {
 	if err != nil {
 		return
 	}
-	req.Header.Set("User-Agent", "artex-enrich/1.0")
+	req.Header.Set("User-Agent", "CAUTIOUSMEMORY-enrich/1.0")
 	resp, err := e.client.Do(req)
 	if err != nil {
 		return
@@ -290,3 +290,4 @@ func uniq(in []string) []string {
 	}
 	return out
 }
+

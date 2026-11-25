@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestInheritedDTOProvenance(t *testing.T) {
@@ -115,3 +115,4 @@ func TestFindingProvenanceInTask(t *testing.T) {
 		t.Fatal("detached finding must not be readable through task context")
 	}
 }
+

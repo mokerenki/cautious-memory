@@ -1,27 +1,27 @@
 #!/bin/sh
-# ARTEX supervisor startup script (Linux / macOS / Docker ENTRYPOINT)
+# cautiousmemory supervisor startup script (Linux / macOS / Docker ENTRYPOINT)
 #
 # Usage:
 #   ./start.sh                       run in the foreground (Ctrl-C to stop)
-#   nohup ./start.sh >artex.log 2>&1 &   run persistently in the background
-#   ./start.sh -addr :9000           pass additional arguments through to artex unchanged
+#   nohup ./start.sh >cautiousmemory.log 2>&1 &   run persistently in the background
+#   ./start.sh -addr :9000           pass additional arguments through to cautiousmemory unchanged
 #
-# Its only job is to start artex and decide whether to relaunch it based on its exit code.
+# Its only job is to start cautiousmemory and decide whether to relaunch it based on its exit code.
 #
-#   0      user-requested stop        → exit the loop
-#   75     program-requested restart        → relaunch immediately (the page requested "one-click update" or "rollback")
-#   other  crash                → relaunch after backoff (1→2→4…up to 60 seconds)
+#   0      user-requested stop        â†’ exit the loop
+#   75     program-requested restart        â†’ relaunch immediately (the page requested "one-click update" or "rollback")
+#   other  crash                â†’ relaunch after backoff (1â†’2â†’4â€¦up to 60 seconds)
 #
 # Downloads, SHA256 verification, and binary replacement are intentionally handled elsewhere: implementing that logic in both sh and bat would duplicate it,
-# and those are precisely the steps that must not fail—if an unstartable binary were installed, this script would faithfully
+# and those are precisely the steps that must not failâ€”if an unstartable binary were installed, this script would faithfully
 # keep relaunching it, leaving the user to recover the machine manually. Verification and replacement are therefore handled in Go (the selfupdate package),
-# by artex itself at startup, keeping this script simple.
+# by cautiousmemory itself at startup, keeping this script simple.
 set -u
 
 cd "$(dirname "$0")" || exit 1
 
-BIN=./artex
-[ -x "$BIN" ] || { echo "[artex] executable not found $BIN" >&2; exit 1; }
+BIN=./cautiousmemory
+[ -x "$BIN" ] || { echo "[cautiousmemory] executable not found $BIN" >&2; exit 1; }
 
 RESTART_CODE=75
 MAX_DELAY=60
@@ -29,10 +29,10 @@ MAX_DELAY=60
 child=0
 stopping=0
 
-# Forward stop signals to the artex process.
+# Forward stop signals to the cautiousmemory process.
 #
 # This is required in Docker: docker stop sends SIGTERM only to PID 1 (this script),
-# not to child processes. Without forwarding it, artex cannot shut down gracefully and is killed with SIGKILL after 10 seconds,
+# not to child processes. Without forwarding it, cautiousmemory cannot shut down gracefully and is killed with SIGKILL after 10 seconds,
 # abruptly interrupting any tasks in progress.
 forward() {
 	stopping=1
@@ -58,25 +58,26 @@ while :; do
 	child=0
 
 	if [ "$stopping" -eq 1 ]; then
-		echo "[artex] stopped"
+		echo "[cautiousmemory] stopped"
 		exit 0
 	fi
 
 	case "$code" in
 		0)
-			echo "[artex] exited normally"
+			echo "[cautiousmemory] exited normally"
 			exit 0
 			;;
 		"$RESTART_CODE")
-			# Update/rollback is ready: relaunch artex to complete the replacement at startup (see selfupdate.Bootstrap).
-			echo "[artex] restart requested (applying the new version)…"
+			# Update/rollback is ready: relaunch cautiousmemory to complete the replacement at startup (see selfupdate.Bootstrap).
+			echo "[cautiousmemory] restart requested (applying the new version)â€¦"
 			delay=1
 			;;
 		*)
-			echo "[artex] exited unexpectedly (code=$code); restarting in ${delay}s" >&2
+			echo "[cautiousmemory] exited unexpectedly (code=$code); restarting in ${delay}s" >&2
 			sleep "$delay"
 			delay=$((delay * 2))
 			[ "$delay" -gt "$MAX_DELAY" ] && delay=$MAX_DELAY
 			;;
 	esac
 done
+

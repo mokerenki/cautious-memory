@@ -18,7 +18,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 func repeaterTestSend(t *testing.T, s *Server, payload any) (int, repeaterSendResponse, string) {
@@ -294,7 +294,7 @@ func TestRepeaterTruncatesAndHonoursHEAD(t *testing.T) {
 }
 
 func TestRepeaterBodyTextReplacesBinaryControls(t *testing.T) {
-	if got := repeaterBodyText([]byte{'a', 0, 0xff, 'b'}); got != "a��b" {
+	if got := repeaterBodyText([]byte{'a', 0, 0xff, 'b'}); got != "aï¿½ï¿½b" {
 		t.Fatalf("body text=%q", got)
 	}
 }
@@ -428,7 +428,7 @@ func TestRepeaterHonorsExplicitHTTPVersion(t *testing.T) {
 	}
 }
 
-func TestRepeaterExplicitHTTP2Cleartext(t *testing.T) {
+func TestRepeaterExplicitHTTP2CleCAUTIOUSMEMORYt(t *testing.T) {
 	t.Setenv(repeaterAllowLocalEnv, "1")
 	srv := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { _, _ = io.WriteString(w, r.Proto) }))
 	srv.Config.Protocols = new(http.Protocols)
@@ -440,3 +440,4 @@ func TestRepeaterExplicitHTTP2Cleartext(t *testing.T) {
 		t.Fatalf("status=%d response=%s", code, raw)
 	}
 }
+

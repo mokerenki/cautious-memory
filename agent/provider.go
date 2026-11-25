@@ -1,6 +1,6 @@
 // Package agent wires real LLM-driven planner and work agents (on top of the
-// agent-core SDK) to the dual SQLite graph. See docs/ARTEX-architecture.md
-// §4.3 (planner) and §4.4 (work agent).
+// agent-core SDK) to the dual SQLite graph. See docs/CAUTIOUSMEMORY-architecture.md
+// Â§4.3 (planner) and Â§4.4 (work agent).
 //
 // Provider configuration is read from the environment so the system runs with
 // any Anthropic- or OpenAI-format endpoint. If no key is configured, FromEnv
@@ -19,8 +19,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/llmhttp"
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/llmhttp"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/compaction"
 	"github.com/Autumn-27/norma/llm"
@@ -38,7 +38,7 @@ type Config struct {
 	APIKey  string
 	Model   string
 	// Proxy routes all LLM requests through the given proxy URL (http/https/socks5,
-	// optionally with user:pass@ credentials). Empty means direct — it does NOT
+	// optionally with user:pass@ credentials). Empty means direct â€” it does NOT
 	// fall back to the standard *_PROXY environment variables.
 	Proxy string
 	// RatePerSecond / RatePerMinute cap the shared request rate across ALL agents
@@ -50,7 +50,7 @@ type Config struct {
 	ContextWindowK int
 	// ThinkingType independently controls the thinking "switch" field (thinking.type):
 	//   "" = don't send (default, compatible with models not supporting this field); "disabled" = explicitly off;
-	//   "enabled" = on. fully decoupled from ReasoningEffort — some APIs lack thinking field,
+	//   "enabled" = on. fully decoupled from ReasoningEffort â€” some APIs lack thinking field,
 	//   only use strength param to activate thinking, so both can be set independently.
 	ThinkingType string
 	// ReasoningEffort independently controls the thinking "strength" field:
@@ -77,7 +77,7 @@ type Config struct {
 // empty = don't send. value attached to request context by transcript.WithSessionID, read by RoundTripper
 // and inserted, so same shared provider can send different header values per session.
 	SessionHeaderKey string
-// Retry is the parsed retry params for this config (profile override → global policy → built-in defaults,
+// Retry is the parsed retry params for this config (profile override â†’ global policy â†’ built-in defaults,
 // parsed by server). see RetryConfig for three layers' meanings; zero = use all built-in defaults.
 	Retry RetryConfig
 }
@@ -95,7 +95,7 @@ type RetryConfig struct {
 	// default 2 attempts, same exponential gradient.
 	EmptyAttempts int
 	EmptyInterval time.Duration
-	// StreamAttempts/StreamInterval: same provider safety window retry — this project adds a layer
+	// StreamAttempts/StreamInterval: same provider safety window retry â€” this project adds a layer
 	// on top of SDK, only replays stream breaks/overload/429-in-stream when "no output delivered to caller yet".
 	// SDK can't see it, consumed by server/task_llm.go. default 2 attempts, 0.5s start exponential (capped 4s).
 	StreamAttempts int
@@ -103,16 +103,16 @@ type RetryConfig struct {
 }
 
 // compaction window resolution bounds (in K tokens). Below the floor the
-// threshold math (window − summary reserve − buffer) would go non-positive and
+// threshold math (window âˆ’ summary reserve âˆ’ buffer) would go non-positive and
 // compaction would fire every turn; above the cap it would never fire.
 const (
-	defaultWindowK = 200  // unset → assume a 200K window (Claude default)
+	defaultWindowK = 200  // unset â†’ assume a 200K window (Claude default)
 	minWindowK     = 32   // floor so effectiveWindow stays comfortably positive
 	maxWindowK     = 1000 // cap at 1M tokens (user request)
 )
 
 // CompactionWindow returns the model context window in TOKENS for compaction
-// thresholds, resolved from the user-configured size (ContextWindowK). 0/unset →
+// thresholds, resolved from the user-configured size (ContextWindowK). 0/unset â†’
 // a 200K default; otherwise clamped to [32K, 1M] so compaction stays effective.
 func (c Config) CompactionWindow() int {
 	k := c.ContextWindowK
@@ -140,13 +140,13 @@ func compactionConfig(windowTokens int) *compaction.Config {
 
 // FromEnv resolves the LLM provider config:
 //
-//	ARTEX_LLM_PROVIDER = anthropic|openai (default: inferred from keys)
-//	ARTEX_LLM_MODEL    = model id        (default: per provider)
-//	ARTEX_LLM_BASE_URL = endpoint        (optional)
-//	ARTEX_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
+//	CAUTIOUSMEMORY_LLM_PROVIDER = anthropic|openai (default: inferred from keys)
+//	CAUTIOUSMEMORY_LLM_MODEL    = model id        (default: per provider)
+//	CAUTIOUSMEMORY_LLM_BASE_URL = endpoint        (optional)
+//	CAUTIOUSMEMORY_LLM_PROXY    = proxy URL        (optional; http/https/socks5)
 //	ANTHROPIC_API_KEY / OPENAI_API_KEY         = credentials
 func FromEnv() (Config, bool) {
-	prov := os.Getenv("ARTEX_LLM_PROVIDER")
+	prov := os.Getenv("CAUTIOUSMEMORY_LLM_PROVIDER")
 	anthKey := os.Getenv("ANTHROPIC_API_KEY")
 	oaiKey := os.Getenv("OPENAI_API_KEY")
 
@@ -162,11 +162,11 @@ func FromEnv() (Config, bool) {
 	}
 
 	c := Config{
-		BaseURL: os.Getenv("ARTEX_LLM_BASE_URL"),
-		Model:   os.Getenv("ARTEX_LLM_MODEL"),
-		Proxy:   strings.TrimSpace(os.Getenv("ARTEX_LLM_PROXY")),
-		// default streaming; ARTEX_LLM_STREAM=false/0/off explicitly disables to non-streaming.
-		Stream: !isFalsy(os.Getenv("ARTEX_LLM_STREAM")),
+		BaseURL: os.Getenv("CAUTIOUSMEMORY_LLM_BASE_URL"),
+		Model:   os.Getenv("CAUTIOUSMEMORY_LLM_MODEL"),
+		Proxy:   strings.TrimSpace(os.Getenv("CAUTIOUSMEMORY_LLM_PROXY")),
+		// default streaming; CAUTIOUSMEMORY_LLM_STREAM=false/0/off explicitly disables to non-streaming.
+		Stream: !isFalsy(os.Getenv("CAUTIOUSMEMORY_LLM_STREAM")),
 	}
 	switch prov {
 	case "openai":
@@ -238,7 +238,7 @@ func ConfigFrom(provider, model, baseURL, apiKey, proxy string) Config {
 }
 
 // isFalsy reports whether an env-var string explicitly requests "off". Empty or
-// unrecognized → false (so an unset var keeps the streaming default).
+// unrecognized â†’ false (so an unset var keeps the streaming default).
 func isFalsy(s string) bool {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "0", "false", "off", "no":
@@ -367,7 +367,7 @@ type quotaAwareTransport struct {
 func (t quotaAwareTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	// Custom session-id header: name is user-configured, value is THIS run's
 	// session id (norma stashes it on the context via transcript.WithSessionID).
-	// Stable across a session's turns and distinct across sessions — exactly what
+	// Stable across a session's turns and distinct across sessions â€” exactly what
 	// a session-keyed prompt cache wants. Skipped when no session id is present.
 	if t.sessionHeaderKey != "" {
 		if sid := transcript.SessionIDFrom(req.Context()); sid != "" {
@@ -437,18 +437,18 @@ func quotaAwareHTTPClient(proxy, sessionHeaderKey string) (*http.Client, error) 
 
 // logTestConnection prints the raw HTTP status code(s) and response body of a
 // connection test to the server log, so "click test" leaves a diagnosable trail of
-// exactly what the gateway returned — 401 bodies, quota text, empty frames — not
+// exactly what the gateway returned â€” 401 bodies, quota text, empty frames â€” not
 // just the collapsed ok/err the UI shows. Bodies are clipped to keep a chatty
 // SSE stream from flooding the log.
 func logTestConnection(c Config, capt *llmrec.Capture) {
 	attempts := capt.Attempts()
 	if len(attempts) == 0 {
-		log.Printf("[llm-test] %s / %s @ %s — no HTTP request sent (config parse or connect failed)",
+		log.Printf("[llm-test] %s / %s @ %s â€” no HTTP request sent (config parse or connect failed)",
 			c.Provider(), c.Model, c.BaseURL)
 		return
 	}
 	for i, a := range attempts {
-		log.Printf("[llm-test] %s / %s @ %s — attempt %d/%d HTTP %d\nresponse body: %s",
+		log.Printf("[llm-test] %s / %s @ %s â€” attempt %d/%d HTTP %d\nresponse body: %s",
 			c.Provider(), c.Model, c.BaseURL, i+1, len(attempts), a.Status, clipBody(a.Body))
 	}
 }
@@ -508,10 +508,11 @@ func TestConnection(ctx context.Context, c Config) (time.Duration, string, error
 	}
 	// err==nil isn't enough: request succeeded but model returns no text is real (thinking burns budget,
 	// content swallowed by safety policy, compat layer drops content). such config is "silent" in session,
-	// but test would report success — exactly the gap this check eliminates. no visible text = fail.
+	// but test would report success â€” exactly the gap this check eliminates. no visible text = fail.
 	reply = strings.TrimSpace(reply)
 	if reply == "" {
 		return lat, "", fmt.Errorf("model returned no content (request went through but no text was returned)")
 	}
 	return lat, reply, nil
 }
+

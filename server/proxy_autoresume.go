@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/Autumn-27/cautiousmemory/agent"
 )
 
 const (
@@ -233,7 +233,7 @@ func truncateProxyError(err error) string {
 	}
 	s := maskSecrets(err.Error())
 	if len(s) > 240 {
-		return s[:240] + "…"
+		return s[:240] + "â€¦"
 	}
 	return s
 }
@@ -460,3 +460,4 @@ func (s *Server) setProxyReconnectSettings(max, interval *int) error {
 	}
 	return nil
 }
+

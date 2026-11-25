@@ -1,4 +1,4 @@
-module github.com/Autumn-27/artex
+module github.com/Autumn-27/cautiousmemory
 
 go 1.26.10
 
@@ -61,3 +61,4 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
+

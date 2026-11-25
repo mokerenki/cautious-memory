@@ -13,10 +13,10 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/sidequestion"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/sidequestion"
 	"github.com/Autumn-27/norma/llm"
 )
 
@@ -323,7 +323,7 @@ func (s *Server) pgConversationMessages(w http.ResponseWriter, r *http.Request) 
 	running := s.chatBusy[s.convBusyKey(c.ID)]
 	s.chatMu.Unlock()
 
-	// Incremental tail: ?since=N returns steps after id N (ASC) — used by the live
+	// Incremental tail: ?since=N returns steps after id N (ASC) â€” used by the live
 	// poll and the post-send fetch. A generous cap so a burst is never dropped.
 	if sv := q.Get("since"); sv != "" {
 		since, _ := strconv.ParseInt(sv, 10, 64)
@@ -336,7 +336,7 @@ func (s *Server) pgConversationMessages(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// History page (reverse pagination): no ?since → the latest page; ?before=N →
+	// History page (reverse pagination): no ?since â†’ the latest page; ?before=N â†’
 	// the page of older steps ending before id N. hasMore lets the client stop
 	// loading earlier history once the top of the thread is reached.
 	before, _ := strconv.ParseInt(q.Get("before"), 10, 64)
@@ -371,7 +371,7 @@ func (s *Server) pgConversationMsgDetail(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, 200, map[string]any{"detail": detail})
 }
 
-// pgStopConversation aborts the in-flight run for one conversation (manual stop —
+// pgStopConversation aborts the in-flight run for one conversation (manual stop â€”
 // the run/stop button in the chat UI). It cancels only THIS session's agent run;
 // the P3 trigger queue is untouched, so the agent's next queued fire still starts.
 func (s *Server) pgStopConversation(w http.ResponseWriter, r *http.Request) {
@@ -437,7 +437,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 
 	// persist + float the human turn; auto-title the thread from the first message.
 	// Worker is the agent key (not "user") so the transcript stays a single lane
-	// (no worker chips) — the kind='user' already right-aligns it as a human bubble.
+	// (no worker chips) â€” the kind='user' already right-aligns it as a human bubble.
 	// With attachments, Detail carries {text, attachments} JSON so the transcript
 	// renders attachment cards; without, Detail is the full text (Summary is truncated,
 	// so the transcript lazy-loads Detail to show the message untruncated).
@@ -515,7 +515,7 @@ func (s *Server) pgSendConversationMessage(w http.ResponseWriter, r *http.Reques
 	// Append the uploaded files' ABSOLUTE paths so the ChatAgent opens them with its
 	// Read/Bash tools. baseDir = the agent's per-session CWD (<workDir>/sessions/
 	// conv-<id>/), matching chatUpload's landing dir and agent/chat.go's sessionWorkDir
-	// — busyKey == convBusyKey(c.ID) == "conv-<id>" == that session id.
+	// â€” busyKey == convBusyKey(c.ID) == "conv-<id>" == that session id.
 	baseDir := filepath.Join(s.m.dir, "sessions", busyKey)
 	s.runConversation(c, composeAgentMessage(agentMessage, req.Attachments, baseDir), busyKey, msg)
 	writeJSON(w, 202, map[string]any{"status": "accepted"})
@@ -532,7 +532,7 @@ func autoTitleIsUsable(generated string) bool {
 }
 
 // runConversation runs ONE agent turn on a conversation in a background goroutine
-// (each conversation is independent → parallel). Steps stream to
+// (each conversation is independent â†’ parallel). Steps stream to
 // conversation_activities. Shared by the chat HTTP handler and the P3 scheduler.
 // busyKey clears when the run ends (best-effort in-flight marker).
 func (s *Server) runConversation(c *db.Conversation, msg, busyKey string, userMessage ...string) {
@@ -640,7 +640,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 	if ctx.Err() != nil {
 		return
 	}
-	// precedence: the conversation agent's own binding → this conversation's pin → global.
+	// precedence: the conversation agent's own binding â†’ this conversation's pin â†’ global.
 	ca := s.resolveChatAgent(c)
 	if ca == nil {
 		finishReason = s.chatUnavailableReason()
@@ -660,7 +660,7 @@ func (s *Server) runConversationTurn(ctx context.Context, cancel context.CancelC
 		}
 	}
 	// On a manual stop ctx is cancelled; Chat already emits a clean "manually stopped"
-	// step, so skip the raw-error entry — only surface genuine failures.
+	// step, so skip the raw-error entry â€” only surface genuine failures.
 	if _, err := ca.Chat(ctx, c.AgentKey, sessionID, msg, maxTurns, maxDuration, webSearch, emit); err != nil {
 		finishReason = err.Error()
 		if ctx.Err() == nil {
@@ -705,8 +705,8 @@ func (s *Server) readTriggerBehavior(agentKey string) triggerBehavior {
 }
 
 // StartTriggeredRun enqueues a P3 trigger fire for agentKey and pumps the queue. The
-// agent's policy decides concurrency + merge: serial → run one at a time (optionally
-// merging by task / all / none); parallel → run each fire in its own concurrent
+// agent's policy decides concurrency + merge: serial â†’ run one at a time (optionally
+// merging by task / all / none); parallel â†’ run each fire in its own concurrent
 // conversation up to trigger_max_parallel. Distinct agents always run concurrently.
 func (s *Server) StartTriggeredRun(agentKey, title, message string, taskID int64, mergeable bool, taskDesc, taskGoal string) {
 	s.startTriggeredRun(agentKey, title, message, taskID, mergeable, taskDesc, taskGoal, 0)
@@ -744,7 +744,7 @@ func normalizeReporterTriggerMessage(message string) string {
 }
 
 // pumpLocked launches queued fires for one agent up to its concurrency limit, then
-// returns. Serial → limit 1; parallel → limit = maxParallel (<=0 → unlimited). Each
+// returns. Serial â†’ limit 1; parallel â†’ limit = maxParallel (<=0 â†’ unlimited). Each
 // launched run re-pumps on completion (runAndPump) to fill the freed slot. Caller
 // holds queueMu.
 func (s *Server) pumpLocked(agentKey string) {
@@ -785,9 +785,9 @@ func (s *Server) runAndPump(agentKey string, item triggeredRun) {
 
 // nextTriggerRun pops the next run from the agent's queue per the merge mode:
 //
-//	parallel / none → one head item, no merge
-//	by_task         → head + all queued same-task mergeable fires merged into one
-//	all             → the ENTIRE queue merged into one run (regardless of task/type)
+//	parallel / none â†’ one head item, no merge
+//	by_task         â†’ head + all queued same-task mergeable fires merged into one
+//	all             â†’ the ENTIRE queue merged into one run (regardless of task/type)
 //
 // Caller holds queueMu.
 func (s *Server) nextTriggerRun(agentKey string, cfg triggerBehavior) triggeredRun {
@@ -865,14 +865,14 @@ func mergeTriggeredRuns(items []triggeredRun) triggeredRun {
 	var b strings.Builder
 	fmt.Fprintf(&b, "[This session merged %d trigger events for task #%d, please handle them together]\n", first.taskID, len(items))
 	if h := taskContextHeader(first.taskID, first.taskDesc, first.taskGoal); h != "" {
-		fmt.Fprintf(&b, "%s\n", h) // same task → task context appears once
+		fmt.Fprintf(&b, "%s\n", h) // same task â†’ task context appears once
 	}
 	for i, it := range items {
-		fmt.Fprintf(&b, "\n── Trigger %d ──\n%s\n", i+1, it.message)
+		fmt.Fprintf(&b, "\nâ”€â”€ Trigger %d â”€â”€\n%s\n", i+1, it.message)
 	}
 	return triggeredRun{
 		agentKey:  first.agentKey,
-		title:     fmt.Sprintf("Merged trigger · task#%d · %d items", first.taskID, len(items)),
+		title:     fmt.Sprintf("Merged trigger Â· task#%d Â· %d items", first.taskID, len(items)),
 		message:   b.String(),
 		taskID:    first.taskID,
 		mergeable: true,
@@ -882,8 +882,8 @@ func mergeTriggeredRuns(items []triggeredRun) triggeredRun {
 
 // mergeAllRuns folds the ENTIRE queued burst into one run (merge_mode='all'),
 // regardless of type. Events are grouped by task (tasks in first-appearance order,
-// events in their original order within a task), so each task's context header — and
-// its possibly long description/goal — is written exactly ONCE even when fires from
+// events in their original order within a task), so each task's context header â€” and
+// its possibly long description/goal â€” is written exactly ONCE even when fires from
 // different tasks interleave in the queue. Cross-task chronology is not preserved
 // (event bodies carry no timestamps, so per-task grouping reads better for the agent).
 func mergeAllRuns(items []triggeredRun) triggeredRun {
@@ -905,16 +905,16 @@ func mergeAllRuns(items []triggeredRun) triggeredRun {
 	for _, tid := range order {
 		g := groups[tid]
 		if h := taskContextHeader(tid, g[0].taskDesc, g[0].taskGoal); h != "" {
-			fmt.Fprintf(&b, "\n%s\n", h) // same task → context appears once, even if interleaved
+			fmt.Fprintf(&b, "\n%s\n", h) // same task â†’ context appears once, even if interleaved
 		}
 		for _, it := range g {
 			seq++
-			fmt.Fprintf(&b, "\n── Trigger %d (task#%d) ──\n%s\n", seq, tid, it.message)
+			fmt.Fprintf(&b, "\nâ”€â”€ Trigger %d (task#%d) â”€â”€\n%s\n", seq, tid, it.message)
 		}
 	}
 	return triggeredRun{
 		agentKey:  first.agentKey,
-		title:     fmt.Sprintf("Merged trigger · all · %d items", len(items)),
+		title:     fmt.Sprintf("Merged trigger Â· all Â· %d items", len(items)),
 		message:   b.String(),
 		taskID:    first.taskID,
 		mergeable: true,
@@ -968,7 +968,8 @@ func firstLine(s string, max int) string {
 		s = s[:i]
 	}
 	if len([]rune(s)) > max {
-		s = string([]rune(s)[:max]) + "…"
+		s = string([]rune(s)[:max]) + "â€¦"
 	}
 	return s
 }
+

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestFindingPaginationParam(t *testing.T) {
@@ -39,7 +39,7 @@ func TestFindingPaginationParam(t *testing.T) {
 func TestFindingGroupsReturnsTaskBucketsAndNormalizesPagination(t *testing.T) {
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	defer m.Close()
 	marker := fmt.Sprintf("__server_finding_groups_%d__", time.Now().UnixNano())
@@ -149,7 +149,7 @@ func TestFindingGroupsReturnsTaskBucketsAndNormalizesPagination(t *testing.T) {
 func TestDeepenFindingCreatesAuditedIntentAndRevivesTask(t *testing.T) {
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	defer m.Close()
 
@@ -178,7 +178,7 @@ func TestDeepenFindingCreatesAuditedIntentAndRevivesTask(t *testing.T) {
 	s := &Server{m: m, engine: NewEngine(m), ctx: ctx}
 	live, unsubscribe := s.engine.Broadcaster().Subscribe(task.ID)
 	defer unsubscribe()
-	body := bytes.NewBufferString(`{"description":"验证完整利用链并保留可复现证据"}`)
+	body := bytes.NewBufferString(`{"description":"éªŒè¯å®Œæ•´åˆ©ç”¨é“¾å¹¶ä¿ç•™å¯å¤çŽ°è¯æ®"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/exploration/findings/1/deepen", body)
 	req.SetPathValue("id", strconv.FormatInt(findingID, 10))
 	rec := httptest.NewRecorder()
@@ -216,7 +216,7 @@ func TestDeepenFindingCreatesAuditedIntentAndRevivesTask(t *testing.T) {
 	var persistedAudit db.Activity
 	auditCount := 0
 	for _, item := range activity {
-		if item.Worker == "system" && strings.Contains(item.Summary, "人工提交漏洞深入利用意图") {
+		if item.Worker == "system" && strings.Contains(item.Summary, "äººå·¥æäº¤æ¼æ´žæ·±å…¥åˆ©ç”¨æ„å›¾") {
 			persistedAudit = item
 			auditCount++
 		}
@@ -341,3 +341,4 @@ func TestDeepenAdmissionFailureDiscardsFollowUpIntent(t *testing.T) {
 		t.Fatalf("failed admission left an orphan audit: before=%d after=%d", activitiesBefore, activitiesAfter)
 	}
 }
+

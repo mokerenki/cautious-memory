@@ -1,4 +1,4 @@
-package notify
+﻿package notify
 
 import (
 	"context"
@@ -26,14 +26,14 @@ func singleMsg() Message {
 			Severity:  "high",
 			Summary:   "parameter id\nis not filtered, leading to injection",
 			Assets:    []string{"a.example.com", "b.example.com"},
-			DetailURL: "https://artex.local/function/findings/detail?id=42",
+			DetailURL: "https://CAUTIOUSMEMORY.local/function/findings/detail?id=42",
 		}},
 	}
 }
 
 // batchMsg constructs a batch digest message.
 func batchMsg(n int) Message {
-	m := Message{Batch: true, WindowMinutes: 30, HomeURL: "https://artex.local/function/findings"}
+	m := Message{Batch: true, WindowMinutes: 30, HomeURL: "https://CAUTIOUSMEMORY.local/function/findings"}
 	for i := 0; i < n; i++ {
 		m.Items = append(m.Items, Item{
 			FindingID: int64(i + 1),
@@ -75,7 +75,7 @@ func TestDingTalkSendsActionCardWhenLinkPresent(t *testing.T) {
 			t.Fatalf("expected actionCard when detail link is present, got %v", body["msgtype"])
 		}
 		card, _ := body["actionCard"].(map[string]any)
-		if card["singleURL"] != "https://artex.local/function/findings/detail?id=42" {
+		if card["singleURL"] != "https://CAUTIOUSMEMORY.local/function/findings/detail?id=42" {
 			t.Errorf("detail link missing: %v", card["singleURL"])
 		}
 	})
@@ -180,7 +180,7 @@ func TestFeishuCardStructureAndSign(t *testing.T) {
 			actions, _ := em["actions"].([]any)
 			for _, a := range actions {
 				am, _ := a.(map[string]any)
-				if am["url"] == "https://artex.local/function/findings/detail?id=42" {
+				if am["url"] == "https://CAUTIOUSMEMORY.local/function/findings/detail?id=42" {
 					foundButton = true
 				}
 			}
@@ -255,7 +255,7 @@ func TestWebhookDefaultTemplateProducesValidJSON(t *testing.T) {
 	// This is what the default template exists for: with quotes and newlines in the title,
 	// any naive `"title": "{{.Title}}"` produces invalid JSON. {{json .}} does not.
 	srv := capturePost(t, `{"ok":true}`, func(t *testing.T, body map[string]any, _ *http.Request) {
-		if body["title"] != `[🟠 High] Login "SQL injection" risk` {
+		if body["title"] != `[ðŸŸ  High] Login "SQL injection" risk` {
 			t.Errorf("title was not restored correctly: %v", body["title"])
 		}
 		items, _ := body["items"].([]any)
@@ -322,11 +322,11 @@ func TestWebhookValidateCatchesBadConfigEarly(t *testing.T) {
 }
 
 func TestEmailMessageIsWellFormed(t *testing.T) {
-	msg, err := buildEmailMessage("artex@example.com", []string{"a@example.com", "b@example.com"}, singleMsg())
+	msg, err := buildEmailMessage("CAUTIOUSMEMORY@example.com", []string{"a@example.com", "b@example.com"}, singleMsg())
 	if err != nil {
 		t.Fatalf("could not assemble the email: %v", err)
 	}
-	if !strings.HasPrefix(msg, "From: artex@example.com\r\n") {
+	if !strings.HasPrefix(msg, "From: CAUTIOUSMEMORY@example.com\r\n") {
 		t.Fatalf("From header is wrong:\n%s", msg)
 	}
 	if !strings.Contains(msg, "To: a@example.com, b@example.com\r\n") {
@@ -374,7 +374,7 @@ func TestEmailEscapesStructuralInjection(t *testing.T) {
 			Severity:  "high",
 			Name:      `<script>alert(1)</script>`,
 			Summary:   "a & b > c",
-			DetailURL: `https://artex.local/x?a="onmouseover=alert(1)`,
+			DetailURL: `https://CAUTIOUSMEMORY.local/x?a="onmouseover=alert(1)`,
 		}},
 	}
 	html := htmlBody(m, 0)
@@ -515,3 +515,4 @@ func TestPermanentErrorUnwrap(t *testing.T) {
 type permanentSentinel struct{}
 
 func (*permanentSentinel) Error() string { return "sentinel" }
+

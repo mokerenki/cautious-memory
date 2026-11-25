@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxRemarkRunes = db.MaxTaskRemarkRunes
@@ -71,3 +71,4 @@ func (s *Server) updateScheduleMetadata(w http.ResponseWriter, r *http.Request) 
 	}
 	writeJSON(w, 200, item)
 }
+

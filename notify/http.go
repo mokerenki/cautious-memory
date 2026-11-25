@@ -27,11 +27,11 @@ import (
 //
 // However, "local SMTP relay" (postfix on 127.0.0.1:25) is a common setup for self-hosted email; blocking it outright
 // would break legitimate deployments. So we provide an explicit escape hatch instead of a hardcoded allowlist:
-// set ARTEX_NOTIFY_ALLOW_LOCAL=1 to allow it.
+// set CAUTIOUSMEMORY_NOTIFY_ALLOW_LOCAL=1 to allow it.
 //
 // Exported as AllowLocalTargetsEnv so tests can explicitly enable it—this package and server tests use httptest receivers
 // on 127.0.0.1 extensively, and without it they would all be blocked by the guard.
-const AllowLocalTargetsEnv = "ARTEX_NOTIFY_ALLOW_LOCAL"
+const AllowLocalTargetsEnv = "CAUTIOUSMEMORY_NOTIFY_ALLOW_LOCAL"
 
 func allowLocalTargets() bool {
 	v := strings.TrimSpace(os.Getenv(AllowLocalTargetsEnv))

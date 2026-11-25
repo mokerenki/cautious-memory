@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
@@ -61,7 +61,7 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 	schedulePath := fmt.Sprintf("/api/schedules/%d/remark", schedule.ID)
 	for _, path := range []string{taskPath, schedulePath} {
 		t.Run(path, func(t *testing.T) {
-			for _, remark := range []string{"  中文备注 📝\n第二行 <script>alert(1)</script>  ", strings.Repeat("📝", maxRemarkRunes), ""} {
+			for _, remark := range []string{"  ä¸­æ–‡å¤‡æ³¨ ðŸ“\nç¬¬äºŒè¡Œ <script>alert(1)</script>  ", strings.Repeat("ðŸ“", maxRemarkRunes), ""} {
 				body, _ := json.Marshal(map[string]string{"remark": remark})
 				rec := request(path, string(body), true)
 				if rec.Code != http.StatusOK {
@@ -132,7 +132,7 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 				status        int
 			}{
 				{`{}`, true, 400}, {`{"remark":null}`, true, 400}, {`{"remark":123}`, true, 400}, {`{`, true, 400},
-				{`{"remark":"` + strings.Repeat("文", maxRemarkRunes+1) + `"}`, true, 400},
+				{`{"remark":"` + strings.Repeat("æ–‡", maxRemarkRunes+1) + `"}`, true, 400},
 				{`{"remark":"` + strings.Repeat("x", maxTaskMetadataRequestSize) + `"}`, true, 413},
 				{`{"remark":"denied"}`, false, 401},
 			}
@@ -145,20 +145,20 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 		})
 	}
 	// A normal rename/pin patch must preserve a previously saved remark.
-	note := "保留的任务备注"
+	note := "ä¿ç•™çš„ä»»åŠ¡å¤‡æ³¨"
 	if _, err := m.UpdateTaskMetadata(task.ID, db.TaskPatch{Remark: &note}); err != nil {
 		t.Fatal(err)
 	}
-	rec := request(taskPath, `{"name":"新名称","pinned":true}`, true)
+	rec := request(taskPath, `{"name":"æ–°åç§°","pinned":true}`, true)
 	if rec.Code != 200 || !bytes.Contains(rec.Body.Bytes(), []byte(note)) {
 		t.Fatalf("rename lost remark: %s", rec.Body.String())
 	}
-	note = "保留的计划备注"
+	note = "ä¿ç•™çš„è®¡åˆ’å¤‡æ³¨"
 	if _, err := m.pg.UpdateTaskScheduleRemark(schedule.ID, note); err != nil {
 		t.Fatal(err)
 	}
 	metadataPath := fmt.Sprintf("/api/schedules/%d/metadata", schedule.ID)
-	rec = request(metadataPath, `{"name":"  行内改名  "}`, true)
+	rec = request(metadataPath, `{"name":"  è¡Œå†…æ”¹å  "}`, true)
 	if rec.Code != 200 {
 		t.Fatalf("schedule rename: %d %s", rec.Code, rec.Body.String())
 	}
@@ -166,22 +166,22 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if renamed.Name != "行内改名" || renamed.Remark != note || renamed.Status != original.Status || renamed.Enabled != original.Enabled || renamed.LastWindowKey != original.LastWindowKey || renamed.LastError != original.LastError || !renamed.LastTransitionAt.Equal(*original.LastTransitionAt) || len(renamed.TaskIDs) != 1 || renamed.TaskIDs[0] != taskID {
+	if renamed.Name != "è¡Œå†…æ”¹å" || renamed.Remark != note || renamed.Status != original.Status || renamed.Enabled != original.Enabled || renamed.LastWindowKey != original.LastWindowKey || renamed.LastError != original.LastError || !renamed.LastTransitionAt.Equal(*original.LastTransitionAt) || len(renamed.TaskIDs) != 1 || renamed.TaskIDs[0] != taskID {
 		t.Fatalf("rename changed calendar state or metadata: %+v", renamed)
 	}
-	for _, body := range []string{`{}`, `{"name":null}`, `{"name":" "}`, `{"name":123}`, `{"name":"` + strings.Repeat("文", maxTaskNameRunes+1) + `"}`, `{"name":"must not apply","remark":"` + strings.Repeat("文", maxRemarkRunes+1) + `"}`} {
+	for _, body := range []string{`{}`, `{"name":null}`, `{"name":" "}`, `{"name":123}`, `{"name":"` + strings.Repeat("æ–‡", maxTaskNameRunes+1) + `"}`, `{"name":"must not apply","remark":"` + strings.Repeat("æ–‡", maxRemarkRunes+1) + `"}`} {
 		if rec := request(metadataPath, body, true); rec.Code != 400 {
 			t.Fatalf("invalid rename: %d %s", rec.Code, rec.Body.String())
 		}
 	}
 	unchanged, err := m.pg.GetTaskSchedule(schedule.ID)
-	if err != nil || unchanged.Name != "行内改名" || unchanged.Remark != note {
+	if err != nil || unchanged.Name != "è¡Œå†…æ”¹å" || unchanged.Remark != note {
 		t.Fatalf("invalid patch partially changed metadata: %+v %v", unchanged, err)
 	}
 	if rec := request(metadataPath, `{"name":"denied"}`, false); rec.Code != 401 {
 		t.Fatalf("rename auth: %d", rec.Code)
 	}
-	scheduleInput.Name = "新计划名称"
+	scheduleInput.Name = "æ–°è®¡åˆ’åç§°"
 	updated, err := m.pg.UpdateTaskSchedule(schedule.ID, scheduleInput)
 	if err != nil || updated.Remark != note {
 		t.Fatalf("schedule edit lost remark: %+v %v", updated, err)
@@ -192,3 +192,4 @@ func TestRemarksRoundTripPreservesExecutionState(t *testing.T) {
 		}
 	}
 }
+

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Autumn-27/artex/selfupdate"
+	"github.com/Autumn-27/cautiousmemory/selfupdate"
 )
 
 const updateSettingsKey = "update.network"
@@ -81,3 +81,4 @@ func (s *Server) updateClient() (*http.Client, string, error) {
 	client, err := selfupdate.NewClient(cfg.Proxy)
 	return client, cfg.Proxy, err
 }
+

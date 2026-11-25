@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	pgdb "github.com/Autumn-27/artex/db"
+	pgdb "github.com/Autumn-27/cautiousmemory/db"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -104,7 +104,7 @@ func TestTaskArchivePackageSkipsSymlink(t *testing.T) {
 	if err := os.WriteFile(regular, []byte("keep me"), archiveFileMode); err != nil {
 		t.Fatal(err)
 	}
-	// 工作目录里出现的符号链接应被跳过，而不是让整个归档失败。
+	// å·¥ä½œç›®å½•é‡Œå‡ºçŽ°çš„ç¬¦å·é“¾æŽ¥åº”è¢«è·³è¿‡ï¼Œè€Œä¸æ˜¯è®©æ•´ä¸ªå½’æ¡£å¤±è´¥ã€‚
 	if err := os.Symlink(regular, filepath.Join(payload, "link.txt")); err != nil {
 		t.Skipf("symlink unsupported on this platform: %v", err)
 	}
@@ -254,3 +254,4 @@ func TestTaskArchivePackageRejectsTraversal(t *testing.T) {
 		t.Fatalf("traversal wrote outside destination: %v", err)
 	}
 }
+

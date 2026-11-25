@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/notify"
+	"github.com/Autumn-27/cautiousmemory/notify"
 )
 
 var (
@@ -113,8 +113,8 @@ type PreparedTrafficEvidence struct {
 
 // Normalize makes the snapshot's text columns safe for PostgreSQL. URL and the
 // head blocks come straight off the wire, so a target answering with a non-UTF-8
-// header (a GBK `Content-Disposition: filename=…`, a NUL byte) would otherwise
-// abort the INSERT and roll back the whole finding — losing a confirmed finding
+// header (a GBK `Content-Disposition: filename=â€¦`, a NUL byte) would otherwise
+// abort the INSERT and roll back the whole finding â€” losing a confirmed finding
 // over a malformed response header. Applied before hashing so the ID always
 // matches the bytes that actually land in the table.
 func (s TrafficEvidenceSnapshot) Normalize() TrafficEvidenceSnapshot {
@@ -474,3 +474,4 @@ func (d *DB) SetFindingReportVersionByNodeID(ctx context.Context, nodeID int64, 
 	})
 	return
 }
+

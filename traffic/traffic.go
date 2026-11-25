@@ -1,4 +1,4 @@
-// Package traffic implements the request-recording subsystem (docs §10): an
+// Package traffic implements the request-recording subsystem (docs Â§10): an
 // embedded go-mitmproxy proxy whose addon writes every target HTTP exchange into
 // a human-browsable file tree, with a sidecar SQLite index for paged queries.
 // Full capture, plaintext (no redaction), target HTTP only.
@@ -30,7 +30,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 	mproxy "github.com/lqqyt2423/go-mitmproxy/proxy"
@@ -78,8 +78,8 @@ CREATE INDEX IF NOT EXISTS idx_blob_refs_ex ON blob_refs(exchange_id);
 // ftsSchema is applied separately from indexSchema: a driver build without FTS5
 // must degrade to "no full-text search" rather than take the whole recorder down.
 // trigram (not the default unicode61) is required for two reasons this subsystem
-// depends on: it matches arbitrary substrings — "ssw0r" finds "P@ssw0rd" — and it
-// handles CJK, which unicode61 does not tokenize. Contentless (content=”) keeps
+// depends on: it matches arbitrary substrings â€” "ssw0r" finds "P@ssw0rd" â€” and it
+// handles CJK, which unicode61 does not tokenize. Contentless (content=â€) keeps
 // only the index, since the text itself lives in exchange_bodies; contentless_delete
 // lets rows be deleted without replaying the original text back in.
 const ftsSchema = `CREATE VIRTUAL TABLE IF NOT EXISTS ex_fts USING fts5(
@@ -114,9 +114,9 @@ const (
 	// what discards them, and left undone the index grows on every deletion.
 	reclaimMergePages = 256
 	// reclaimMergeSteps bounds how many merges one reclamation performs. fts5
-	// offers no way to ask whether an index has settled — its special INSERT
+	// offers no way to ask whether an index has settled â€” its special INSERT
 	// registers a row change of its own, so change counting cannot tell a real
-	// merge from a no-op — so the budget is simply spent down, and whatever is
+	// merge from a no-op â€” so the budget is simply spent down, and whatever is
 	// left over falls to the next deletion.
 	reclaimMergeSteps = 16
 	// reclaimMaxSteps backstops the loop. Both merging and incremental_vacuum are
@@ -163,7 +163,7 @@ type Traffic struct {
 	closeOnce sync.Once
 	// pass is the set of hosts whose MITM interception failed for a proxy/protocol
 	// reason; connections to them are tunneled transparently (fail-open) so the
-	// request still reaches the target — unrecorded — instead of being killed.
+	// request still reaches the target â€” unrecorded â€” instead of being killed.
 	pass sync.Map // hostname(string) -> struct{}
 	// upstream is the global egress proxy every captured request is forwarded
 	// through (nil = dial targets directly). Both the intercepted and the
@@ -183,7 +183,7 @@ func Open(dir, addr string) (*Traffic, error) {
 	}
 	// busy_timeout is a per-connection setting, so it belongs in the DSN rather
 	// than in a one-off Exec: the pool opens connections on demand, and an Exec
-	// only configures whichever one happened to serve it — leaving every other
+	// only configures whichever one happened to serve it â€” leaving every other
 	// connection to fail instantly the moment a writer holds the database.
 	// The driver splits the DSN at the first '?', so a data directory containing
 	// one would silently name a different file; that path falls back to a bare
@@ -216,9 +216,9 @@ func Open(dir, addr string) (*Traffic, error) {
 	// dialed DIRECTLY: go-mitmproxy's own default upstream uses
 	// http.ProxyFromEnvironment, so an HTTP_PROXY/HTTPS_PROXY in the environment
 	// (a VPN/system proxy) would make it forward target requests through that
-	// external proxy — which can't reach the target → 502. Returning nil forces
+	// external proxy â€” which can't reach the target â†’ 502. Returning nil forces
 	// a direct dial. When a global egress proxy IS configured (SetUpstreamProxy),
-	// every captured request — intercepted AND transparently tunneled — is
+	// every captured request â€” intercepted AND transparently tunneled â€” is
 	// forwarded through it instead, so no host leaks the real source IP.
 	p.SetUpstreamProxy(func(*http.Request) (*url.URL, error) { return t.upstream.Load(), nil })
 	// Fail-open: MITM every host by default, EXCEPT ones a prior request proved we
@@ -235,13 +235,13 @@ func Open(dir, addr string) (*Traffic, error) {
 
 // initIndex applies the schema on a single pinned connection. Pinning is what
 // makes auto_vacuum reliable: it can only be set while the database still holds
-// no tables, and only the VACUUM that follows writes it into the file header —
+// no tables, and only the VACUUM that follows writes it into the file header â€”
 // two steps a pooled *sql.DB is free to route to different connections, which
 // would silently drop the setting.
 //
 // auto_vacuum=incremental is what lets a deletion hand freed pages back to the
 // filesystem. Without it SQLite merely chains them onto its freelist, so the
-// index file never shrinks no matter how much traffic is deleted — and since
+// index file never shrinks no matter how much traffic is deleted â€” and since
 // every body below maxInlineBody lives in that file, plus a trigram index
 // roughly twice the size of the text it covers, a capture-heavy install ends up
 // holding gigabytes for traffic it no longer has. On a database that already has
@@ -314,7 +314,7 @@ func (t *Traffic) ProxyAddr() string {
 // SetUpstreamProxy points every captured request at a global egress proxy
 // (http/https/socks5, optional user:pass in the URL). An empty raw string clears
 // it, restoring direct dialing. The change is atomic and takes effect on the next
-// connection — no restart, no proxy rebuild. go-mitmproxy dials all three schemes
+// connection â€” no restart, no proxy rebuild. go-mitmproxy dials all three schemes
 // itself, so socks5 works uniformly here regardless of the target tool.
 func (t *Traffic) SetUpstreamProxy(raw string) error {
 	if strings.TrimSpace(raw) == "" {
@@ -385,7 +385,7 @@ func (t *Traffic) Start() error { return t.proxy.Start() }
 // index, so shutdown never leaves a goroutine unlinking files out from under a
 // removed data directory. Index-space reclamation is signalled to stop first:
 // it holds a whole minutes-long budget, and finishing it is never worth delaying
-// shutdown for — the next deletion resumes it.
+// shutdown for â€” the next deletion resumes it.
 func (t *Traffic) Close() error {
 	if t.closed != nil {
 		t.closeOnce.Do(func() { close(t.closed) })
@@ -421,7 +421,7 @@ func (s *sink) Response(f *mproxy.Flow) {
 
 // RequestError fires when a request through an established MITM tunnel fails. If
 // the failure looks proxy/protocol-caused (h2 quirks, HEAD-with-body, protocol
-// errors) — not a plain target-unreachable error — we flag the host for
+// errors) â€” not a plain target-unreachable error â€” we flag the host for
 // transparent passthrough so future requests to it succeed instead of dying.
 func (s *sink) RequestError(f *mproxy.Flow, err error) {
 	s.t.reportUpstreamFailure(err)
@@ -433,7 +433,7 @@ func (s *sink) HTTPConnectError(_ *mproxy.Flow, err error) {
 }
 
 // maybePassthrough marks a host to be tunneled transparently on the next
-// connection, but only for errors the proxy itself caused — a target that is
+// connection, but only for errors the proxy itself caused â€” a target that is
 // simply down/filtered would fail without us too, and must stay MITM'd+recorded.
 func (t *Traffic) maybePassthrough(f *mproxy.Flow, err error) {
 	if err == nil || f == nil || f.Request == nil || f.Request.URL == nil || !proxyCausedErr(err) {
@@ -449,7 +449,7 @@ func (t *Traffic) maybePassthrough(f *mproxy.Flow, err error) {
 }
 
 // proxyCausedErr reports whether err indicates the interception layer (not the
-// target) is at fault — HTTP/2 handling, HEAD-with-body, or a protocol violation.
+// target) is at fault â€” HTTP/2 handling, HEAD-with-body, or a protocol violation.
 func proxyCausedErr(err error) bool {
 	s := strings.ToLower(err.Error())
 	for _, p := range []string{"head request", "http2", "http/2", "protocol error", "protocol_error", "malformed"} {
@@ -461,7 +461,7 @@ func proxyCausedErr(err error) bool {
 }
 
 // record persists one exchange entirely in SQLite: metadata, bodies and the
-// full-text index. Nothing is written to a per-request directory — only bodies
+// full-text index. Nothing is written to a per-request directory â€” only bodies
 // above maxInlineBody spill to the content-addressed blob store.
 func (t *Traffic) record(f *mproxy.Flow) {
 	// The write lock covers blob + index writes, so DeleteHost (and its blob GC)
@@ -551,7 +551,7 @@ type storedBody struct {
 // spill decides where one body lives. Small bodies stay inline. Large ones are
 // written to the content-addressed store and keep a readable preview inline so a
 // reader can identify them without fetching the blob. Either way, text bodies
-// are handed to the full-text index in full (up to maxIndexBody) — indexing is
+// are handed to the full-text index in full (up to maxIndexBody) â€” indexing is
 // independent of where the bytes end up.
 func (t *Traffic) spill(body []byte, contentType string) storedBody {
 	if len(body) == 0 {
@@ -822,9 +822,9 @@ func (t *Traffic) Search(host string, page, size int) ([]ExchangeMeta, error) {
 }
 
 // ftsFilter builds the SQL condition restricting rows to those whose indexed
-// text matches term. ok is false when full-text search cannot serve the term —
+// text matches term. ok is false when full-text search cannot serve the term â€”
 // no FTS index on this build, or fewer than three characters, which the trigram
-// tokenizer cannot match — leaving callers to fall back to metadata matching.
+// tokenizer cannot match â€” leaving callers to fall back to metadata matching.
 func (t *Traffic) ftsFilter(term string) (cond string, arg any, ok bool) {
 	term = strings.TrimSpace(term)
 	if !t.fts || utf8.RuneCountInString(term) < minTrigram {
@@ -850,7 +850,7 @@ type PageQuery struct {
 	Method  string   // exact method (case-insensitive)
 	Query   string   // broad search box: metadata columns OR captured text
 	Body    string   // content box: captured request/response text only (full-text)
-	Path    string   // url_template substring — the vulnerability's path
+	Path    string   // url_template substring â€” the vulnerability's path
 	Status  string   // exact code ("404") or class bucket ("4xx")
 	RespMin int64    // minimum resp_len, or -1 when unset
 	RespMax int64    // maximum resp_len, or -1 when unset
@@ -974,7 +974,7 @@ func (t *Traffic) Page(f PageQuery, page, size int) (rows []ExchangeMeta, total 
 	// Body is the dedicated content box: it only searches captured request/response
 	// text, so it goes straight to the full-text index with no metadata fallback. A
 	// term too short for the trigram tokenizer cannot be served and is skipped
-	// rather than guessed at — the UI hints at the three-character minimum.
+	// rather than guessed at â€” the UI hints at the three-character minimum.
 	if b := strings.TrimSpace(f.Body); b != "" {
 		if cond, arg, ok := t.ftsFilter(b); ok {
 			add(cond, arg)
@@ -1051,7 +1051,7 @@ func assembleRaw(head string, body []byte, blob sql.NullString, total int) strin
 	b.WriteByte('\n')
 	b.Write(body)
 	if blob.Valid && blob.String != "" {
-		fmt.Fprintf(&b, "\n…[truncated] @blob sha256:%s (len=%d)", blob.String, total)
+		fmt.Fprintf(&b, "\nâ€¦[truncated] @blob sha256:%s (len=%d)", blob.String, total)
 	}
 	return b.String()
 }
@@ -1063,7 +1063,7 @@ type HostCount struct {
 }
 
 // Hosts returns distinct recorded hosts with exchange counts, most recent
-// activity first — powers the page's target picker.
+// activity first â€” powers the page's target picker.
 func (t *Traffic) Hosts() ([]HostCount, error) {
 	rows, err := t.db.Query(`SELECT host, COUNT(*) AS n, MAX(ts) AS last FROM exchanges GROUP BY host ORDER BY last DESC`)
 	if err != nil {
@@ -1114,7 +1114,7 @@ func (t *Traffic) Count() (int, error) {
 }
 
 // DeleteHost removes every recorded exchange whose host contains the given
-// substring — mirroring the UI's host filter, so what you filtered is what gets
+// substring â€” mirroring the UI's host filter, so what you filtered is what gets
 // deleted. Everything lives in SQLite, so the deletion is one transaction across
 // the index, bodies, full-text index and blob references. Content-addressed
 // blobs are shared across hosts and so are garbage-collected afterwards rather
@@ -1140,7 +1140,7 @@ func (t *Traffic) DeleteHost(host string) (int64, error) {
 	}
 	// Staged before the commit so a filesystem failure can still abort the whole
 	// deletion, and before gcBlobs so reference collection sees the correct live
-	// set — a staged tree is invisible to it.
+	// set â€” a staged tree is invisible to it.
 	stageDir, moves, err := t.stageTrees(legacy)
 	if err != nil {
 		return 0, errors.Join(err, restoreTrees(stageDir, moves))
@@ -1158,7 +1158,7 @@ func (t *Traffic) DeleteHost(host string) (int64, error) {
 	return n, nil
 }
 
-// DeleteAll removes every recorded exchange — the page's clear-everything
+// DeleteAll removes every recorded exchange â€” the page's clear-everything
 // action. It differs from the host-scoped deletions in two ways. It sweeps host
 // directories without consulting the index, because "clear everything" should
 // leave nothing behind and a directory whose rows are already gone would
@@ -1231,7 +1231,7 @@ func (t *Traffic) allHostTrees() ([]string, error) {
 // compactIndex rewrites the index into a fresh file, which is what actually
 // returns its pages to the filesystem. VACUUM's runtime and temporary space
 // scale with the content it keeps, so this is only reached right after DeleteAll
-// has emptied the index — never as a routine step. It doubles as the conversion
+// has emptied the index â€” never as a routine step. It doubles as the conversion
 // path for a database created before auto_vacuum=incremental: that pragma only
 // takes effect through the VACUUM that follows it, and both must run on the same
 // connection. Callers must hold wmu.
@@ -1270,7 +1270,7 @@ func (t *Traffic) compactIndex() error {
 
 // deleteWhere removes every trace of the exchanges matching the condition:
 // full-text index rows, bodies, blob references, and finally the index rows.
-// Order matters — each sub-select reads exchanges, so that table is emptied last.
+// Order matters â€” each sub-select reads exchanges, so that table is emptied last.
 func (t *Traffic) deleteWhere(tx *sql.Tx, where string, args ...any) (int64, error) {
 	if t.fts {
 		// ex_fts is contentless and addressed by rowid, hence the rowid sub-select.
@@ -1294,7 +1294,7 @@ func (t *Traffic) deleteWhere(tx *sql.Tx, where string, args ...any) (int64, err
 
 // hostTrees returns the on-disk directory of every host matching the condition.
 // Exchanges recorded since bodies moved into SQLite have no directory at all, so
-// most of these paths simply will not exist — staging skips those. The lookup is
+// most of these paths simply will not exist â€” staging skips those. The lookup is
 // deliberately not restricted to rows with a path: a host whose index rows are
 // already gone can still have an orphaned directory, and deleting the host should
 // take that with it.
@@ -1459,7 +1459,7 @@ func (t *Traffic) reapStage(stageDir string) {
 
 // DeleteHostsExact removes recorded exchanges for a set of EXACT hosts (the
 // batch path for the page's multi-select delete): index rows + each host's file
-// tree, then one blob-GC pass. Exact match — unlike DeleteHost's substring —
+// tree, then one blob-GC pass. Exact match â€” unlike DeleteHost's substring â€”
 // so picking "api.example.com" never sweeps "api.example.com.cn". Returns rows
 // deleted. Duplicate hosts are harmless (idempotent deletes, single tree pass).
 func (t *Traffic) DeleteHostsExact(hosts []string) (int64, error) {
@@ -1752,7 +1752,7 @@ func (s *HostDeleteStage) Commit() error {
 	}
 	// Unlinking the staged trees is what used to hold the write lock for hours;
 	// it now runs in the background, while collection below only needs them to be
-	// out of the live tree — which the staging rename already guaranteed.
+	// out of the live tree â€” which the staging rename already guaranteed.
 	s.traffic.reapStage(s.stageDir)
 	s.traffic.reclaim()
 	var errs []error
@@ -1786,7 +1786,7 @@ func (t *Traffic) indexBytes() int64 {
 // captures heavily ends up holding far more than the traffic it still has.
 //
 // The work is done in the background, in bounded steps that drop the write lock
-// between them, because it is proportional to what was deleted — freeing several
+// between them, because it is proportional to what was deleted â€” freeing several
 // gigabytes under one lock would stall record(), which go-mitmproxy calls before
 // it replies to the client, and so would stall the requests being recorded.
 // Safe to call with wmu held: the background pass simply waits for it.
@@ -1887,7 +1887,7 @@ func (t *Traffic) reclaimChunk(ctx context.Context, conn *sql.Conn, merges *int)
 
 // gcBlobs removes blobs that no remaining exchange references. Live references
 // come from blob_refs, so collection is one query plus a sweep of the blob
-// directory — no exchange body is ever read. Emptied bucket directories are
+// directory â€” no exchange body is ever read. Emptied bucket directories are
 // removed as well; the previous file-scanning collector deleted only files and
 // left the buckets behind permanently. Best-effort: walk errors only skip the
 // affected entries. Callers must hold wmu so this never races a concurrent
@@ -1935,7 +1935,7 @@ func (t *Traffic) gcBlobs() error {
 		return err
 	}
 	// Deepest first, so a two-level bucket left by the old layout collapses fully.
-	// Remove fails harmlessly on a non-empty directory — exactly the guard needed
+	// Remove fails harmlessly on a non-empty directory â€” exactly the guard needed
 	// to avoid deleting a bucket that still holds live blobs.
 	sort.Slice(buckets, func(i, j int) bool { return len(buckets[i]) > len(buckets[j]) })
 	for _, b := range buckets {
@@ -1947,7 +1947,7 @@ func (t *Traffic) gcBlobs() error {
 // legacyBlobRefs adds hashes referenced by pre-SQLite exchanges, whose bodies are
 // still .http files on disk holding "@blob sha256:<hex>" pointers. Without this
 // the first collection after the upgrade would delete blobs that history still
-// points at. Skipped entirely once no legacy rows remain — the steady state — so
+// points at. Skipped entirely once no legacy rows remain â€” the steady state â€” so
 // the tree walk is transitional rather than a permanent cost.
 func (t *Traffic) legacyBlobRefs(refs map[string]struct{}) error {
 	var n int
@@ -2169,7 +2169,7 @@ func (t *Traffic) Tools() []actool.CoreTool {
 
 	blob := actool.Build(actool.Spec{
 		Name:        "traffic_blob",
-		Description: "Read oversized request/response bodies in chunks. Parts shown in traffic_get as '…[truncated] @blob sha256:<hash>' are stored here; pass that hash to fetch full content. Returns at most 8KB per call; use offset to continue (result includes total length). Useful for backups, source leaks, large JSON exports, etc. exceeding inline threshold.",
+		Description: "Read oversized request/response bodies in chunks. Parts shown in traffic_get as 'â€¦[truncated] @blob sha256:<hash>' are stored here; pass that hash to fetch full content. Returns at most 8KB per call; use offset to continue (result includes total length). Useful for backups, source leaks, large JSON exports, etc. exceeding inline threshold.",
 		Schema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -2210,7 +2210,7 @@ func (t *Traffic) Tools() []actool.CoreTool {
 }
 
 // SeedToolMetas returns the traffic tools built on a ZERO receiver, for seeding the
-// tools catalog (metadata only — Name/Description/InputSchema). The handlers close
+// tools catalog (metadata only â€” Name/Description/InputSchema). The handlers close
 // over the nil receiver but are never invoked on this instance, so it is safe.
 func SeedToolMetas() []actool.CoreTool { return (&Traffic{}).Tools() }
 
@@ -2220,3 +2220,4 @@ func clip(s string, max int) string {
 	}
 	return s[:max] + fmt.Sprintf("\n... [truncated, total %d bytes; full content in traffic file tree] ...", len(s))
 }
+

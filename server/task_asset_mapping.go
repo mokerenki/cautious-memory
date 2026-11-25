@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // taskAssetMapping starts a visible topology-mapping conversation for the task.
@@ -78,7 +78,7 @@ Both results must use only real asset data of the current task and its directly 
 			message += "\n\nThe following is the real summary of the task asset graph just read by the page; explain only based on the summary and task scope, and avoid mistaking global assets for assets of this task. Do not elaborate on nodes that are not listed:\n" + string(snapshot)
 		}
 	}
-	title := fmt.Sprintf("Asset and Network Mapping · Task #%d", taskID)
+	title := fmt.Sprintf("Asset and Network Mapping Â· Task #%d", taskID)
 	conversation, err := s.m.pg.CreateConversation("asset_mapper", title, nil)
 	if err != nil || conversation == nil {
 		writeErr(w, http.StatusInternalServerError, "Failed to create topology mapping session")
@@ -111,8 +111,8 @@ func (s *Server) taskAssetMappingStatus(w http.ResponseWriter, r *http.Request) 
 		writeErr(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	title := fmt.Sprintf("Asset and Network Mapping · Task #%s", t.ID)
-	legacyTitle := fmt.Sprintf("Asset Mapping · Task #%s", t.ID)
+	title := fmt.Sprintf("Asset and Network Mapping Â· Task #%s", t.ID)
+	legacyTitle := fmt.Sprintf("Asset Mapping Â· Task #%s", t.ID)
 	for _, conversation := range conversations {
 		if conversation.AgentKey != "asset_mapper" || (conversation.Title != title && conversation.Title != legacyTitle) {
 			continue
@@ -131,3 +131,4 @@ func (s *Server) taskAssetMappingStatus(w http.ResponseWriter, r *http.Request) 
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"running": false})
 }
+

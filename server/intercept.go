@@ -14,11 +14,11 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/guard"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/intercept/jev"
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/guard"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/intercept/jev"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 	"github.com/Autumn-27/norma/llm"
 )
 
@@ -34,7 +34,7 @@ func (s *Server) chatGuard() *guard.Guard {
 
 // wireInterceptReviewer installs the LLM fallback judge into the interceptor. The
 // judge runs only on tool calls that matched no rule (see intercept.Judge). It
-// resolves the configured judge profile (0 → active/default), builds a provider,
+// resolves the configured judge profile (0 â†’ active/default), builds a provider,
 // runs a one-shot JSON classification with an explanation for every verdict.
 func (s *Server) wireInterceptReviewer() {
 	s.m.interceptor.SetReviewer(func(ctx context.Context, profileID int64, prompt string, input intercept.ReviewInput) (intercept.Decision, error) {
@@ -678,3 +678,4 @@ func (s *Server) interceptExecution(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]any{"conversation_id": target.ConversationID, "task_id": target.TaskID, "session": target.Session, "seq": target.Seq, "items": activityDTOs(target.Items)})
 }
+

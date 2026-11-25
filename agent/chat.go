@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/guard"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/guard"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/permission"
@@ -19,7 +19,7 @@ import (
 // ChatAgent is the generic, task-independent conversational runner behind the chat
 // page. It generalizes MainAgent.Chat: any agent (built-in OR a custom one, by
 // key) can be chatted with, multi-turn history resumed from the transcript. It is
-// a PURE ASSISTANT — base tools are the SDK DefaultTools (Bash/Read/Write/Edit/
+// a PURE ASSISTANT â€” base tools are the SDK DefaultTools (Bash/Read/Write/Edit/
 // LS/Glob/Grep) plus whatever skills/MCP the key is made visible; NO pentest
 // graph/task context is injected (that stays exclusive to MainAgent).
 type ChatAgent struct {
@@ -80,7 +80,7 @@ func (c *ChatAgent) SetGuard(g *guard.Guard) { c.guard = g }
 // agent's system prompt. Mirrors artifactSpec but without pentest-specific
 // wording ("payload", "capture response body") that would be odd in a general assistant.
 func chatWorkDirSpec(workDir string) string {
-	return "\n\n**File output specification**: When writing files, always write to working directory " + workDir + " (this is the default CWD, relative paths land here, or you can use this absolute path)—do not write to /tmp or other absolute paths."
+	return "\n\n**File output specification**: When writing files, always write to working directory " + workDir + " (this is the default CWD, relative paths land here, or you can use this absolute path)â€”do not write to /tmp or other absolute paths."
 }
 
 // chatSystem renders the DB-managed prompt body for agentKey. Custom agents have
@@ -157,7 +157,7 @@ func (c *ChatAgent) Chat(ctx context.Context, agentKey, sessionID, message strin
 		// large tool output spills to cmd-output/ under the session dir.
 		// Truncation limit uses SDK default (tool.Capture's 30000 chars).
 		ToolOutputDir: filepath.Join(sessionWorkDir, "cmd-output"),
-		// Hit budget (turns) → SDK runs wrap-up: output one summary sentence. Prompt and wrap-up turns editable in admin per agent key (custom agents each have their own; empty/0 uses global default: 10 turns).
+		// Hit budget (turns) â†’ SDK runs wrap-up: output one summary sentence. Prompt and wrap-up turns editable in admin per agent key (custom agents each have their own; empty/0 uses global default: 10 turns).
 		Settlement:   wrapupSettlement(agentKey, nil),
 		NonStreaming: c.nonStreaming(), // when this profile selects non-streaming, use Provider.Complete
 		MaxTokens:    c.maxTokens(),    // 0 = send no limit, let server default decide
@@ -165,7 +165,7 @@ func (c *ChatAgent) Chat(ctx context.Context, agentKey, sessionID, message strin
 	if c.guard != nil {
 		opts.Hooks = c.guard.Hooks()
 	}
-	if c.tx != nil { // persist raw human↔AI conversation; one accumulating file per thread
+	if c.tx != nil { // persist raw humanâ†”AI conversation; one accumulating file per thread
 		opts.Transcript = c.tx
 		opts.SessionID = sessionID
 	}
@@ -175,7 +175,7 @@ func (c *ChatAgent) Chat(ctx context.Context, agentKey, sessionID, message strin
 	s := agentcore.NewSession(opts)
 	defer s.Close()
 	// reload prior conversation so the agent has context across turns (each Chat is
-	// a fresh session). First turn: no file yet → Resume loads nothing and proceeds.
+	// a fresh session). First turn: no file yet â†’ Resume loads nothing and proceeds.
 	if c.tx != nil {
 		_ = s.Resume(sessionID)
 	}
@@ -190,3 +190,4 @@ func (c *ChatAgent) Chat(ctx context.Context, agentKey, sessionID, message strin
 	})
 	return text, err
 }
+

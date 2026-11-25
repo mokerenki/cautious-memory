@@ -9,14 +9,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 	"github.com/Autumn-27/norma/llm"
 )
 
 // End-to-end through a real norma provider: the Capture rides the context into
 // norma, survives its internal request building, and comes back holding the
 // exact bytes buildBody() put on the wire. This is the load-bearing assumption
-// of the whole feature — norma must propagate the caller's context down to
+// of the whole feature â€” norma must propagate the caller's context down to
 // http.NewRequestWithContext.
 func TestCapturePropagatesThroughNormaProvider(t *testing.T) {
 	sse := strings.Join([]string{
@@ -89,14 +89,14 @@ func TestCapturePropagatesThroughNormaProvider(t *testing.T) {
 	}
 
 	// The raw request must be what norma actually sent, not the recorder's
-	// re-serialization — which is exactly why it carries fields the normalized
+	// re-serialization â€” which is exactly why it carries fields the normalized
 	// view drops.
 	raw := capt.RawRequest()
 	if raw == "" {
-		t.Fatal("no raw request captured — context did not reach the transport")
+		t.Fatal("no raw request captured â€” context did not reach the transport")
 	}
 	// The load-bearing claim: what we stored equals, byte for byte, what the
-	// server received — not merely "has the right fields".
+	// server received â€” not merely "has the right fields".
 	if raw != serverSaw {
 		t.Fatalf("captured request != what the server received:\n got: %q\nsaw: %q", raw, serverSaw)
 	}
@@ -129,3 +129,4 @@ func TestCapturePropagatesThroughNormaProvider(t *testing.T) {
 		t.Errorf("RawResponse mismatch:\n got: %q\nwant: %q", capt.RawResponse(), sse)
 	}
 }
+

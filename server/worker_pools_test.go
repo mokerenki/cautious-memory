@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/llm"
 )
 
@@ -380,7 +380,7 @@ func TestDetachedIntentPinnedOwnerUsesPinnedResolver(t *testing.T) {
 		return nil, nil
 	})
 	err = e.runDetachedIntent(context.Background(), task, intentID, "request", "human", "agent")
-	if err == nil || !strings.Contains(err.Error(), "LLM 配置 #12 不可用") {
+	if err == nil || !strings.Contains(err.Error(), "LLM é…ç½® #12 ä¸å¯ç”¨") {
 		t.Fatalf("runDetachedIntent err=%v", err)
 	}
 	if pinnedCalls.Load() != 1 || snapshotCalls.Load() != 0 {
@@ -391,3 +391,4 @@ func TestDetachedIntentPinnedOwnerUsesPinnedResolver(t *testing.T) {
 		t.Fatalf("intent changed after unavailable resolver: node=%+v err=%v", node, err)
 	}
 }
+

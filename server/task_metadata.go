@@ -7,7 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const (
@@ -74,3 +74,4 @@ func (s *Server) updateTaskMetadata(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, taskDTO(task, s.resolvedTaskStatus(task)))
 }
+

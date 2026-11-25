@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/llmhttp"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/llmhttp"
 )
 
 const (
@@ -448,3 +448,4 @@ func (c Config) TestConnection(ctx context.Context) (time.Duration, string, erro
 	}
 	return time.Since(start), a.Message, nil
 }
+

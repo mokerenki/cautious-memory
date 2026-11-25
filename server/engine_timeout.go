@@ -8,14 +8,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Task-level timeout coordinator (see the task timeout and wrap-up design document, sections 4 and 8.5).
 // Absolute wall-clock: one timer goroutine per task with a timeout, driving the ordered shutdown sequence when it expires:
-//   ① settling → ② workers stop claiming new intents / ③ planner discards ordinary notify
-//   ④ wait for running workers to drain (subject to grace) → ⑤ final planner decision → ⑥ set terminal state (guarded)
+//   â‘  settling â†’ â‘¡ workers stop claiming new intents / â‘¢ planner discards ordinary notify
+//   â‘£ wait for running workers to drain (subject to grace) â†’ â‘¤ final planner decision â†’ â‘¥ set terminal state (guarded)
 
 const (
 	settleDrainGrace     = 90 * time.Second // Maximum time to wait for running workers to clean up gracefully; hard cancel after that
@@ -118,7 +118,7 @@ func (e *Engine) stampFirstRun(t *Task) {
 func (e *Engine) clockCtx(base context.Context, t *Task, final bool) context.Context {
 	dl := e.taskDeadline(t)
 	if dl <= 0 && !final {
-		return base // no timeout → unchanged behavior
+		return base // no timeout â†’ unchanged behavior
 	}
 	return agent.WithTaskClock(base, agent.TaskClock{DeadlineUnix: dl, Final: final})
 }
@@ -156,7 +156,7 @@ func (e *Engine) deadlineCoordinator(ctx context.Context, t *Task) {
 		default:
 		}
 		if isTerminalStatus(e.m.TaskStatus(t.ID)) {
-			return // already finished (goals met / failed) — nothing to time out
+			return // already finished (goals met / failed) â€” nothing to time out
 		}
 		dl := e.taskDeadline(t)
 		if dl <= 0 {
@@ -180,15 +180,15 @@ func (e *Engine) deadlineCoordinator(ctx context.Context, t *Task) {
 	}
 }
 
-// settleTask runs the ordered settle sequence once (§4 steps ①–⑥).
+// settleTask runs the ordered settle sequence once (Â§4 steps â‘ â€“â‘¥).
 func (e *Engine) settleTask(ctx context.Context, t *Task) {
 	if !e.markSettling(t.ID) {
 		return
 	}
 	log.Printf("[deadline] task %s reached the timeout limit, entering cleanup sequence", t.ID)
 
-	// ④ wait for running workers/planner to drain (running runs finish on their own due to the MaxDuration squeeze);
-	// if not drained after grace → hard-cancel the task exec ctx (the settling-aware branch classifies it correctly).
+	// â‘£ wait for running workers/planner to drain (running runs finish on their own due to the MaxDuration squeeze);
+	// if not drained after grace â†’ hard-cancel the task exec ctx (the settling-aware branch classifies it correctly).
 	hardStop := time.Now().Add(settleDrainGrace)
 	for e.inflightCount(t.ID) > 0 {
 		if time.Now().After(hardStop) {
@@ -202,14 +202,14 @@ func (e *Engine) settleTask(ctx context.Context, t *Task) {
 		}
 	}
 
-	// ⑤ Final-round planner (task-timeout phrase, final goal judgment, no new intent).
+	// â‘¤ Final-round planner (task-timeout phrase, final goal judgment, no new intent).
 	met := e.runFinalPlannerRound(ctx, t)
 	if !e.beginTaskOperation(t.ID) {
 		return
 	}
 	defer e.decInflight(t.ID)
 
-	// ⑥ Set terminal state (with guard): met → done(completed); otherwise timeout. If the normal path already set done,
+	// â‘¥ Set terminal state (with guard): met â†’ done(completed); otherwise timeout. If the normal path already set done,
 	// the guard (SetTaskStatusGuarded) rejects the override, preserving completed semantics.
 	status := "timeout"
 	if met {
@@ -254,7 +254,7 @@ func (e *Engine) runFinalPlannerRound(ctx context.Context, t *Task) (met bool) {
 	defer e.decInflight(t.ID)
 	emit := func(r db.Activity) { e.emitActivity(t, r) }
 	e.emitActivity(t, db.Activity{Worker: "planner", Kind: "round",
-		Summary: fmt.Sprintf("Task timeout finalization · final determination (round %d)", e.nextPlannerRound(t.ID))})
+		Summary: fmt.Sprintf("Task timeout finalization Â· final determination (round %d)", e.nextPlannerRound(t.ID))})
 	tTaskID, _ := strconv.ParseInt(t.ID, 10, 64)
 	e.BeginLLMCall(t.ID)
 	met, reason, err := planner.Plan(fctx, tTaskID, e.m.assets, t.Store, t.Goal, t.drainTriggers(), emit)
@@ -266,3 +266,4 @@ func (e *Engine) runFinalPlannerRound(ctx context.Context, t *Task) (met bool) {
 	}
 	return met
 }
+

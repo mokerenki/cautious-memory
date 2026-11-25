@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // testDB opens a DB connection, skipping if PG is unavailable.
@@ -42,7 +42,7 @@ func callInsertAssets(t *testing.T, ts *ToolSet, payload any) map[string]any {
 
 // =====================================================================
 // TestInsertAssetsSubdomainSideEffects
-// 子域名插入 → 自动创建 root_domain + IP 资产，IP 绑定域名
+// å­åŸŸåæ’å…¥ â†’ è‡ªåŠ¨åˆ›å»º root_domain + IP èµ„äº§ï¼ŒIP ç»‘å®šåŸŸå
 // =====================================================================
 func TestInsertAssetsSubdomainSideEffects(t *testing.T) {
 	d := testDB(t)
@@ -111,7 +111,7 @@ func TestInsertAssetsSubdomainSideEffects(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsMultiIPSubdomain
-// 多个 IP 的子域名：所有 IP 都应存入 record_value[]，各自创建 IP 资产
+// å¤šä¸ª IP çš„å­åŸŸåï¼šæ‰€æœ‰ IP éƒ½åº”å­˜å…¥ record_value[]ï¼Œå„è‡ªåˆ›å»º IP èµ„äº§
 // =====================================================================
 func TestInsertAssetsMultiIPSubdomain(t *testing.T) {
 	d := testDB(t)
@@ -159,7 +159,7 @@ func TestInsertAssetsMultiIPSubdomain(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsHTTPServiceTechnologies
-// HTTP 服务插入：technologies 存储并可读回；IP 存在时域名和端口写入 IP 资产
+// HTTP æœåŠ¡æ’å…¥ï¼štechnologies å­˜å‚¨å¹¶å¯è¯»å›žï¼›IP å­˜åœ¨æ—¶åŸŸåå’Œç«¯å£å†™å…¥ IP èµ„äº§
 // =====================================================================
 func TestInsertAssetsHTTPServiceTechnologies(t *testing.T) {
 	d := testDB(t)
@@ -242,7 +242,7 @@ func TestInsertAssetsHTTPServiceTechnologies(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsOtherService
-// 非 HTTP 服务：c_segment 自动生成，IP 资产含 open_ports 和 bound_domains
+// éž HTTP æœåŠ¡ï¼šc_segment è‡ªåŠ¨ç”Ÿæˆï¼ŒIP èµ„äº§å« open_ports å’Œ bound_domains
 // =====================================================================
 func TestInsertAssetsOtherService(t *testing.T) {
 	d := testDB(t)
@@ -303,7 +303,7 @@ func TestInsertAssetsOtherService(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsMixedBatch
-// 混合批量插入：一次调用插入多种类型
+// æ··åˆæ‰¹é‡æ’å…¥ï¼šä¸€æ¬¡è°ƒç”¨æ’å…¥å¤šç§ç±»åž‹
 // =====================================================================
 func TestInsertAssetsMixedBatch(t *testing.T) {
 	d := testDB(t)
@@ -361,7 +361,7 @@ func TestInsertAssetsMixedBatch(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsDedup
-// 幂等写入：同一资产插入两次，返回相同 ID
+// å¹‚ç­‰å†™å…¥ï¼šåŒä¸€èµ„äº§æ’å…¥ä¸¤æ¬¡ï¼Œè¿”å›žç›¸åŒ ID
 // =====================================================================
 func TestInsertAssetsDedup(t *testing.T) {
 	d := testDB(t)
@@ -398,8 +398,8 @@ func TestInsertAssetsDedup(t *testing.T) {
 
 // =====================================================================
 // TestInsertAssetsRejectsHostnameIPPerItem
-// 一批里混入 ip 填了主机名的一条 → 只有那条失败，其余照常入库，
-// 且错误里带得上 index 和改正方法，Agent 下一轮能自己修好。
+// ä¸€æ‰¹é‡Œæ··å…¥ ip å¡«äº†ä¸»æœºåçš„ä¸€æ¡ â†’ åªæœ‰é‚£æ¡å¤±è´¥ï¼Œå…¶ä½™ç…§å¸¸å…¥åº“ï¼Œ
+// ä¸”é”™è¯¯é‡Œå¸¦å¾—ä¸Š index å’Œæ”¹æ­£æ–¹æ³•ï¼ŒAgent ä¸‹ä¸€è½®èƒ½è‡ªå·±ä¿®å¥½ã€‚
 // =====================================================================
 func TestInsertAssetsRejectsHostnameIPPerItem(t *testing.T) {
 	d := testDB(t)
@@ -417,7 +417,7 @@ func TestInsertAssetsRejectsHostnameIPPerItem(t *testing.T) {
 		},
 	})
 
-	// The two valid entries must survive the bad one — a whole-batch failure
+	// The two valid entries must survive the bad one â€” a whole-batch failure
 	// would make the agent re-send assets that were already fine.
 	results, _ := out["results"].([]any)
 	if len(results) != 2 {
@@ -435,7 +435,7 @@ func TestInsertAssetsRejectsHostnameIPPerItem(t *testing.T) {
 	message, _ := entry["error"].(string)
 	for _, want := range []string{"cdn.badip-test.com", "type=subdomain", "A/AAAA"} {
 		if !strings.Contains(message, want) {
-			t.Fatalf("error message %q lacks %q — agent cannot act on it", message, want)
+			t.Fatalf("error message %q lacks %q â€” agent cannot act on it", message, want)
 		}
 	}
 
@@ -448,3 +448,4 @@ func TestInsertAssetsRejectsHostnameIPPerItem(t *testing.T) {
 		t.Fatalf("rejected hostname still stored in assets.ip (%d rows)", stored)
 	}
 }
+

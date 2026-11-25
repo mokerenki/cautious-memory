@@ -22,7 +22,7 @@ Real model conversations, returned objects, engineering assertions, and the Qwen
 | MainAgent / Worker archive and recovery, v1/v2/v3 | Pass | `TestSideTaskArchiveVersions` |
 | Three parent interfaces, authentication, resource ownership, Worker logical deletion | Pass | `TestSideHTTPGlobalLimitTaskWorkerAndDeletion`, `TestSideCheckpointPersistsBeforeAdmissionAndRestart` |
 | Busy main session can side-question, independent SSE reconnect / disconnect, cancel, clear | Pass | `TestSideHTTPBusyIsolationClearAndReconnect` |
-| 1 per parent session / 4 global concurrency | Pass | Two `TestSideHTTP…` cases |
+| 1 per parent session / 4 global concurrency | Pass | Two `TestSideHTTPâ€¦` cases |
 | Snapshot persisted before admission, restart continues questioning, old sessions cannot forge snapshots | Pass | `TestSideCheckpointPersistsBeforeAdmissionAndRestart` |
 | Cached config deleted or model changed then refuse to continue | Pass | `TestSideRejectsDeletedOrChangedCachedProfile` |
 | Cancel before archiving and wait for the final answer and usage to persist | Pass | `TestSideTaskDrainPersistsBeforeArchive` |
@@ -32,7 +32,7 @@ Real model conversations, returned objects, engineering assertions, and the Qwen
 | TypeScript and production build | Pass | `npx tsc --noEmit`, `npm run build` |
 | New frontend module Biome | Pass | `biome check`, 3 new modules |
 
-Automated checks can be reproduced after configuring `ARTEX_PG_DSN` in a separate disposable database (do not point it at a production database):
+Automated checks can be reproduced after configuring `CAUTIOUSMEMORY_PG_DSN` in a separate disposable database (do not point it at a production database):
 
 ```sh
 go test -race ./agent ./db ./server ./sidequestion ./llmrec ./llmpool \
@@ -43,7 +43,7 @@ npx biome check src/lib/side-questions.ts src/hooks/use-side-questions.ts src/co
 npm run build
 ```
 
-The full Go regression is not all green: two existing tests in the `server` package fail during temporary directory cleanup, both reporting `TempDir RemoveAll … directory not empty`:
+The full Go regression is not all green: two existing tests in the `server` package fail during temporary directory cleanup, both reporting `TempDir RemoveAll â€¦ directory not empty`:
 
 - `TestInheritedActivityDetailAndRelationDeletion`
 - `TestTaskMetadataPatchReturnsRenameAndPin`
@@ -54,7 +54,7 @@ Next.js build output has the existing multi-lockfile / workspace root inference 
 
 ## Browser Checks
 
-Uses the Codex In-app Browser, connecting to an independent local Go service and Next.js dev server. On desktop and a 390 × 844 narrow screen, the following manual automated operations were performed, checking screenshots and browser logs:
+Uses the Codex In-app Browser, connecting to an independent local Go service and Next.js dev server. On desktop and a 390 Ã— 844 narrow screen, the following manual automated operations were performed, checking screenshots and browser logs:
 
 - Enter `/btw` while a normal chat is running; the main content and side question display simultaneously; the desktop sidebar works normally.
 - Continuous follow-up questions; after stopping the side question, the generated part is retained; the main flow continues.
@@ -74,13 +74,13 @@ Probing prioritized `grok-4.6`, the OpenAI-compatible interface `http://127.0.0.
 | Scenario | Actual Result |
 | --- | --- |
 | Asking about assets, goals, and markers while the main session is running | Returned `redhaze.top`, the homepage read, and the summarized goal, `BTW-REAL-0910`; the side question completed, 16.97 seconds |
-| Asking about the tool basis after the main session completed the homepage read | Correctly cited WebFetch 200, curl redirect 301 → 302 → 200, and the page title; 7.24 seconds |
+| Asking about the tool basis after the main session completed the homepage read | Correctly cited WebFetch 200, curl redirect 301 â†’ 302 â†’ 200, and the page title; 7.24 seconds |
 | Side question asks Bash to create a test file | Refused to execute, the target file was not created; 7.74 seconds |
 | A completed side question does not change the main context | The main transcript SHA-256 stays consistent with the main activity record; side tool execution count is 0 |
 | After a real stop / restart of the Go service, continue questioning | Retained the previous 3 side-question history entries, answered directly from the persisted snapshot about assets, markers, and the title, without re-running the main Agent |
 | New session using the Grok non-streaming config | Correctly answered about the assets and `ATOMIC-0910`; returned and saved usage: input 11734, output 138, cache_read 11520 |
 
-The asset case's main session used WebFetch and Bash/curl to read a public homepage; the landing page is `https://id.redhaze.top/home`, titled "HongMu Technology RedHaze Group · Global Integrated Group Portal". Bash temporarily stored the response in a local test file; no write was executed against the remote. That fact and "the side question executed no tools" are verified separately.
+The asset case's main session used WebFetch and Bash/curl to read a public homepage; the landing page is `https://id.redhaze.top/home`, titled "HongMu Technology RedHaze Group Â· Global Integrated Group Portal". Bash temporarily stored the response in a local test file; no write was executed against the remote. That fact and "the side question executed no tools" are verified separately.
 
 The main transcript checksum: `e7e61f135a4a120954b539f357e8c4205d7d5cd7460dcaf3dc0fd066463e1d00`.
 
@@ -91,3 +91,4 @@ The main transcript checksum: `e7e61f135a4a120954b539f357e8c4205d7d5cd7460dcaf3d
 The review model `qwen-flash`, OpenAI-compatible interface `https://dashscope.aliyuncs.com/compatible-mode/v1`, HTTP 200. The first three real side-question conversations, the main session tool basis, and engineering assertions were provided; it returned `verdict: accept`, `concerns: []`, considering the answers consistent with the assets, markers, and page-read evidence, and the side tool refusal compliant with the constraints. Review usage: prompt 6625, completion 312, total 6937.
 
 This Qwen review scope does not include the later added service restart and non-streaming tests. Qwen's summary of "no write" was too broad: the main session curl did create a local response temporary file, as clearly recorded above. Concurrency, zero tool execution, and transcript isolation are judged by engineering assertions, and the model review only aids in assessing answer quality.
+

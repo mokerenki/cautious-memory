@@ -1,5 +1,5 @@
-# ARTEX Tencent TSec Benchmark evaluation image - one-command local build + run.
-# Independent of the production docker-compose.yml (multi-service: artex+postgres).
+# cautiousmemory Tencent TSec Benchmark evaluation image - one-command local build + run.
+# Independent of the production docker-compose.yml (multi-service: cautiousmemory+postgres).
 # Usage:
 #   cp bench/.env.example bench/.env   # fill in LLM_API_KEY / BENCHMARK_TOKEN, etc.
 #   docker compose -f docker-compose.bench.yml up --build      # build and run in foreground (view logs)
@@ -9,12 +9,12 @@
 # Browser: http://localhost:8787 (log in with ADMIN_PASSWORD)
 
 services:
-  artex-bench:
+  cautiousmemory-bench:
     build:
       context: .
       dockerfile: Dockerfile.bench
-    image: artex-bench:latest
-    container_name: artex-bench
+    image: cautiousmemory-bench:latest
+    container_name: cautiousmemory-bench
     env_file:
       - bench/.env
     # Share the host network: the container uses the host network stack directly and can reach target networks on the host/VPN.
@@ -24,4 +24,5 @@ services:
     restart: "no"
 
 volumes:
-  artex_bench_data:
+  cautiousmemory_bench_data:
+

@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	pgdb "github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	pgdb "github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 const taskArchivePollInterval = 2 * time.Second
@@ -220,13 +220,13 @@ func (s *Server) archiveTask(job *pgdb.TaskArchive) (runErr error) {
 	removePackage = false
 	if trafficStage != nil {
 		if err := trafficStage.Commit(); err != nil {
-			warning := "归档已完成，但独占流量热存储清理失败（归档包仍可恢复）：" + err.Error()
+			warning := "å½’æ¡£å·²å®Œæˆï¼Œä½†ç‹¬å æµé‡çƒ­å­˜å‚¨æ¸…ç†å¤±è´¥ï¼ˆå½’æ¡£åŒ…ä»å¯æ¢å¤ï¼‰ï¼š" + err.Error()
 			log.Printf("[task-archive] task %s: archive cleanup warning: %s", taskID, warning)
 			_ = s.m.pg.AppendTaskArchiveWarning(job.ID, warning)
 		}
 	}
 	if err := fileStage.commit(); err != nil {
-		warning := "归档已完成，但暂存目录清理失败：" + err.Error()
+		warning := "å½’æ¡£å·²å®Œæˆï¼Œä½†æš‚å­˜ç›®å½•æ¸…ç†å¤±è´¥ï¼š" + err.Error()
 		log.Printf("[task-archive] task %s: archive cleanup warning: %s", taskID, warning)
 		_ = s.m.pg.AppendTaskArchiveWarning(job.ID, warning)
 	}
@@ -346,7 +346,7 @@ func (s *Server) restoreTaskArchivePayload(job *pgdb.TaskArchive, snapshot *pgdb
 	}
 	if len(warnings) > 0 {
 		if _, err := s.m.pg.Exploration(snapshot.ExplorationID).AppendActivity(pgdb.Activity{
-			Worker: "system", Kind: "system", Summary: "任务还原完成，但部分关联已降级", Detail: strings.Join(warnings, "\n"),
+			Worker: "system", Kind: "system", Summary: "ä»»åŠ¡è¿˜åŽŸå®Œæˆï¼Œä½†éƒ¨åˆ†å…³è”å·²é™çº§", Detail: strings.Join(warnings, "\n"),
 		}); err != nil {
 			log.Printf("[task-archive] persist restore warnings for task %d: %v", job.TaskID, err)
 		}
@@ -726,3 +726,4 @@ func writeArchiveError(w http.ResponseWriter, err error) {
 	}
 	writeErr(w, status, err.Error())
 }
+

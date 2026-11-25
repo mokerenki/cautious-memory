@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 const (
@@ -1158,3 +1158,4 @@ func (s *Server) testAllProxyPool(w http.ResponseWriter, r *http.Request) {
 	entries, active, logs := s.m.ProxyPoolSnapshot()
 	writeJSON(w, 200, map[string]any{"entries": entries, "active_id": active, "switch_log": logs})
 }
+

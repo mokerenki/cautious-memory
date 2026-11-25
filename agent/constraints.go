@@ -3,7 +3,7 @@ package agent
 import (
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // constraintBlock renders this task's operation constraints (task_constraints) as a
@@ -47,3 +47,4 @@ func constraintBlock(ts *db.ExplorationStore) string {
 	b.WriteString("\n(Discovering new targets/new ports/new hosts outside constraints does not equal authorization: unless it falls within the above allowlist, record it as an out-of-scope fact and skip, do not derive intents or execute actions for it.)")
 	return b.String()
 }
+

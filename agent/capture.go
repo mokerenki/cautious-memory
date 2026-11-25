@@ -6,9 +6,9 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/sidequestion"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/sidequestion"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/harness"
 	"github.com/Autumn-27/norma/llm"
@@ -17,7 +17,7 @@ import (
 // captureRun drives one agent turn-to-completion over Session.Prompt and emits a
 // coalesced ActivityRecord per execution step (tool_use / tool_result / text /
 // thinking / result). It is shared by every LLM agent in the system (worker,
-// planner, …) so their execution is visible instead of a black box — the old
+// planner, â€¦) so their execution is visible instead of a black box â€” the old
 // agentcore.Run discarded every event. The emitted records carry only
 // Kind/Tool/ToolUseID/IsError/Summary/Detail; the caller's emit fills in
 // IntentID/Worker. Returns the final assistant text + terminal error.
@@ -117,7 +117,7 @@ func captureRunSession(ctx context.Context, s *agentcore.Session, input string, 
 		case harness.KindUsage:
 			// live cumulative token usage (per model turn). Emitted as a non-rendered
 			// "usage" activity carrying only the token fields; the UI uses the latest
-			// one for a running session's live token count. Don't flush() here — the
+			// one for a running session's live token count. Don't flush() here â€” the
 			// buffered final-answer text must stay for the KindResult de-dup.
 			if ev.Usage != nil {
 				u := *ev.Usage
@@ -192,7 +192,7 @@ func firstLine(s string, max int) string {
 		s = before
 	}
 	if utf8.RuneCountInString(s) > max {
-		s = string([]rune(s)[:max]) + "…"
+		s = string([]rune(s)[:max]) + "â€¦"
 	}
 	return s
 }
@@ -220,3 +220,4 @@ func approvalHistory(messages []llm.Message) []db.InterceptContextEntry {
 	}
 	return entries
 }
+

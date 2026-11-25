@@ -1,17 +1,17 @@
 package agent
 
-// cold-digest §2/§3: pure graph algorithms for cold-node compression.
+// cold-digest Â§2/Â§3: pure graph algorithms for cold-node compression.
 //
 // This file is deliberately free of any DB or LLM dependency so the hot/cold
-// judgment, connectivity grouping (§3) and the same-parent singleton rescue
-// (§3.1) can be unit-tested in isolation. Callers translate db.Node/db.Edge into
+// judgment, connectivity grouping (Â§3) and the same-parent singleton rescue
+// (Â§3.1) can be unit-tested in isolation. Callers translate db.Node/db.Edge into
 // the light cgNode/cgEdge structs and feed the per-node bookkeeping (cold_since
 // stamps, content versions) alongside.
 //
 // Edge direction convention (matches db + agent/tools.go graphOverviewData):
-// every edge From→To means From is the parent/upstream and To the child/
-// downstream, for ALL relations (yields: intent→fact, derived_from/spawns:
-// parent→child). "Downstream" therefore follows From→To.
+// every edge Fromâ†’To means From is the parent/upstream and To the child/
+// downstream, for ALL relations (yields: intentâ†’fact, derived_from/spawns:
+// parentâ†’child). "Downstream" therefore follows Fromâ†’To.
 
 import (
 	"crypto/sha256"
@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // cgNode is the minimal node view the cold-graph algorithms need.
@@ -36,21 +36,21 @@ type cgEdge struct {
 	To   int64
 }
 
-// coldParams are the tunable thresholds (cold-digest §7).
+// coldParams are the tunable thresholds (cold-digest Â§7).
 type coldParams struct {
-	R int // debounce: a node must be continuously inactive ≥R planner rounds (§7 R=6)
-	K int // min block size to fold; K=2 skips only degenerate singletons (§7 K=2)
+	R int // debounce: a node must be continuously inactive â‰¥R planner rounds (Â§7 R=6)
+	K int // min block size to fold; K=2 skips only degenerate singletons (Â§7 K=2)
 }
 
 func defaultColdParams() coldParams { return coldParams{R: 6, K: 2} }
 
 // coldGraph is an in-memory adjacency view over real exploration edges. The
 // derived view layer (kind=digest nodes, rel=covers edges) is filtered out at
-// construction so it can never distort causal reachability or grouping (§2/§3).
+// construction so it can never distort causal reachability or grouping (Â§2/Â§3).
 type coldGraph struct {
 	nodes    map[int64]cgNode
-	children map[int64][]int64 // From → [To]   (downstream)
-	parents  map[int64][]int64 // To   → [From] (upstream)
+	children map[int64][]int64 // From â†’ [To]   (downstream)
+	parents  map[int64][]int64 // To   â†’ [From] (upstream)
 }
 
 func newColdGraph(nodes []cgNode, edges []cgEdge) *coldGraph {
@@ -63,7 +63,7 @@ func newColdGraph(nodes []cgNode, edges []cgEdge) *coldGraph {
 		g.nodes[n.ID] = n
 	}
 	for _, e := range edges {
-		if e.Rel == db.RelCovers { // derived view layer, not exploration causality (§2/§3)
+		if e.Rel == db.RelCovers { // derived view layer, not exploration causality (Â§2/Â§3)
 			continue
 		}
 		if _, ok := g.nodes[e.From]; !ok {
@@ -78,7 +78,7 @@ func newColdGraph(nodes []cgNode, edges []cgEdge) *coldGraph {
 	return g
 }
 
-// isLiveIntent reports whether a node is a not-yet-settled intent — the frontier
+// isLiveIntent reports whether a node is a not-yet-settled intent â€” the frontier
 // that keeps its ancestors hot. paused counts as live (it may still resume);
 // settled = done/blocked/exhausted/stopped.
 func isLiveIntent(n cgNode) bool {
@@ -92,11 +92,11 @@ func isLiveIntent(n cgNode) bool {
 	return false
 }
 
-// foldableKind reports whether a node kind is eligible for folding at all (§2:
+// foldableKind reports whether a node kind is eligible for folding at all (Â§2:
 // only fact and settled intent; finding/goal/hint/begin/digest never fold).
 func foldableKind(k string) bool { return k == db.KindIntent || k == db.KindFact }
 
-// hotSet computes the hot nodes (§2 rule 1+2): a node is hot iff it can reach a
+// hotSet computes the hot nodes (Â§2 rule 1+2): a node is hot iff it can reach a
 // live intent by going downstream (it is an ancestor of a live intent), OR it is
 // a live intent, OR it is a direct child of a live intent (rule 1: an open/
 // running intent's freshly produced facts stay hot). Everything else is cold-
@@ -131,8 +131,8 @@ func (g *coldGraph) hotSet() map[int64]bool {
 	return hot
 }
 
-// structuralCold is the set of foldable nodes that are currently not hot — i.e.
-// settled + blood-inactive (§2 rules 1+2), before the ≥R debounce is applied.
+// structuralCold is the set of foldable nodes that are currently not hot â€” i.e.
+// settled + blood-inactive (Â§2 rules 1+2), before the â‰¥R debounce is applied.
 func (g *coldGraph) structuralCold(hot map[int64]bool) map[int64]bool {
 	cold := map[int64]bool{}
 	for id, n := range g.nodes {
@@ -143,7 +143,7 @@ func (g *coldGraph) structuralCold(hot map[int64]bool) map[int64]bool {
 	return cold
 }
 
-// stampOp is one cold_since_round bookkeeping change (§2.3): Set=true stamps the
+// stampOp is one cold_since_round bookkeeping change (Â§2.3): Set=true stamps the
 // round a node went cold; Set=false clears the stamp (the node revived / turned
 // hot again).
 type stampOp struct {
@@ -153,10 +153,10 @@ type stampOp struct {
 }
 
 // computeStampOps derives the cold_since_round updates for this round. It stamps
-// a node the round it FIRST goes cold (empty→round_no) and clears the stamp when
-// it is no longer cold. It never re-stamps an already-stamped cold node — that is
-// what preserves "how long it has been cold" (§2.3: measure the round it turned
-// cold, not the round it last turned hot). coldSince maps node id → stamp (nil =
+// a node the round it FIRST goes cold (emptyâ†’round_no) and clears the stamp when
+// it is no longer cold. It never re-stamps an already-stamped cold node â€” that is
+// what preserves "how long it has been cold" (Â§2.3: measure the round it turned
+// cold, not the round it last turned hot). coldSince maps node id â†’ stamp (nil =
 // unstamped / hot).
 func computeStampOps(structCold map[int64]bool, coldSince map[int64]*int64, roundNo int64) []stampOp {
 	var ops []stampOp
@@ -178,7 +178,7 @@ func computeStampOps(structCold map[int64]bool, coldSince map[int64]*int64, roun
 }
 
 // eligibleCold narrows structuralCold to nodes that have been continuously cold
-// for ≥R rounds (§2.3 / §3②). A node with no stamp, or one that has not yet
+// for â‰¥R rounds (Â§2.3 / Â§3â‘¡). A node with no stamp, or one that has not yet
 // aged R rounds, is held in the hot region a while longer (bias to conservative).
 func (g *coldGraph) eligibleCold(structCold map[int64]bool, coldSince map[int64]*int64, roundNo int64, p coldParams) map[int64]bool {
 	out := map[int64]bool{}
@@ -191,25 +191,25 @@ func (g *coldGraph) eligibleCold(structCold map[int64]bool, coldSince map[int64]
 }
 
 // block is a group of cold nodes to fold into one digest, plus the external
-// parent nodes that anchor them (§3.1 "parent anchors, not members"): anchors are fed to the
+// parent nodes that anchor them (Â§3.1 "parent anchors, not members"): anchors are fed to the
 // compressor as context but never become members / never get a covers edge.
 type block struct {
 	Members []int64 // sorted; the nodes this digest covers
 	Anchors []int64 // sorted; external (non-member) parents, context only
 }
 
-// group partitions `set` into foldable blocks (§3 + §3.1). Two passes of
+// group partitions `set` into foldable blocks (Â§3 + Â§3.1). Two passes of
 // union-find:
 //
-//	rule ①  connect cold nodes joined by a real exploration edge (§3);
-//	rule ②  connect the LEFTOVER singletons that share a common direct parent
-//	        (§3.1 — rescues the "hot hub + flat dead leaves" fan-out), without
-//	        disturbing any already-formed ≥2 block.
+//	rule â‘   connect cold nodes joined by a real exploration edge (Â§3);
+//	rule â‘¡  connect the LEFTOVER singletons that share a common direct parent
+//	        (Â§3.1 â€” rescues the "hot hub + flat dead leaves" fan-out), without
+//	        disturbing any already-formed â‰¥2 block.
 //
-// Only components of size ≥K survive (§3① skips degenerate singletons).
+// Only components of size â‰¥K survive (Â§3â‘  skips degenerate singletons).
 func (g *coldGraph) group(set map[int64]bool, p coldParams) []block {
 	uf := newUnionFind(set)
-	// rule ①: real cold↔cold edges.
+	// rule â‘ : real coldâ†”cold edges.
 	for from := range set {
 		for _, to := range g.children[from] {
 			if set[to] {
@@ -217,12 +217,12 @@ func (g *coldGraph) group(set map[int64]bool, p coldParams) []block {
 			}
 		}
 	}
-	// rule ②: leftover singletons sharing a common parent.
+	// rule â‘¡: leftover singletons sharing a common parent.
 	comps := uf.components()
 	byParent := map[int64][]int64{}
 	for _, ids := range comps {
 		if len(ids) != 1 {
-			continue // only rescue singletons; never re-shuffle ≥2 blocks
+			continue // only rescue singletons; never re-shuffle â‰¥2 blocks
 		}
 		s := ids[0]
 		for _, par := range g.parents[s] {
@@ -234,7 +234,7 @@ func (g *coldGraph) group(set map[int64]bool, p coldParams) []block {
 	}
 	for _, sibs := range byParent {
 		if len(sibs) < 2 {
-			continue // a lone cold child under a parent stays a true singleton (§3①)
+			continue // a lone cold child under a parent stays a true singleton (Â§3â‘ )
 		}
 		for i := 1; i < len(sibs); i++ {
 			uf.union(sibs[0], sibs[i])
@@ -277,7 +277,7 @@ func (g *coldGraph) group(set map[int64]bool, p coldParams) []block {
 	return blocks
 }
 
-// blockSignature is the change-detection key (§5.3): a hash over the sorted
+// blockSignature is the change-detection key (Â§5.3): a hash over the sorted
 // member ids + each member's content_version, plus the anchor ids + versions
 // (so an anchor's summary/state change also invalidates the cached body). A
 // re-compaction whose block matches an existing active digest's signature
@@ -328,3 +328,4 @@ func (u *unionFind) components() map[int64][]int64 {
 	}
 	return out
 }
+

@@ -1,4 +1,4 @@
-# ARTEX `/btw`
+# cautiousmemory `/btw`
 
 Normal chat, the task MainAgent, and the current task's own Worker support independent side questions. Enter `/btw question` in the main input box to submit; an empty `/btw` or the "Side Question" button opens the history. Desktop uses an adjustable-width sidebar, and mobile uses a Drawer.
 
@@ -52,7 +52,7 @@ The following paths are used as `{parent}`, reusing the existing authentication 
 | Request | Response and Behavior |
 | --- | --- |
 | `GET {parent}/side-questions?before={ordinal}` | `items` ordered newest to oldest, an independent `current` running status, `snapshot` metadata, `next_cursor`; a cursor of 0 means the latest page / no next page |
-| `POST {parent}/side-questions` | JSON `{ "question": "…", "client_request_id": "UUID" }`; a new request returns 202 with the request object; the same ID and question return the existing object 200 |
+| `POST {parent}/side-questions` | JSON `{ "question": "â€¦", "client_request_id": "UUID" }`; a new request returns 202 with the request object; the same ID and question return the existing object 200 |
 | `DELETE {parent}/side-questions` | Cancels and clears the current parent session's side questions |
 | `GET /api/side-questions/{requestID}/events` | `snapshot` SSE event, with `id` as an incrementing ordinal and `data` as the complete cumulative request object; a `cleared` event is sent when clearing |
 | `POST /api/side-questions/{requestID}/cancel` | Explicit cancellation; the terminal state can be read from history or the SSE |
@@ -63,4 +63,5 @@ The question limit is 4000 characters. No snapshot, model configuration changes,
 
 Automated checks, real model usage, and known limitations are described in [VALIDATION.md](VALIDATION.md).
 
-For independent request references see [Grok CLI side-question.ts (fixed commit)](https://github.com/superagent-ai/grok-cli/blob/fb97af83f06dca873281d60168430f06c8de6324/src/utils/side-question.ts), and for run isolation see [OpenCode (fixed commit)](https://github.com/anomalyco/opencode/tree/b3f1a96c6dd7adeb28b36dd11add1998fc84d67b). ARTEX's context uses norma's structured messages and does not adopt the approach of concatenating text from frontend logs.
+For independent request references see [Grok CLI side-question.ts (fixed commit)](https://github.com/superagent-ai/grok-cli/blob/fb97af83f06dca873281d60168430f06c8de6324/src/utils/side-question.ts), and for run isolation see [OpenCode (fixed commit)](https://github.com/anomalyco/opencode/tree/b3f1a96c6dd7adeb28b36dd11add1998fc84d67b). cautiousmemory's context uses norma's structured messages and does not adopt the approach of concatenating text from frontend logs.
+

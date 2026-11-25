@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
@@ -31,9 +31,9 @@ func (s *Server) isHistoricalFindingReview(conv int64) (bool, error) {
 
 func (s *Server) toolCompleteFindingCaseReview() actool.CoreTool {
 	decision := objSchema(map[string]any{
-		"finding_id":          idParam("所选独立漏洞记录 ID"),
+		"finding_id":          idParam("æ‰€é€‰ç‹¬ç«‹æ¼æ´žè®°å½• ID"),
 		"verdict":             map[string]any{"type": "string", "enum": []string{"independent", "merged", "suggested"}},
-		"reason":              strParam("判断理由，引用已证据化的共同点或不同代码路径；仅类型、标题或资产相同不足以证明共同根因"),
+		"reason":              strParam("åˆ¤æ–­ç†ç”±ï¼Œå¼•ç”¨å·²è¯æ®åŒ–çš„å…±åŒç‚¹æˆ–ä¸åŒä»£ç è·¯å¾„ï¼›ä»…ç±»åž‹ã€æ ‡é¢˜æˆ–èµ„äº§ç›¸åŒä¸è¶³ä»¥è¯æ˜Žå…±åŒæ ¹å› "),
 		"root_cause_evidence": strParam("Specific evidence from the original report or evidence supporting the same or different root cause. For suggested, explain the specific commonality, missing key evidence, and saved group. Mark as independent when there is no specific commonality.")}, "finding_id", "verdict", "reason", "root_cause_evidence")
 	return wrTool("complete_finding_case_review", "Before finishing the review, submit and validate a root-cause decision for every selected record. All records must have been read; suspected duplicates must already have a pending group suggestion. Merges only need to exist in the active folder; the unified report can be completed later. Do not report completion if validation fails.", objSchema(map[string]any{"summary": strParam("Summary of the review results"), "decisions": map[string]any{"type": "array", "items": decision}}, "summary", "decisions"), func(ctx context.Context, raw json.RawMessage) (actool.Result, error) {
 		var a findingReviewConclusion
@@ -44,7 +44,7 @@ func (s *Server) toolCompleteFindingCaseReview() actool.CoreTool {
 		if err := s.saveFindingReviewConclusion(ctx, conv, a); err != nil {
 			return actool.Errorf(err.Error()), nil
 		}
-		return actool.Text("历史整理验收通过；原始记录和报告保留，逐条根因判断已保存。"), nil
+		return actool.Text("åŽ†å²æ•´ç†éªŒæ”¶é€šè¿‡ï¼›åŽŸå§‹è®°å½•å’ŒæŠ¥å‘Šä¿ç•™ï¼Œé€æ¡æ ¹å› åˆ¤æ–­å·²ä¿å­˜ã€‚"), nil
 	})
 }
 
@@ -154,8 +154,8 @@ func (s *Server) validateFindingReviewCompletion(conv int64) error {
 // Require substantive sections and balanced fenced blocks. This validates report
 // completeness, not the truth of a model's root-cause claim or a live exploit.
 func validateUnifiedFindingReport(report string) error {
-	aliases := [][]string{{"概述", "overview", "summary"}, {"影响", "impact"}, {"前置", "prerequisite", "precondition"}, {"复现", "reproduction", "reproduce"}, {"证据", "evidence"}, {"poc", "完整脚本", "验证脚本", "proof of concept"}, {"根因", "root cause"}, {"修复", "remediation", "recommendation", "fix"}}
-	names := []string{"概述", "影响", "前置条件", "复现步骤", "证据", "PoC", "根因分析", "修复建议"}
+	aliases := [][]string{{"æ¦‚è¿°", "overview", "summary"}, {"å½±å“", "impact"}, {"å‰ç½®", "prerequisite", "precondition"}, {"å¤çŽ°", "reproduction", "reproduce"}, {"è¯æ®", "evidence"}, {"poc", "å®Œæ•´è„šæœ¬", "éªŒè¯è„šæœ¬", "proof of concept"}, {"æ ¹å› ", "root cause"}, {"ä¿®å¤", "remediation", "recommendation", "fix"}}
+	names := []string{"æ¦‚è¿°", "å½±å“", "å‰ç½®æ¡ä»¶", "å¤çŽ°æ­¥éª¤", "è¯æ®", "PoC", "æ ¹å› åˆ†æž", "ä¿®å¤å»ºè®®"}
 	found := make([]bool, len(aliases))
 	current := -1
 	hasContent := false
@@ -223,7 +223,7 @@ func validateUnifiedFindingReport(report string) error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("Unified report missing content sections: %s; please complete and save", strings.Join(missing, "、"))
+		return fmt.Errorf("Unified report missing content sections: %s; please complete and save", strings.Join(missing, "ã€"))
 	}
 	return nil
 }
@@ -245,3 +245,4 @@ func (s *Server) historicalFindingReviewSelection(ctx context.Context) ([]int64,
 	err = json.Unmarshal(raw, &ids)
 	return ids, err
 }
+

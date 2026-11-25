@@ -10,14 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestCompanyScopeInputsAcceptStructuredAndLegacyRules(t *testing.T) {
 	var inputs companyScopeInputs
 	if err := json.Unmarshal([]byte(`[
 		"example.com",
-		{"kind":"icp","value":"京 ICP备 123号"},
+		{"kind":"icp","value":"äº¬ ICPå¤‡ 123å·"},
 		{"kind":"keyword","value":"Acme Security"}
 	]`), &inputs); err != nil {
 		t.Fatal(err)
@@ -137,7 +137,7 @@ func TestCompanyScopeHTTPErrorClassificationAndBounds(t *testing.T) {
 		body, err := json.Marshal(map[string]any{
 			"name": "Oversized Scope",
 			"scope": []map[string]string{{
-				"kind": "keyword", "value": strings.Repeat("界", db.MaxCompanyScopeRawRunes+1),
+				"kind": "keyword", "value": strings.Repeat("ç•Œ", db.MaxCompanyScopeRawRunes+1),
 			}},
 		})
 		if err != nil {
@@ -272,3 +272,4 @@ func TestCompanyScopeSystemFailureIsHTTP500(t *testing.T) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }
+

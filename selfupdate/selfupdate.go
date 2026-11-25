@@ -1,4 +1,4 @@
-// Package selfupdate implements in-app one-click updates for ARTEX: it fetches a new
+﻿// Package selfupdate implements in-app one-click updates for CAUTIOUSMEMORY: it fetches a new
 // binary from a GitHub Release, verifies and stages it, then atomically swaps it in on
 // the next startup.
 //
@@ -17,13 +17,13 @@
 //
 // A complete upgrade spans three process starts:
 //
-//	① old server receives /api/update/apply -> download/verify -> stage artex.new -> exit 75
-//	② script relaunches the old version -> Bootstrap finds artex.new -> verify/smoke -> swap -> exit 75
-//	③ script relaunches, now running the new version -> Bootstrap records one attempt -> clears the marker after a stable startup
+//	â‘  old server receives /api/update/apply -> download/verify -> stage CAUTIOUSMEMORY.new -> exit 75
+//	â‘¡ script relaunches the old version -> Bootstrap finds CAUTIOUSMEMORY.new -> verify/smoke -> swap -> exit 75
+//	â‘¢ script relaunches, now running the new version -> Bootstrap records one attempt -> clears the marker after a stable startup
 //
-// Any step that fails falls back to the old version: if ② fails validation the staged
-// artifact is deleted and the old version keeps running; if ③ never reaches marker
-// clearing (it crashes before then) for 3 consecutive attempts, artex.old is swapped back
+// Any step that fails falls back to the old version: if â‘¡ fails validation the staged
+// artifact is deleted and the old version keeps running; if â‘¢ never reaches marker
+// clearing (it crashes before then) for 3 consecutive attempts, CAUTIOUSMEMORY.old is swapped back
 // automatically.
 package selfupdate
 
@@ -53,11 +53,11 @@ const maxAttempts = 3
 // any other path, which would place staged artifacts elsewhere and break the swap logic.
 type Paths struct {
 	Dir     string // directory containing the executable
-	Current string // currently running binary        artex      / artex.exe
-	New     string // staged new version              artex.new  / artex.new.exe
-	Sum     string // sha256 (hex) of the new version artex.new.sha256 / artex.new.exe.sha256
-	Old     string // backup of the old version       artex.old  / artex.old.exe
-	Marker  string // upgrade state marker            artex.upgrade.json
+	Current string // currently running binary        CAUTIOUSMEMORY      / CAUTIOUSMEMORY.exe
+	New     string // staged new version              CAUTIOUSMEMORY.new  / CAUTIOUSMEMORY.new.exe
+	Sum     string // sha256 (hex) of the new version CAUTIOUSMEMORY.new.sha256 / CAUTIOUSMEMORY.new.exe.sha256
+	Old     string // backup of the old version       CAUTIOUSMEMORY.old  / CAUTIOUSMEMORY.old.exe
+	Marker  string // upgrade state marker            CAUTIOUSMEMORY.upgrade.json
 }
 
 // ResolvePaths derives all upgrade paths from the current executable.
@@ -119,7 +119,7 @@ func writeMarker(path string, m marker) error {
 }
 
 // cleanStaged removes staged artifacts. Used after a successful swap, failed validation,
-// or user cancellation to prevent a leftover artex.new from being retried on the next start.
+// or user cancellation to prevent a leftover CAUTIOUSMEMORY.new from being retried on the next start.
 func cleanStaged(p Paths) {
 	_ = os.Remove(p.New)
 	_ = os.Remove(p.Sum)
@@ -189,3 +189,4 @@ func InDocker() bool {
 	s := string(b)
 	return strings.Contains(s, "docker") || strings.Contains(s, "containerd")
 }
+

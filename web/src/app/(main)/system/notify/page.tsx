@@ -311,7 +311,7 @@ export default function NotifyPage() {
             <Label htmlFor="n-base">Callback address</Label>
             <Input
               id="n-base"
-              placeholder="https://artex.example.com"
+              placeholder="https://CAUTIOUSMEMORY.example.com"
               value={baseURL}
               onChange={(e) => setBaseURL(e.target.value)}
             />

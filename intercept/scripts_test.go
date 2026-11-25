@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	_ "modernc.org/sqlite"
 )
 
@@ -211,3 +211,4 @@ func TestCommandGeneratedScriptSnapshots(t *testing.T) {
 		t.Fatal("snapshot capture executed a file creation")
 	}
 }
+

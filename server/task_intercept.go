@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // Task-level asset intercept/allow rule CRUD. Rules are scoped to task_id and apply
@@ -188,3 +188,4 @@ func (s *Server) taskInterceptToggleRule(w http.ResponseWriter, r *http.Request)
 	}
 	writeJSON(w, 200, map[string]any{"ok": true, "enabled": req.Enabled})
 }
+

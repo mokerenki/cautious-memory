@@ -1,4 +1,4 @@
-package selfupdate
+﻿package selfupdate
 
 import (
 	"archive/zip"
@@ -38,7 +38,7 @@ const (
 type Progress func(ph Phase, pct int, msg string)
 
 // Stage downloads the release package for the current platform for the given Release,
-// verifies it, and stages the new binary as artex.new.
+// verifies it, and stages the new binary as CAUTIOUSMEMORY.new.
 //
 // The full zip is used instead of a bare binary for two reasons: the existing Release
 // SHA256SUMS already only covers zips, so using zips requires no CI changes and remains
@@ -70,7 +70,7 @@ func stageAt(ctx context.Context, c *http.Client, rel *Release, currentVersion s
 		return fmt.Errorf("this release does not provide a package for %s/%s (missing %s)", runtime.GOOS, runtime.GOARCH, name)
 	}
 
-	prog(PhaseDownload, 0, "Fetching checksum manifest…")
+	prog(PhaseDownload, 0, "Fetching checksum manifestâ€¦")
 	sums, err := fetchSums(ctx, c, rel)
 	if err != nil {
 		return err
@@ -90,18 +90,18 @@ func stageAt(ctx context.Context, c *http.Client, rel *Release, currentVersion s
 		_ = os.Remove(binPath)
 	}()
 
-	prog(PhaseDownload, 0, fmt.Sprintf("Downloading %s (%s)…", name, humanSize(asset.Size)))
+	prog(PhaseDownload, 0, fmt.Sprintf("Downloading %s (%s)â€¦", name, humanSize(asset.Size)))
 	got, err := download(ctx, c, asset, zipPath, prog)
 	if err != nil {
 		return err
 	}
 
-	prog(PhaseVerify, -1, "Verifying SHA256…")
+	prog(PhaseVerify, -1, "Verifying SHA256â€¦")
 	if !strings.EqualFold(got, want) {
 		return fmt.Errorf("SHA256 mismatch: expected %s, got %s (download corrupted or tampered)", short(want), short(got))
 	}
 
-	prog(PhaseExtract, -1, "Extracting and smoke testing…")
+	prog(PhaseExtract, -1, "Extracting and smoke testingâ€¦")
 	if err := extractBinary(zipPath, binPath); err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func stageAt(ctx context.Context, c *http.Client, rel *Release, currentVersion s
 		prog(PhaseStaged, -1, "Warning: failed to write upgrade marker; this upgrade will have no automatic rollback protection")
 	}
 
-	prog(PhaseStaged, 100, "New version is ready, restarting…")
+	prog(PhaseStaged, 100, "New version is ready, restartingâ€¦")
 	return nil
 }
 
@@ -236,7 +236,7 @@ func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, err
 	if err := checkURL(req.URL); err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", "artex-selfupdate")
+	req.Header.Set("User-Agent", "CAUTIOUSMEMORY-selfupdate")
 	resp, err := c.Do(req)
 	if err != nil {
 		return nil, err
@@ -248,16 +248,16 @@ func get(ctx context.Context, c *http.Client, rawURL string) (io.ReadCloser, err
 	return resp.Body, nil
 }
 
-// extractBinary extracts the artex executable from the release package.
+// extractBinary extracts the CAUTIOUSMEMORY executable from the release package.
 //
-// The package layout is artex-<version>-<os>-<arch>/artex, but matching is done by base
+// The package layout is CAUTIOUSMEMORY-<version>-<os>-<arch>/CAUTIOUSMEMORY, but matching is done by base
 // name rather than the full path: the version appears once in the package name, and a
 // single-character mismatch would break the entire upgrade. Matching by base name is more
 // resilient to changes.
 func extractBinary(zipPath, dst string) error {
-	want := "artex"
+	want := "CAUTIOUSMEMORY"
 	if runtime.GOOS == "windows" {
-		want = "artex.exe"
+		want = "CAUTIOUSMEMORY.exe"
 	}
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
@@ -300,7 +300,7 @@ func extractBinary(zipPath, dst string) error {
 // running as non-root or placing the binary in a system directory would only fail at the
 // swap step after downloading tens of megabytes.
 func checkWritable(dir string) error {
-	probe, err := os.CreateTemp(dir, ".artex-update-probe-*")
+	probe, err := os.CreateTemp(dir, ".CAUTIOUSMEMORY-update-probe-*")
 	if err != nil {
 		return fmt.Errorf("program directory %s is not writable; cannot auto-update (check permissions or use manual upgrade): %w", dir, err)
 	}
@@ -349,7 +349,8 @@ func humanSize(n int64) string {
 
 func short(sum string) string {
 	if len(sum) > 12 {
-		return sum[:12] + "…"
+		return sum[:12] + "â€¦"
 	}
 	return sum
 }
+

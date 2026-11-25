@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ const (
 	repeaterDefaultTimeout = 30_000
 	repeaterMinTimeout     = 1_000
 	repeaterMaxTimeout     = 120_000
-	repeaterAllowLocalEnv  = "ARTEX_REPEATER_ALLOW_LOCAL"
+	repeaterAllowLocalEnv  = "CAUTIOUSMEMORY_REPEATER_ALLOW_LOCAL"
 )
 
 var repeaterHopByHop = map[string]struct{}{
@@ -191,7 +191,7 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 				return err
 			}
 			if len(via) > 0 && !strings.EqualFold(next.URL.Host, via[0].URL.Host) {
-				return fmt.Errorf("Rejected cross-host redirect (%s → %s)", via[0].URL.Host, next.URL.Host)
+				return fmt.Errorf("Rejected cross-host redirect (%s â†’ %s)", via[0].URL.Host, next.URL.Host)
 			}
 			return nil
 		},
@@ -238,8 +238,8 @@ func (s *Server) sendRepeater(w http.ResponseWriter, r *http.Request) {
 // characters into the JSON/UI raw view; the original bytes are not base64
 // encoded and the preview remains bounded by repeaterMaxBody.
 func repeaterBodyText(data []byte) string {
-	text := string(bytes.ToValidUTF8(data, []byte("�")))
-	return strings.ReplaceAll(text, "\x00", "�")
+	text := string(bytes.ToValidUTF8(data, []byte("ï¿½")))
+	return strings.ReplaceAll(text, "\x00", "ï¿½")
 }
 
 func (s *Server) repeaterTransport(useRecordingProxy, insecure bool) http.RoundTripper {
@@ -443,3 +443,4 @@ func repeaterRedactError(err error) string {
 	}
 	return err.Error()
 }
+

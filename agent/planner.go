@@ -7,8 +7,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	"github.com/Autumn-27/norma/agentcore"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/permission"
@@ -16,7 +16,7 @@ import (
 	"github.com/Autumn-27/norma/transcript"
 )
 
-// Planner is the event-driven LLM planner (docs §4.3): each time the asset or
+// Planner is the event-driven LLM planner (docs Â§4.3): each time the asset or
 // exploration graph changes (debounced), it reads the exploration route, queries
 // assets, judges whether the task goal is met, and emits 0..N exploration intents
 // into the frontier. It is the sole intent generator.
@@ -39,10 +39,10 @@ type Planner struct {
 	nonStreamingFn    func() bool   // resolver: use non-streaming (Complete) path? (nil = streaming)
 	noaEnabledFn      func() bool   // resolver: use experimental noa compaction? (nil = off)
 	maxTokensFn       func() int    // resolver: per-reply output cap (nil/0 = send no cap)
-	compactor         *Compactor    // cold-node compaction (§7); nil = disabled
+	compactor         *Compactor    // cold-node compaction (Â§7); nil = disabled
 
 	// todos keeps ONE plan-scratchpad per task (keyed by exploration id) so the
-	// planner's multi-step plan survives across wake-ups — each Plan() is a fresh
+	// planner's multi-step plan survives across wake-ups â€” each Plan() is a fresh
 	// session, but the shared store lets it record a serial exploit chain once and
 	// dispatch it step-by-step over rounds instead of front-loading it in parallel.
 	todoMu sync.Mutex
@@ -55,7 +55,7 @@ func NewPlanner(prov llm.Provider, model, workDir string, tx *transcript.Store, 
 
 func (p *Planner) SetCompactionWindowResolver(fn func() int) { p.windowFn = fn }
 
-// SetCompactor wires the cold-node compactor (cold-digest §7). Called each
+// SetCompactor wires the cold-node compactor (cold-digest Â§7). Called each
 // planner wake-up to advance the round counter, maintain cold stamps, and
 // (off the hot path) fold cold nodes into digests. nil = feature disabled.
 func (p *Planner) SetCompactor(c *Compactor) { p.compactor = c }
@@ -127,7 +127,7 @@ func (p *Planner) SetKillWork(fn func(intentID int64) error) { p.killWork = fn }
 func (p *Planner) SetSteerWork(fn func(intentID int64, msg string) error) { p.steerWork = fn }
 
 // renderPlannerTodos formats the persistent planning todo for injection into the
-// wake-up prompt (empty when there are no todos yet — first wake-up).
+// wake-up prompt (empty when there are no todos yet â€” first wake-up).
 func renderPlannerTodos(items []actool.Todo) string {
 	if len(items) == 0 {
 		return ""
@@ -135,9 +135,9 @@ func renderPlannerTodos(items []actool.Todo) string {
 	var b strings.Builder
 	b.WriteString("\n\n[Your planning todos (retained across wake-ups, written by you in the last round)]:\n")
 	for _, it := range items {
-		mark := map[actool.TodoStatus]string{actool.TodoPending: "☐", actool.TodoInProgress: "▶", actool.TodoCompleted: "✔"}[it.Status]
+		mark := map[actool.TodoStatus]string{actool.TodoPending: "â˜", actool.TodoInProgress: "â–¶", actool.TodoCompleted: "âœ”"}[it.Status]
 		if mark == "" {
-			mark = "☐"
+			mark = "â˜"
 		}
 		b.WriteString(fmt.Sprintf("  %s %s\n", mark, it.Content))
 	}
@@ -149,13 +149,13 @@ func renderPlannerTodos(items []actool.Todo) string {
 // the planner looks first at the actual change instead of re-scanning the whole
 // overview. Kind:
 //
-//	"done"    — a worker finished intent IntentID (its output conclusion is fetched).
-//	"finding" — a worker reported a finding on intent IntentID (Detail = summary).
-//	"goal"    — the human (via main agent's set_goals) added one OR MORE goals in a
+//	"done"    â€” a worker finished intent IntentID (its output conclusion is fetched).
+//	"finding" â€” a worker reported a finding on intent IntentID (Detail = summary).
+//	"goal"    â€” the human (via main agent's set_goals) added one OR MORE goals in a
 //	            single call (Goals = newly added goal text for this call, 1+ items; set_goals supports batch).
-//	"goal_deleted" — the human deleted a goal from the overview goal management (Detail = deleted goal text).
-//	"goal_edited"  — the human edited a goal from the overview goal management (OldGoal→NewGoal text).
-//	"cancelled" — the human deleted intent IntentID (Detail = deletion reason). The intent is
+//	"goal_deleted" â€” the human deleted a goal from the overview goal management (Detail = deleted goal text).
+//	"goal_edited"  â€” the human edited a goal from the overview goal management (OldGoalâ†’NewGoal text).
+//	"cancelled" â€” the human deleted intent IntentID (Detail = deletion reason). The intent is
 //	            stopped (not deleted) and the reason is attached to it as a fact.
 type TriggerEvent struct {
 	Kind     string
@@ -169,7 +169,7 @@ type TriggerEvent struct {
 }
 
 // renderTriggers spells out the change(s) that fired this round: for a finished
-// worker — which intent + its output conclusion; for a finding — which intent +
+// worker â€” which intent + its output conclusion; for a finding â€” which intent +
 // what was found. Empty for time/heartbeat wakes. Reads the store (best-effort;
 // a blank field never blocks the round).
 func renderTriggers(ts *db.ExplorationStore, evs []TriggerEvent) string {
@@ -182,20 +182,20 @@ func renderTriggers(ts *db.ExplorationStore, evs []TriggerEvent) string {
 		switch ev.Kind {
 		case "goal":
 			if len(ev.Goals) == 1 {
-				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one goal: %s —— new goal to achieve, please add exploration directions accordingly (if no corresponding intent yet).", ev.Goals[0]))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one goal: %s â€”â€” new goal to achieve, please add exploration directions accordingly (if no corresponding intent yet).", ev.Goals[0]))
 			} else {
-				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d goals: %s —— all are new goals to achieve, please add exploration directions one by one for goals without corresponding intents yet.", len(ev.Goals), strings.Join(ev.Goals, "; ")))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d goals: %s â€”â€” all are new goals to achieve, please add exploration directions one by one for goals without corresponding intents yet.", len(ev.Goals), strings.Join(ev.Goals, "; ")))
 			}
 		case "hint":
 			if len(ev.Hints) == 1 {
-				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one strategic hint: %s —— already attached to the exploration graph, please adjust/add exploration directions accordingly (if no corresponding intent yet).", ev.Hints[0]))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added one strategic hint: %s â€”â€” already attached to the exploration graph, please adjust/add exploration directions accordingly (if no corresponding intent yet).", ev.Hints[0]))
 			} else {
-				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d strategic hints: %s —— all already attached to the exploration graph, please adjust/add exploration directions one by one accordingly.", len(ev.Hints), strings.Join(ev.Hints, "; ")))
+				b.WriteString(fmt.Sprintf("\n- Human (main agent) added %d strategic hints: %s â€”â€” all already attached to the exploration graph, please adjust/add exploration directions one by one accordingly.", len(ev.Hints), strings.Join(ev.Hints, "; ")))
 			}
 		case "goal_deleted":
-			b.WriteString(fmt.Sprintf("\n- Human deleted this goal: %s —— this goal has been removed, please re-judge remaining goals/directions accordingly (no need to dispatch intents for it).", ev.Detail))
+			b.WriteString(fmt.Sprintf("\n- Human deleted this goal: %s â€”â€” this goal has been removed, please re-judge remaining goals/directions accordingly (no need to dispatch intents for it).", ev.Detail))
 		case "goal_edited":
-			b.WriteString(fmt.Sprintf("\n- Human edited the goal, from「%s」to「%s」—— please adjust exploration directions according to the new goal (if the original direction no longer applies, stop dispatching).", ev.OldGoal, ev.NewGoal))
+			b.WriteString(fmt.Sprintf("\n- Human edited the goal, fromã€Œ%sã€toã€Œ%sã€â€”â€” please adjust exploration directions according to the new goal (if the original direction no longer applies, stop dispatching).", ev.OldGoal, ev.NewGoal))
 		case "finding":
 			b.WriteString(fmt.Sprintf("\n- Worker of intent #%d (%s) reported a finding: %s", ev.IntentID, intentSummary(ts, ev.IntentID), ev.Detail))
 		case "cancelled":
@@ -216,7 +216,7 @@ func renderTriggers(ts *db.ExplorationStore, evs []TriggerEvent) string {
 	return b.String()
 }
 
-// factIDsYielded lists the fact ids an intent produced this run as "#12、#15", so the
+// factIDsYielded lists the fact ids an intent produced this run as "#12ã€#15", so the
 // planner can jump straight to the round's incremental facts. Empty (best-effort) when
 // the intent yielded no facts or the lookup fails.
 func factIDsYielded(ts *db.ExplorationStore, id int64) string {
@@ -228,7 +228,7 @@ func factIDsYielded(ts *db.ExplorationStore, id int64) string {
 	for i, fid := range ids {
 		parts[i] = fmt.Sprintf("#%d", fid)
 	}
-	return strings.Join(parts, "、")
+	return strings.Join(parts, "ã€")
 }
 
 // intentSummary reads an intent node's one-line summary (best-effort, "?" on miss).
@@ -246,7 +246,7 @@ func intentSummary(ts *db.ExplorationStore, id int64) string {
 	return "?"
 }
 
-// workerOutput returns the finished worker's conclusion for an intent — the last
+// workerOutput returns the finished worker's conclusion for an intent â€” the last
 // 'result' (else 'text') activity's full detail, truncated. Same source get_worker_output uses.
 func workerOutput(ts *db.ExplorationStore, id int64) string {
 	acts, _, err := ts.ActivityList(&id, 0, 1000)
@@ -278,14 +278,14 @@ func truncOutput(s string, n int) string {
 	if len(r) <= n {
 		return s
 	}
-	return string(r[:n]) + " … (truncated, full text see get_worker_output)"
+	return string(r[:n]) + " â€¦ (truncated, full text see get_worker_output)"
 }
 
 // renderGraphOverview folds the pre-computed graph_overview snapshot into the
 // wake-up prompt so the planner starts each round with the full situation in
-// hand — saving the round-trip it would otherwise spend calling the tool. It is
+// hand â€” saving the round-trip it would otherwise spend calling the tool. It is
 // the exact same JSON graph_overview would return; deeper detail is still one
-// tool call away (node_detail / list_facts / …).
+// tool call away (node_detail / list_facts / â€¦).
 func renderGraphOverview(data map[string]any) string {
 	b, err := json.Marshal(data)
 	if err != nil {
@@ -297,47 +297,47 @@ func renderGraphOverview(data map[string]any) string {
 // plannerDefaultTmpl is the built-in EDITABLE body (section [A]) of the planner prompt,
 // seeded into agent_prompts. Goal is a {{.Goal}} template var; the intermediate artifact
 // output spec tail is code-owned (artifactSpec) and appended by plannerSystem after rendering.
-const plannerDefaultTmpl = `You are the "planner" of an authorized penetration testing system on a security platform, frequently woken up (woken whenever the graph changes). Responsibility: read situation → judge goals → **only add exploration intents when confirmed new uncovered directions exist**. You are the planner, not the executor: this round's outputs can only be [generate/explain intents] or [judge goals], absolutely do not do the work in the plan.
+const plannerDefaultTmpl = `You are the "planner" of an authorized penetration testing system on a security platform, frequently woken up (woken whenever the graph changes). Responsibility: read situation â†’ judge goals â†’ **only add exploration intents when confirmed new uncovered directions exist**. You are the planner, not the executor: this round's outputs can only be [generate/explain intents] or [judge goals], absolutely do not do the work in the plan.
 
 Task goal: {{.Goal}}
 
 **How many intents should this round produce (think this through first)**:
-- **Hard bottom line (highest priority)**: as long as [goal not yet achieved] AND [currently no open or running intents] (frontier_open=0 and running_intents empty), this round [must] produce at least one intent advancing toward the goal—when there's no work running to wait for and no queued direction, producing 0 intents = task stalled; even if known directions are only in recent_done, still open a new one or re-dispatch one based on the done/exhausted/blocked judgment below.
-- Outside the hard bottom line, **producing 0 intents is a normal result, but must have a valid reason** (not a default of "fewer is safer"): ① **Already covered**—directions you think of are all being handled by existing open/running intents (rewording to regenerate already-existing intents is a serious error); ② **Waiting on dependency**—the next step depends on output from work currently running, but it hasn't come out yet (hard dispatching at this point would leave downstream with nothing to work on, idle; wait until the next wake-up after the graph updates before dispatching).
-- Conversely: when there's definitely a [new uncovered direction not depending on running work], or the goal is not yet achieved and there's still untested surface within scope, you should dispatch—don't treat 0 intents as a default of laziness.
+- **Hard bottom line (highest priority)**: as long as [goal not yet achieved] AND [currently no open or running intents] (frontier_open=0 and running_intents empty), this round [must] produce at least one intent advancing toward the goalâ€”when there's no work running to wait for and no queued direction, producing 0 intents = task stalled; even if known directions are only in recent_done, still open a new one or re-dispatch one based on the done/exhausted/blocked judgment below.
+- Outside the hard bottom line, **producing 0 intents is a normal result, but must have a valid reason** (not a default of "fewer is safer"): â‘  **Already covered**â€”directions you think of are all being handled by existing open/running intents (rewording to regenerate already-existing intents is a serious error); â‘¡ **Waiting on dependency**â€”the next step depends on output from work currently running, but it hasn't come out yet (hard dispatching at this point would leave downstream with nothing to work on, idle; wait until the next wake-up after the graph updates before dispatching).
+- Conversely: when there's definitely a [new uncovered direction not depending on running work], or the goal is not yet achieved and there's still untested surface within scope, you should dispatchâ€”don't treat 0 intents as a default of laziness.
 
 **Decision process for each wake-up**:
 
 1. **The full situation is already attached below this prompt** (it's the graph_overview return, no need to call it): task (original title + goal/root node), asset counts, goals + status, open/running/recent_done intents, sites_without_endpoints (sites without endpoints, hinting at possibly unexplored directions), facts (count of exploration facts, distinct from findings), recent_facts ({id, summary, confidence?}).
-   - **Scope**: exploration nodes (goals/intents/facts/findings) contain only this task; **assets are isolated by task by default** (only this task and explicitly associated tasks; after the user enables "share global assets", can query the whole library)—ignore assets not related to this task when they appear.
+   - **Scope**: exploration nodes (goals/intents/facts/findings) contain only this task; **assets are isolated by task by default** (only this task and explicitly associated tasks; after the user enables "share global assets", can query the whole library)â€”ignore assets not related to this task when they appear.
    - **Lineage**: each intent carries parents (upstream: which facts/intents it derives from) and yields (downstream: which facts/findings it produced), each recent_fact carries from_intent; use this to understand "which facts come from which direction, can new directions be synthesized".
-   - **Negative/doubtful observations** ("port closed / not injectable" etc. in recent_facts) are worker observations, not conclusions: before accepting, first check node_detail(id) for evidence—only when evidence is solid, confidence=observed, and methods exhausted, is that direction considered temporarily closed; missing evidence, just "looks like / only probed once", or confidence=inferred, treat as [not yet explored]; if within scope and no other intent covers it, default to dispatching a verification intent to confirm or refute (**at most one re-check per negative direction**); after re-check still negative and evidence reasonable, respect that conclusion, don't dispatch again.
+   - **Negative/doubtful observations** ("port closed / not injectable" etc. in recent_facts) are worker observations, not conclusions: before accepting, first check node_detail(id) for evidenceâ€”only when evidence is solid, confidence=observed, and methods exhausted, is that direction considered temporarily closed; missing evidence, just "looks like / only probed once", or confidence=inferred, treat as [not yet explored]; if within scope and no other intent covers it, default to dispatching a verification intent to confirm or refute (**at most one re-check per negative direction**); after re-check still negative and evidence reasonable, respect that conclusion, don't dispatch again.
    - **Call for deeper details only when needed**: list_facts (paginated, newest first, default 20, q filterable, before pagination, with total/has_more), list_findings (all findings), node_detail(id) (full evidence/details; list/recent_facts only give summaries), list_assets (pull: q search, type/company_id/task_id filter, pagination, or id/ids direct lookup), asset_neighbors. Whether assets are shared is decided by user settings, cannot be enabled on your own; sharing does not mean expanding testing authorization.
 
-2. **Judge goals (core responsibility)**: the goals field already contains goals and status; for unachieved goals already proven by a discovery/fact, call prove_goal(goal_id, evidence_id, reason) to mark met.**When you mark the last uncompleted goal, the system automatically determines the entire task is complete**—finalization is driven only by prove_goal one by one, there is no other "one-click complete" method.
-   - ⚠️ **Quantitative acceptance check (strictly prohibit premature sealing)**: when the goal contains quantifiable conditions (coverage reaches X%, reaches a specified count, obtains a certain permission), [must] verify the actual measured values in graph_overview above (coverage.pct, findings_total count, etc.) before prove_goal: if not met, [prohibit] prove_goal, instead dispatch an intent to make up the difference; do not mark met prematurely on grounds of "basically achieved / core already obtained". Example: requires 100% coverage but actual measured coverage.pct=40% → not achieved, continue dispatching supplementary testing intents.
+2. **Judge goals (core responsibility)**: the goals field already contains goals and status; for unachieved goals already proven by a discovery/fact, call prove_goal(goal_id, evidence_id, reason) to mark met.**When you mark the last uncompleted goal, the system automatically determines the entire task is complete**â€”finalization is driven only by prove_goal one by one, there is no other "one-click complete" method.
+   - âš ï¸ **Quantitative acceptance check (strictly prohibit premature sealing)**: when the goal contains quantifiable conditions (coverage reaches X%, reaches a specified count, obtains a certain permission), [must] verify the actual measured values in graph_overview above (coverage.pct, findings_total count, etc.) before prove_goal: if not met, [prohibit] prove_goal, instead dispatch an intent to make up the difference; do not mark met prematurely on grounds of "basically achieved / core already obtained". Example: requires 100% coverage but actual measured coverage.pct=40% â†’ not achieved, continue dispatching supplementary testing intents.
 
-3. **(Optional, opening only, very light) Probe understanding**: only when there are almost no facts in the graph (recent_facts basically empty, task just started), and the situation alone cannot make the initial intent specific, use Bash etc. to do very few read-only probes against the target (e.g. 1–2 curl to view homepage/fingerprint). **The only legal output is one more precise intent description**—absolutely not discovery/verification/exploitation of vulnerabilities, nor enumeration results of endpoints/directories/parameters (those are worker's work, write them as intents and dispatch). Three hard boundaries:
-   - If the graph already has worker-produced facts (facts>0 / recent_facts non-empty) → [prohibit] probing yourself anymore, all judgments based on existing facts, this round's output can only be "dispatch new intent" or "end"; want to dig deeper into a clue → dispatch an intent for the worker to check, don't curl yourself.
-   - Even at opening, probe at most ≤3 times then stop, just to clarify the initial intent; once you find yourself "deeply verifying" rather than "quickly determining direction" (enumerating endpoints/directories one by one, trying ids one by one, decoding chains, repeatedly probing the same interface, any injection/escalation/vulnerability testing/verification—all heavy worker work), stop immediately and write it as an intent.
+3. **(Optional, opening only, very light) Probe understanding**: only when there are almost no facts in the graph (recent_facts basically empty, task just started), and the situation alone cannot make the initial intent specific, use Bash etc. to do very few read-only probes against the target (e.g. 1â€“2 curl to view homepage/fingerprint). **The only legal output is one more precise intent description**â€”absolutely not discovery/verification/exploitation of vulnerabilities, nor enumeration results of endpoints/directories/parameters (those are worker's work, write them as intents and dispatch). Three hard boundaries:
+   - If the graph already has worker-produced facts (facts>0 / recent_facts non-empty) â†’ [prohibit] probing yourself anymore, all judgments based on existing facts, this round's output can only be "dispatch new intent" or "end"; want to dig deeper into a clue â†’ dispatch an intent for the worker to check, don't curl yourself.
+   - Even at opening, probe at most â‰¤3 times then stop, just to clarify the initial intent; once you find yourself "deeply verifying" rather than "quickly determining direction" (enumerating endpoints/directories one by one, trying ids one by one, decoding chains, repeatedly probing the same interface, any injection/escalation/vulnerability testing/verificationâ€”all heavy worker work), stop immediately and write it as an intent.
    - Anything that can be judged from existing facts/situation, no need to probe at all.
 
-4. **Decide which new directions to add**: **"restraint" here means only [not repeating existing intents], not "dispatch as few as possible"**—when the goal is not yet achieved, the default question is "what deeper, fiercer, still uncovered techniques are there to approach the goal", not "can we finish". Intent is [an open exploration direction] (not a fixed type/menu), combine known facts, assets, goals to judge direction yourself, compare one by one with open + running + recent_done:
-   - Already covered by existing open/running → no longer generate (being handled).
-   - Appeared in recent_done → **first check that intent's state (each carries one) to distinguish how it stopped, then decide**:
-     · **done (finished normally)**: covered → don't re-dispatch as-is; whether it's a dead end depends on the fact conclusions it yields, not state; only re-dispatch when there's [materially new mechanism] (new fact/asset/parameter/obviously different technique), and write clearly in summary how it differs from last time; rewording, "try once more maybe it works" doesn't count, prohibited retry.
-     · **exhausted (budget exhausted, probed halfway then cut, only partially written back) / blocked (model or network failure, basically not probed)**: both ended mid-way without good conclusion, incomplete information—first use get_worker_trace / get_worker_output to see where it actually got to, where it's stuck, then choose from the following: close to breakthrough but cut by budget → dispatch "continue from previous progress"; pure external failure didn't run (blocked is often this) → directly re-dispatch same direction; gets stuck at the same place every time → change technique/direction. Basis is always real progress in trace, not state itself.
-   - Brand new direction with no intent coverage at all → generate.
-   - All known directions covered by existing open/running intents → no generation, end directly (there's work running/queued, wait for them to progress); but if only recent_done coverage remains, no open/running and goal not yet achieved → per the hard bottom line above, must open a new one or re-dispatch.
+4. **Decide which new directions to add**: **"restraint" here means only [not repeating existing intents], not "dispatch as few as possible"**â€”when the goal is not yet achieved, the default question is "what deeper, fiercer, still uncovered techniques are there to approach the goal", not "can we finish". Intent is [an open exploration direction] (not a fixed type/menu), combine known facts, assets, goals to judge direction yourself, compare one by one with open + running + recent_done:
+   - Already covered by existing open/running â†’ no longer generate (being handled).
+   - Appeared in recent_done â†’ **first check that intent's state (each carries one) to distinguish how it stopped, then decide**:
+     Â· **done (finished normally)**: covered â†’ don't re-dispatch as-is; whether it's a dead end depends on the fact conclusions it yields, not state; only re-dispatch when there's [materially new mechanism] (new fact/asset/parameter/obviously different technique), and write clearly in summary how it differs from last time; rewording, "try once more maybe it works" doesn't count, prohibited retry.
+     Â· **exhausted (budget exhausted, probed halfway then cut, only partially written back) / blocked (model or network failure, basically not probed)**: both ended mid-way without good conclusion, incomplete informationâ€”first use get_worker_trace / get_worker_output to see where it actually got to, where it's stuck, then choose from the following: close to breakthrough but cut by budget â†’ dispatch "continue from previous progress"; pure external failure didn't run (blocked is often this) â†’ directly re-dispatch same direction; gets stuck at the same place every time â†’ change technique/direction. Basis is always real progress in trace, not state itself.
+   - Brand new direction with no intent coverage at all â†’ generate.
+   - All known directions covered by existing open/running intents â†’ no generation, end directly (there's work running/queued, wait for them to progress); but if only recent_done coverage remains, no open/running and goal not yet achieved â†’ per the hard bottom line above, must open a new one or re-dispatch.
    - **Depth over coverage**: coverage is a floor/acceptance item, not the exploration goal itself; after discovering a high-value entry (possibly leading to RCE/privilege escalation/data exfiltration), prioritize dispatching an intent to [drive deep down that path], rather than spreading thin for flat coverage, shallow-probing each asset one by one.
-   - **Maintain route diversity, don't converge too early**: when goal not achieved, if existing intents are all crowded on the same route/entry, and there's an [essentially different] uncovered direction (different entry surface/asset type/exploit chain), prioritize filling that divergent direction, rather than adding synonymous intents on the same line (look at substantive difference, not wording); if that divergent direction is already covered by existing intents, still don't generate. Ideal is 2–3 routes with different mechanisms coexisting (e.g. "hit via upload chain" and "hit via authentication bypass"), concentrate resources only after one produces [goal-approaching] evidence.**But diversity always obeys the top [operation constraints]**: entry surfaces/ports/hosts/operations excluded by constraints, even if essentially different, absolutely do not generate intents.
+   - **Maintain route diversity, don't converge too early**: when goal not achieved, if existing intents are all crowded on the same route/entry, and there's an [essentially different] uncovered direction (different entry surface/asset type/exploit chain), prioritize filling that divergent direction, rather than adding synonymous intents on the same line (look at substantive difference, not wording); if that divergent direction is already covered by existing intents, still don't generate. Ideal is 2â€“3 routes with different mechanisms coexisting (e.g. "hit via upload chain" and "hit via authentication bypass"), concentrate resources only after one produces [goal-approaching] evidence.**But diversity always obeys the top [operation constraints]**: entry surfaces/ports/hosts/operations excluded by constraints, even if essentially different, absolutely do not generate intents.
 
-   **Serial exploit chains: dispatch step by step, don't split into parallel.** Strongly dependent serial chains (①→②→③, later step depends on actual output of earlier step): don't issue all in parallel at once (downstream can't get upstream output that doesn't exist, only repeats/idles); use TodoWrite to record the whole chain as todos (one per step), only dispatch the step whose [prerequisite already satisfied] this round (usually the first step), wait for it to produce a fact, then on next wake-up (the prompt will carry the todo list) dispatch the next step and mark the satisfied one completed. Don't split "the same thing" into two ("confirm trigger point" and "trigger trigger point" are the same step); only [parallel, independent] dimensions (e.g. enumerating multiple unrelated endpoints) use multiple intents in parallel.
+   **Serial exploit chains: dispatch step by step, don't split into parallel.** Strongly dependent serial chains (â‘ â†’â‘¡â†’â‘¢, later step depends on actual output of earlier step): don't issue all in parallel at once (downstream can't get upstream output that doesn't exist, only repeats/idles); use TodoWrite to record the whole chain as todos (one per step), only dispatch the step whose [prerequisite already satisfied] this round (usually the first step), wait for it to produce a fact, then on next wake-up (the prompt will carry the todo list) dispatch the next step and mark the satisfied one completed. Don't split "the same thing" into two ("confirm trigger point" and "trigger trigger point" are the same step); only [parallel, independent] dimensions (e.g. enumerating multiple unrelated endpoints) use multiple intents in parallel.
 
 5. **Submit**: use [one] add_intent to batch submit the screened new directions (intents array, at most 4 highest-value ones, don't call multiple times one by one):
    - **summary**: one-sentence natural language description of the direction (complete target address of test + what to do + why), no fixed categories; dedup mainly by comparing with existing intents.
-   - **asset_ids**: target asset ids to test/attack for this direction (pass as many as possible, 0/1/multiple, from list_assets)—as long as the direction revolves around specific assets (sites/interfaces/parameters/hosts), be sure to pass, used for coverage dedup and connecting into asset chains; pass all for multi-asset; leave empty only for pure global reconnaissance with no specific asset.
-   - **parent_ids**: which upstream nodes this direction is synthesized from (optional, 0/1/multiple)—pass all when multiple facts combine to produce one intent, also pass the id when derived from an upstream intent/finding, leave empty for top-level brand new directions.
+   - **asset_ids**: target asset ids to test/attack for this direction (pass as many as possible, 0/1/multiple, from list_assets)â€”as long as the direction revolves around specific assets (sites/interfaces/parameters/hosts), be sure to pass, used for coverage dedup and connecting into asset chains; pass all for multi-asset; leave empty only for pure global reconnaissance with no specific asset.
+   - **parent_ids**: which upstream nodes this direction is synthesized from (optional, 0/1/multiple)â€”pass all when multiple facts combine to produce one intent, also pass the id when derived from an upstream intent/finding, leave empty for top-level brand new directions.
 
 No repetition, no forced padding; but when goal not achieved and there's uncovered deeper technique, dispatch when you should. Concise, focused, efficient.`
 
@@ -347,15 +347,15 @@ func plannerSystem(goal, dataDir, workDir string) string {
 }
 
 // Plan runs one planning round. emit, if non-nil, receives the planner's execution
-// steps (so users can see how it reads the situation and judges goals — the
+// steps (so users can see how it reads the situation and judges goals â€” the
 // planner is the intent generator and was previously a black box). Returns whether
 // the planner judged the goal met.
-// triggers carries the concrete change(s) that fired this round — worker(s) done
-// and/or finding(s) reported (may be several — the engine debounces a burst; empty
+// triggers carries the concrete change(s) that fired this round â€” worker(s) done
+// and/or finding(s) reported (may be several â€” the engine debounces a burst; empty
 // for time/heartbeat wakes). They are spelled out at the top of the prompt so the
 // planner looks first at the actual change (which intent, its output/finding).
 func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts *db.ExplorationStore, goal string, triggers []TriggerEvent, emit func(db.Activity)) (met bool, reason string, err error) {
-	// cold-digest §2.3/§7: advance this task's planner-round counter, maintain the
+	// cold-digest Â§2.3/Â§7: advance this task's planner-round counter, maintain the
 	// cold_since_round stamps, and (if a threshold is hit) kick off background
 	// compaction. Synchronous part is cheap (a few queries); the LLM compaction
 	// runs in a detached goroutine so it never adds latency to this round.
@@ -398,7 +398,7 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 	}
 	system, boundary := deferredSystem(sysBody, def)
 	// planner has no own wall-clock budget; when deadline exists, clamp MaxDuration to remaining time so running planning rounds
-	// enter wrap-up when task deadline hits (timeout → task timeout wrap-up, turns → per-run wrap-up).
+	// enter wrap-up when task deadline hits (timeout â†’ task timeout wrap-up, turns â†’ per-run wrap-up).
 	maxDur, clamped := clampMaxDuration(tc.DeadlineUnix, 0)
 	settle := wrapupSettlement("planner", nil)
 	if tc.DeadlineUnix > 0 {
@@ -434,9 +434,9 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 		Compaction:         compactionConfig(p.compactionWindow()),
 		// Cross-wakeup shared planning todos: let serial chains persist across rounds (session is new, store is not).
 		Todos: p.todoFor(ts.ID()),
-		// Hit [current round] turn budget → SDK runs wrap-up: land the conclusions already clear this round (add_intent to dispatch,
-		// prove_goal to mark, serial chain TodoWrite), NOT stop planning — planner will be woken repeatedly.
-		// clamped (task deadline clamped) → switch to PromptByReason (see wrapupSettlementForTask).
+		// Hit [current round] turn budget â†’ SDK runs wrap-up: land the conclusions already clear this round (add_intent to dispatch,
+		// prove_goal to mark, serial chain TodoWrite), NOT stop planning â€” planner will be woken repeatedly.
+		// clamped (task deadline clamped) â†’ switch to PromptByReason (see wrapupSettlementForTask).
 		Settlement:   settle,
 		NonStreaming: p.nonStreaming(), // when this profile selects non-streaming, use Provider.Complete
 		MaxTokens:    p.maxTokens(),    // 0 = send no limit, let server default decide
@@ -450,18 +450,18 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 	enableNoa(&opts, p.noaEnabledFn, p.workDir, noaSession, noaWarn(noaSession))
 	// Situation (just-completed intent + full graph) now goes into current round user input (see input below). user also has
 	// instructions + cross-wakeup todos (todo is model's own planning scratchpad, regenerable, fine in user).
-	// Opener splits by "whether this round has concrete changes": has changes → point to [Actual Changes] block below; no changes
-	// (scheduled heartbeat / hint / recovery etc.) → don't falsely claim "graph changed", instead prompt to incidentally review running intents.
+	// Opener splits by "whether this round has concrete changes": has changes â†’ point to [Actual Changes] block below; no changes
+	// (scheduled heartbeat / hint / recovery etc.) â†’ don't falsely claim "graph changed", instead prompt to incidentally review running intents.
 	lead := "There were specific changes this round (see the [Actual changes this round] block below); plan the next step based on them:"
 	if len(triggers) == 0 {
-		lead = "This round is a **scheduled heartbeat check / no specific change signal** wakeup—the graph may not have new changes. Incidentally review running intents: use steer_work to correct long-stalled or off-track intents, use kill_work to abort entirely wrong directions; then judge goals and decide whether to add new directions:"
-		// On heartbeat/no-change wakeup, if the entire graph has no open or running intents → exploration has stalled (no worker running,
+		lead = "This round is a **scheduled heartbeat check / no specific change signal** wakeupâ€”the graph may not have new changes. Incidentally review running intents: use steer_work to correct long-stalled or off-track intents, use kill_work to abort entirely wrong directions; then judge goals and decide whether to add new directions:"
+		// On heartbeat/no-change wakeup, if the entire graph has no open or running intents â†’ exploration has stalled (no worker running,
 		// no queued directions). Explicitly tell planner and force it to produce new directions this round, not just review running intents and spin empty.
 		if active, err := ts.HasActiveIntent(); err == nil && !active {
-			lead = "This round is a **scheduled heartbeat check** wakeup, and currently **there are no open or running intents**—no worker is running, no queued directions, exploration has stalled. You **must** produce one or more new intents this round that advance the goal and do not duplicate existing intents in the graph (must not produce 0 intents); first judge whether the goal is met based on the situation below, if not met immediately add directions:"
+			lead = "This round is a **scheduled heartbeat check** wakeup, and currently **there are no open or running intents**â€”no worker is running, no queued directions, exploration has stalled. You **must** produce one or more new intents this round that advance the goal and do not duplicate existing intents in the graph (must not produce 0 intents); first judge whether the goal is met based on the situation below, if not met immediately add directions:"
 		}
 	}
-	input := lead + situational + "\n\nJudge the goal based on the situation above. When the goal is **truly met** (goal results obtained / target vulnerabilities confirmed), mark them one by one using prove_goal.**Hard bottom line: as long as the goal is not yet met and there are no open or running intents (frontier_open=0 and running_intents is empty), this round must produce at least one intent advancing the goal—there is no running work to wait for and no queued direction; producing 0 intents = task stalled. Only when there are open/running intents advancing or the goal is already met may this round skip producing new intents.**" +
+	input := lead + situational + "\n\nJudge the goal based on the situation above. When the goal is **truly met** (goal results obtained / target vulnerabilities confirmed), mark them one by one using prove_goal.**Hard bottom line: as long as the goal is not yet met and there are no open or running intents (frontier_open=0 and running_intents is empty), this round must produce at least one intent advancing the goalâ€”there is no running work to wait for and no queued direction; producing 0 intents = task stalled. Only when there are open/running intents advancing or the goal is already met may this round skip producing new intents.**" +
 		renderPlannerTodos(opts.Todos.List())
 	// MaxDuration now interrupts running tools at wall-clock deadline and enters wrap-up in-place (on live ctx), single-round hangs no longer
 	// bypass wrap-up, no external hard ctx fallback needed. ctx only carries pause / kill / shutdown.
@@ -474,3 +474,4 @@ func (p *Planner) Plan(ctx context.Context, taskID int64, as *db.AssetStore, ts 
 		})
 	return tsx.GoalMet, tsx.Reason, err
 }
+

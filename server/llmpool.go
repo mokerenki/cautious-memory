@@ -4,21 +4,21 @@ import (
 	"log"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/llmpool"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/llmpool"
 	"github.com/Autumn-27/norma/llm"
 )
 
 // Server-side wiring for LLM polling (failover). See the LLM polling design document:
 //   - Only the global active config path (agent is unbound, task is not pinned) polls;
 //   - The bound/pinned path uses that config exclusively by default; failures fail immediately (fallback can be enabled with llm_pool_bind_fallback);
-//   - Chain order = active config → others sorted by priority DESC, excluding pool_exclude;
+//   - Chain order = active config â†’ others sorted by priority DESC, excluding pool_exclude;
 //   - Circuit breaker state is shared process-wide (s.llmHealth) and is not cleared when the pool is rebuilt.
 
 // newLLMHealthRegistry builds the process-wide circuit-breaker registry, mirroring
 // state into PG so a cooling-off window survives a restart. Writes are async and
-// best-effort — the in-memory copy is authoritative.
+// best-effort â€” the in-memory copy is authoritative.
 func newLLMHealthRegistry(pg *db.DB) *llmpool.Registry {
 	if pg == nil {
 		return llmpool.NewRegistry(nil, nil)
@@ -70,13 +70,13 @@ func (s *Server) poolMember(p *db.LLMProfile, rank int) *llmpool.Member {
 }
 
 // poolChain reads the failover chain from the DB. headID/headProv/headCfg describe
-// the member that must lead the chain — the globally active profile on the normal
+// the member that must lead the chain â€” the globally active profile on the normal
 // path, or an explicitly bound one when bound-profile fallback is on. The head is
 // passed in (rather than resolved through the cache) so applyLLM's already-built
 // provider is reused instead of duplicated.
 //
 // Returns nil when failover is off or the chain has fewer than two usable members
-// — callers then use the bare provider, which is byte-for-byte the old behavior.
+// â€” callers then use the bare provider, which is byte-for-byte the old behavior.
 func (s *Server) poolChain(headID int64, headProv llm.Provider, headCfg agent.Config) *llmpool.Pool {
 	if s.m == nil || s.m.pg == nil || !s.m.LLMPoolEnabled() {
 		return nil
@@ -93,7 +93,7 @@ func (s *Server) poolChain(headID int64, headProv llm.Provider, headCfg agent.Co
 			break
 		}
 	}
-	if head == nil { // head excluded from the chain (bound + pool_exclude) — still leads
+	if head == nil { // head excluded from the chain (bound + pool_exclude) â€” still leads
 		if p, err := s.m.pg.ProfileByID(headID); err == nil && p != nil {
 			head = p
 		} else {
@@ -162,7 +162,7 @@ type LLMPoolMemberStatus struct {
 	Format    string `json:"format"`
 	Priority  int    `json:"priority"`
 	Active    bool   `json:"active"`   // is the globally-activated profile
-	Excluded  bool   `json:"excluded"` // pool_exclude — not a failover target
+	Excluded  bool   `json:"excluded"` // pool_exclude â€” not a failover target
 	// Health: state is "ok" | "degraded" (failing but not tripped) | "tripped".
 	State        string `json:"state"`
 	Fails        int    `json:"fails"`
@@ -193,7 +193,7 @@ func (s *Server) llmPoolStatus() map[string]any {
 	}
 	health := s.llmHealth.Snapshot()
 	now := time.Now()
-	// Chain order: active first, then priority DESC / id ASC — the same ordering
+	// Chain order: active first, then priority DESC / id ASC â€” the same ordering
 	// PoolProfiles applies, recomputed here so excluded ones can be shown in place.
 	chain := make([]LLMPoolMemberStatus, 0, len(all))
 	for _, p := range all {
@@ -237,3 +237,4 @@ func poolLess(a, b LLMPoolMemberStatus) bool {
 	}
 	return a.Priority > b.Priority
 }
+

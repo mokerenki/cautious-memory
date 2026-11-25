@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // companyScopeInputs accepts both the new [{kind,value}] contract and the
@@ -548,3 +548,4 @@ func (s *Server) insertAssets(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]any{"results": results, "errors": errs})
 }
+

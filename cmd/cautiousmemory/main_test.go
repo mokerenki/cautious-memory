@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Autumn-27/artex/agent"
+	"github.com/Autumn-27/cautiousmemory/agent"
 )
 
 func TestShutdownContextPreservesNamedCause(t *testing.T) {
@@ -17,3 +17,4 @@ func TestShutdownContextPreservesNamedCause(t *testing.T) {
 		t.Fatalf("code=%q ok=%v, want shutdown", code, ok)
 	}
 }
+

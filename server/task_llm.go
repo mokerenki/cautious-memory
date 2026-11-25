@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
 )
@@ -93,7 +93,7 @@ type taskLLMSelection struct {
 	revision  int64
 	provider  llm.Provider
 	// retry holds the retry parameters parsed from the selected config (profile override
-	// → global policy → built-in defaults). Same-provider safe-window retries use this,
+	// â†’ global policy â†’ built-in defaults). Same-provider safe-window retries use this,
 	// so switching profiles changes the retry cadence.
 	retry agent.RetryConfig
 }
@@ -105,12 +105,12 @@ type taskLLMStreamHooks struct {
 }
 
 // current resolves the provider this role runs on. Pinned workers use only their
-// assigned profile; legacy task agents use Agent binding → task LLM config chain
-// → global/env config.
+// assigned profile; legacy task agents use Agent binding â†’ task LLM config chain
+// â†’ global/env config.
 // Binding takes precedence over task chain: if a role is explicitly assigned a
 // model, it always runs on that model; only when binding is missing or fails
 // does it fall back to task chain, then to global config when task chain is empty.
-// The returned profile id is non-zero only when the task chain is used —
+// The returned profile id is non-zero only when the task chain is used â€”
 // streamTaskLLM uses this to determine whether quota errors should advance the
 // task's failover state (binding/global paths don't change task chain state,
 // preserving existing semantics).
@@ -165,7 +165,7 @@ func (r *taskLLMRuntime) current() (taskLLMSelection, error) {
 }
 
 // activeCfg resolves the task's currently-active LLM config, mirroring current()'s
-// source precedence (agent binding → active chain profile → global). Read-only and
+// source precedence (agent binding â†’ active chain profile â†’ global). Read-only and
 // best-effort: ok=false when nothing resolves, leaving the per-setting fallback to
 // the caller. If failover switches profiles, the change takes effect on the next
 // agent run (a fresh Session is built per run in captureRun).
@@ -197,14 +197,14 @@ func (r *taskLLMRuntime) activeCfg() (agent.Config, bool) {
 }
 
 // nonStreaming reports whether the task's currently-active LLM source is set to
-// non-streaming. Unresolvable → streaming (false), the safe default.
+// non-streaming. Unresolvable â†’ streaming (false), the safe default.
 func (r *taskLLMRuntime) nonStreaming() bool {
 	cfg, ok := r.activeCfg()
 	return ok && !cfg.Stream
 }
 
 // maxTokens returns the currently-active source's per-reply output cap.
-// Unresolvable → 0, i.e. send no cap, matching the pre-setting behaviour.
+// Unresolvable â†’ 0, i.e. send no cap, matching the pre-setting behaviour.
 func (r *taskLLMRuntime) maxTokens() int {
 	cfg, _ := r.activeCfg() // returns zero value 0 when no config resolved
 	return cfg.MaxTokens
@@ -247,7 +247,7 @@ func (r *taskLLMRuntime) Stream(ctx context.Context, req llm.CompletionRequest) 
 }
 
 // Complete is the non-streaming counterpart of Stream. A non-streaming call is
-// atomic — it never delivers partial output — so every failure is safe to retry
+// atomic â€” it never delivers partial output â€” so every failure is safe to retry
 // on the same provider or fail over to the next profile without risking
 // duplicated model output or tool execution (the "committed" bookkeeping the
 // streaming path needs is unnecessary here).
@@ -530,7 +530,7 @@ func (r *taskLLMRuntime) CompactionWindow() int {
 }
 
 // agentBindingProvider resolves the profile a role is explicitly bound to
-// (agents.llm_profile_id) — the highest-precedence level for task agents. ok=false
+// (agents.llm_profile_id) â€” the highest-precedence level for task agents. ok=false
 // when the role has no binding or the bound profile no longer builds, so callers
 // fall through to the task chain. A bound profile stays exclusive unless
 // llm_pool_bind_fallback is on, which is what poolForBinding encodes.
@@ -547,7 +547,7 @@ func (s *Server) agentBindingProvider(agentKey string) (llm.Provider, agent.Conf
 }
 
 // globalProvider returns the process-wide provider (persisted active profile or
-// environment config) — the last resort once a role has neither a binding nor a
+// environment config) â€” the last resort once a role has neither a binding nor a
 // task chain.
 func (s *Server) globalProvider() (llm.Provider, agent.Config, bool) {
 	s.cfgMu.Lock()
@@ -561,7 +561,7 @@ func (s *Server) globalProvider() (llm.Provider, agent.Config, bool) {
 // taskRuntimeAvailable reports whether every listed role can resolve a provider
 // under the runtime precedence in current(): the role's own binding first, then
 // the task chain, then global. An exhausted chain is a hard stop for unbound
-// roles rather than a silent fall through to global — same as current().
+// roles rather than a silent fall through to global â€” same as current().
 func (s *Server) taskRuntimeAvailable(t *Task, agentKeys ...string) bool {
 	if t == nil || len(agentKeys) == 0 {
 		return false
@@ -627,9 +627,9 @@ func (s *Server) agentsForTask(t *Task) *taskAgentBundle {
 	pl.SetProxyProvider(s.m.ProxyAddr)
 	pl.SetWebSearch(s.webSearchFor("planner"))
 	pl.SetConstraintInject(s.constraintInjectPlanner) // operation constraint injection for planner (configurable, default on)
-	// cold-digest §7: cold-node background compaction. The engine-driven authoritative
+	// cold-digest Â§7: cold-node background compaction. The engine-driven authoritative
 	// parser is exactly this per-task planner (agentsForTask); Compactor must hook
-	// here. Uses the task-routed planner provider (§4: same model as agent, resolved
+	// here. Uses the task-routed planner provider (Â§4: same model as agent, resolved
 	// via task LLM chain); compaction uses Complete to generate body in one shot.
 	pl.SetCompactor(agent.NewCompactor(plannerRuntime, "task-router"))
 	main := agent.NewMainAgent(mainRuntime, "task-router", s.m.dir, tx, mainRuntime.CompactionWindow(), s.agentMaxTurns("mainagent"))
@@ -785,3 +785,4 @@ func (s *Server) emitManualTaskLLMSwitch(t *Task, previousID, nextID *int64) db.
 	}})
 	return s.engine.emitActivity(t, db.Activity{Worker: "system", Kind: "llm_switch", Summary: summary, Detail: summary, Metadata: metadata})
 }
+

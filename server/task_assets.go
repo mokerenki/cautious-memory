@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxTaskAssetRequestBytes = 512 << 10
@@ -106,3 +106,4 @@ func (s *Server) taskIntentAssets(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"assets": assets})
 }
+

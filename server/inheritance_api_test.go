@@ -8,7 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestInheritedActivityDetailAndRelationDeletion(t *testing.T) {
@@ -98,3 +98,4 @@ func mustTaskID(t *testing.T, raw string) int64 {
 	}
 	return id
 }
+

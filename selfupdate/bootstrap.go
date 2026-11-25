@@ -1,4 +1,4 @@
-package selfupdate
+﻿package selfupdate
 
 import (
 	"context"
@@ -16,11 +16,11 @@ import (
 
 // smokeEnv tells a subprocess launched by the smoke test to skip Bootstrap.
 //
-// Strictly speaking this is not required: the subprocess executable is artex.new, so all
+// Strictly speaking this is not required: the subprocess executable is CAUTIOUSMEMORY.new, so all
 // paths derived from os.Executable() carry the .new suffix and will not collide with the
 // real upgrade files. Relying on that coincidence is fragile, though; an explicit short
 // circuit is clearer and avoids a pointless disk probe in the subprocess.
-const smokeEnv = "ARTEX_SELFUPDATE_SMOKE"
+const smokeEnv = "CAUTIOUSMEMORY_SELFUPDATE_SMOKE"
 
 // Action is the instruction Bootstrap returns to main.
 type Action int
@@ -46,9 +46,9 @@ type State struct {
 //
 // Three situations:
 //
-//	① staged artifact artex.new exists -> validate + smoke test; on success swap and request restart, on failure discard and keep running the old version
-//	② only a marker file remains       -> swap already happened; count one attempt, roll back after too many consecutive failures
-//	③ nothing present                  -> normal startup
+//	â‘  staged artifact CAUTIOUSMEMORY.new exists -> validate + smoke test; on success swap and request restart, on failure discard and keep running the old version
+//	â‘¡ only a marker file remains       -> swap already happened; count one attempt, roll back after too many consecutive failures
+//	â‘¢ nothing present                  -> normal startup
 func Bootstrap() (Action, State) {
 	if os.Getenv(smokeEnv) != "" {
 		return Continue, State{}
@@ -201,7 +201,7 @@ func smokeTest(bin string) error {
 	if err != nil {
 		snippet := strings.TrimSpace(string(out))
 		if len(snippet) > 300 {
-			snippet = snippet[:300] + "…"
+			snippet = snippet[:300] + "â€¦"
 		}
 		return fmt.Errorf("smoke test failed: %v: %s", err, snippet)
 	}
@@ -313,3 +313,4 @@ func orUnknown(s string) string {
 	}
 	return s
 }
+

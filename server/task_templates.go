@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxTaskTemplateRequestBytes = 512 << 10
@@ -251,3 +251,4 @@ func stringValue(value *string) string {
 	}
 	return *value
 }
+

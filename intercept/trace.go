@@ -11,7 +11,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const (
@@ -212,3 +212,4 @@ func bounded(s string, limit int) (string, bool) {
 	}
 	return s[:end], true
 }
+

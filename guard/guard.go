@@ -1,8 +1,8 @@
-// Package guard implements the safety boundary layer (docs §11): an audit log,
+// Package guard implements the safety boundary layer (docs Â§11): an audit log,
 // user-configured intercept-rule evaluation, and Observer/G5 failure attribution.
 // Every tool call passes through the PreToolUse hook before executing.
 // (The RoE authorization-scope mechanism was removed; a replacement may be added
-// later.) Destructive/exfil gating is no longer hard-coded here — it lives in the
+// later.) Destructive/exfil gating is no longer hard-coded here â€” it lives in the
 // DB intercept rules (seeded as ordinary [built-in] rules, so users can disable or
 // delete them), evaluated via applyIntercept.
 package guard
@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/intercept"
+	"github.com/Autumn-27/cautiousmemory/intercept"
 	"github.com/Autumn-27/norma/hook"
 )
 
@@ -57,7 +57,7 @@ func (g *Guard) Hooks() *hook.Registry { return g.reg }
 func (g *Guard) preToolUse(ctx context.Context, ev hook.Event) hook.Result {
 	// Extract the shell-command surface for the audit log: Bash + the interactive-shell
 	// tools (shell_open's command, shell_send's text). Destructive/exfil gating is no
-	// longer hard-coded here — it now lives in the DB intercept rules, evaluated by
+	// longer hard-coded here â€” it now lives in the DB intercept rules, evaluated by
 	// applyIntercept below. Other tools record an empty command.
 	var cmd string
 	switch ev.ToolName {
@@ -110,7 +110,7 @@ func (g *Guard) applyIntercept(ctx context.Context, ev hook.Event) hook.Result {
 		return hook.Result{}
 	case "ask":
 		// If the worker context is already cancelled (task stopped / killed), block
-		// immediately without creating a pending record — avoids orphaned DB entries
+		// immediately without creating a pending record â€” avoids orphaned DB entries
 		// and makes execOne complete fast, reducing the race against drainSynthetic.
 		if ctx.Err() != nil {
 			return g.block(ev.ToolName, systemBlockMessage("task cancelled, platform safety control blocks execution"), "")
@@ -124,20 +124,20 @@ func (g *Guard) applyIntercept(ctx context.Context, ev hook.Event) hook.Result {
 	return hook.Result{}
 }
 
-// systemBlockMessage frames an intercept block as an ARTEX platform-governance
+// systemBlockMessage frames an intercept block as an CAUTIOUSMEMORY platform-governance
 // decision so the agent does not mistake it for a target-side defense.
 //
 // The bare reasons ("tool execution forbidden" / "user denied") read exactly like a
-// WAF/403 on the target, so a pentest agent's instinct is to bypass them — rewrite
+// WAF/403 on the target, so a pentest agent's instinct is to bypass them â€” rewrite
 // the command, swap the payload, re-encode, retry. That is both futile (the
 // platform blocks the class of action, not one string) and wrong (it's a policy
 // decision, not an obstacle to defeat). This prefix states plainly that the block
 // comes from the platform, is not the target's protection, and that the operation
-// is forbidden — so the agent pivots to another approach instead of evading it.
+// is forbidden â€” so the agent pivots to another approach instead of evading it.
 // Audit/history rows keep the raw reason (see Interceptor.Log); only the
 // model-facing tool_result carries this framing.
 func systemBlockMessage(reason string) string {
-	return "[ARTEX platform governance · not target defense] this call was intercepted by the platform." +
+	return "[CAUTIOUSMEMORY platform governance Â· not target defense] this call was intercepted by the platform." +
 		" reason: " + reason + ". this operation is forbidden."
 }
 
@@ -196,3 +196,4 @@ func (g *Guard) Audit() []AuditEntry {
 	copy(out, g.audit)
 	return out
 }
+

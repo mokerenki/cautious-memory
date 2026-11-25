@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/llmpool"
+	"github.com/Autumn-27/cautiousmemory/llmpool"
 	"github.com/Autumn-27/norma/harness"
 	"github.com/Autumn-27/norma/llm"
 )
@@ -264,3 +264,4 @@ func TestMainSideConcurrencyAndIndependentCancellation(t *testing.T) {
 		})
 	}
 }
+

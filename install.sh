@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ARTEX installation script: ① Docker-based installation ② build and run locally
+# cautiousmemory installation script: â‘  Docker-based installation â‘¡ build and run locally
 set -euo pipefail
 cd "$(cd "$(dirname "$0")" && pwd)"
 
@@ -10,7 +10,7 @@ die(){  printf '\033[31m[x]\033[0m %s\n' "$*" >&2; exit 1; }
 ask(){  local p="$1" d="${2:-}" a; read -rp "$p${d:+ [$d]}: " a; echo "${a:-$d}"; }
 rand(){ head -c 18 /dev/urandom | base64 | tr -dc 'A-Za-z0-9' | head -c 24; }
 
-# ── Docker environment check / auto-installation ───────────────────
+# â”€â”€ Docker environment check / auto-installation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 ensure_docker(){
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     ok "Docker and Docker Compose detected"; return
@@ -30,7 +30,7 @@ ensure_docker(){
   esac
 }
 
-# ── ① Docker-based installation ───────────────────────────────
+# â”€â”€ â‘  Docker-based installation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 install_docker(){
   ensure_docker
   umask 077
@@ -46,14 +46,14 @@ install_docker(){
   else
     info "Using the existing .env"
   fi
-  info "Pulling images and starting…"
+  info "Pulling images and startingâ€¦"
   docker compose pull
   docker compose up -d
-  ok "Started → http://localhost:8787"
-  info "View logs: docker compose logs -f artex"
+  ok "Started â†’ http://localhost:8787"
+  info "View logs: docker compose logs -f cautiousmemory"
 }
 
-# ── ② Build and run locally ──────────────────────────────
+# â”€â”€ â‘¡ Build and run locally â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 install_local(){
   echo "Database setup:"
   echo "  1) Connect to an existing PostgreSQL instance"
@@ -62,16 +62,16 @@ install_local(){
     2)
       ensure_docker
       local pw; pw="$(ask 'Postgres password (press Enter for a random one)' "$(rand)")"
-      docker run -d --name artex-pg -p 5432:5432 \
-        -e POSTGRES_USER=artex -e POSTGRES_PASSWORD="$pw" -e POSTGRES_DB=artex \
-        -v artex-pg:/var/lib/postgresql/data postgres:16-alpine
-      DB_HOST=127.0.0.1 DB_PORT=5432 DB_USER=artex DB_PASS="$pw" DB_NAME=artex DB_SSL=disable ;;
+      docker run -d --name cautiousmemory-pg -p 5432:5432 \
+        -e POSTGRES_USER=cautiousmemory -e POSTGRES_PASSWORD="$pw" -e POSTGRES_DB=cautiousmemory \
+        -v cautiousmemory-pg:/var/lib/postgresql/data postgres:16-alpine
+      DB_HOST=127.0.0.1 DB_PORT=5432 DB_USER=cautiousmemory DB_PASS="$pw" DB_NAME=cautiousmemory DB_SSL=disable ;;
     *)
       DB_HOST="$(ask 'Database host' 127.0.0.1)"
       DB_PORT="$(ask 'Port' 5432)"
-      DB_USER="$(ask 'Username' artex)"
+      DB_USER="$(ask 'Username' cautiousmemory)"
       DB_PASS="$(ask 'Password' '')"
-      DB_NAME="$(ask 'Database name' artex)"
+      DB_NAME="$(ask 'Database name' cautiousmemory)"
       DB_SSL="$(ask 'sslmode (disable/require)' disable)" ;;
   esac
 
@@ -96,23 +96,23 @@ JSON
 
   # The embedded frontend requires Node.js to generate static assets
   if command -v npm >/dev/null 2>&1; then
-    info "Building static frontend assets…"
+    info "Building static frontend assetsâ€¦"
     ( cd web && npm ci && npm run build:static )
     rm -rf server/webui/dist && cp -r web/out server/webui/dist
-    info "Compiling the single binary with embedded frontend…"
-    CGO_ENABLED=0 go build -tags embedui -trimpath -o artex ./cmd/artex
+    info "Compiling the single binary with embedded frontendâ€¦"
+    CGO_ENABLED=0 go build -tags embedui -trimpath -o cautiousmemory ./cmd/cautiousmemory
   else
     warn "npm not found: building the backend **without the embedded frontend** (run the frontend separately with npm run dev)"
-    CGO_ENABLED=0 go build -o artex ./cmd/artex
+    CGO_ENABLED=0 go build -o cautiousmemory ./cmd/cautiousmemory
   fi
-  ok "Build complete → ./artex"
+  ok "Build complete â†’ ./cautiousmemory"
 
-  info "Starting… (press Ctrl-C to exit)"
-  ./artex
+  info "Startingâ€¦ (press Ctrl-C to exit)"
+  ./cautiousmemory
 }
 
 echo "=============================="
-echo "  ARTEX installation"
+echo "  cautiousmemory installation"
 echo "  1) Docker-based installation"
 echo "  2) Run locally (compiled with Go)"
 echo "=============================="
@@ -121,3 +121,4 @@ case "$(ask 'Select an option' 1)" in
   2) install_local ;;
   *) die "Invalid selection" ;;
 esac
+

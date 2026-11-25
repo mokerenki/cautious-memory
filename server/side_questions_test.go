@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/sidequestion"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/sidequestion"
 	"github.com/Autumn-27/norma/harness"
 	"github.com/Autumn-27/norma/llm"
 )
@@ -142,7 +142,7 @@ func newSideHTTPFixture(t *testing.T) *sideHTTPFixture {
 	t.Helper()
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Server{m: m, engine: NewEngine(m), ctx: ctx, jwtKey: []byte("btw-test-signing-key-only"), chatBusy: map[string]bool{}, provByProfile: map[int64]*provEntry{}}
@@ -207,7 +207,7 @@ func (f *sideHTTPFixture) checkpoint(t *testing.T, p sidequestion.Parent) sidequ
 
 func TestSideTaskContextFallbackForPausedTask(t *testing.T) {
 	f := newSideHTTPFixture(t)
-	task, err := f.m.CreateTask("审查暂停任务的上下文", "确认边界访问控制", nil, 0, 0)
+	task, err := f.m.CreateTask("å®¡æŸ¥æš‚åœä»»åŠ¡çš„ä¸Šä¸‹æ–‡", "ç¡®è®¤è¾¹ç•Œè®¿é—®æŽ§åˆ¶", nil, 0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -216,14 +216,14 @@ func TestSideTaskContextFallbackForPausedTask(t *testing.T) {
 	if err := f.m.pg.SetPaused(id, true); err != nil {
 		t.Fatal(err)
 	}
-	iid, err := task.Store.AddNode(db.KindIntent, map[string]any{"summary": "检查越权读取"}, 1, "paused", "planner", nil)
+	iid, err := task.Store.AddNode(db.KindIntent, map[string]any{"summary": "æ£€æŸ¥è¶Šæƒè¯»å–"}, 1, "paused", "planner", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := task.Store.AppendActivity(db.Activity{NodeID: &iid, Worker: "worker", Kind: "result", Summary: "发现对象读取缺少租户校验"}); err != nil {
+	if _, err := task.Store.AppendActivity(db.Activity{NodeID: &iid, Worker: "worker", Kind: "result", Summary: "å‘çŽ°å¯¹è±¡è¯»å–ç¼ºå°‘ç§Ÿæˆ·æ ¡éªŒ"}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.m.pg.AddFinding(id, iid, "IDOR", "跨租户读取", db.SeverityHigh, "读取接口返回其他租户对象", "响应中出现其他租户 tenant_id", "worker", nil); err != nil {
+	if _, err := f.m.pg.AddFinding(id, iid, "IDOR", "è·¨ç§Ÿæˆ·è¯»å–", db.SeverityHigh, "è¯»å–æŽ¥å£è¿”å›žå…¶ä»–ç§Ÿæˆ·å¯¹è±¡", "å“åº”ä¸­å‡ºçŽ°å…¶ä»–ç§Ÿæˆ· tenant_id", "worker", nil); err != nil {
 		t.Fatal(err)
 	}
 	path := "/api/tasks/" + task.ID + "/chat/side-questions"
@@ -239,11 +239,11 @@ func TestSideTaskContextFallbackForPausedTask(t *testing.T) {
 	if history.Snapshot == nil || !history.Snapshot.Available {
 		t.Fatalf("task context snapshot unavailable: %s", w.Body.String())
 	}
-	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "暂停前发现了什么？", "client_request_id": "paused-context"}, 202))
+	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "æš‚åœå‰å‘çŽ°äº†ä»€ä¹ˆï¼Ÿ", "client_request_id": "paused-context"}, 202))
 	select {
 	case req := <-f.provider.started:
 		text := req.Messages[0].Text()
-		for _, want := range []string{"审查暂停任务的上下文", "发现对象读取缺少租户校验", "读取接口返回其他租户对象"} {
+		for _, want := range []string{"å®¡æŸ¥æš‚åœä»»åŠ¡çš„ä¸Šä¸‹æ–‡", "å‘çŽ°å¯¹è±¡è¯»å–ç¼ºå°‘ç§Ÿæˆ·æ ¡éªŒ", "è¯»å–æŽ¥å£è¿”å›žå…¶ä»–ç§Ÿæˆ·å¯¹è±¡"} {
 			if !strings.Contains(text, want) {
 				t.Fatalf("synthetic task context missing %q: %s", want, text)
 			}
@@ -276,8 +276,8 @@ func TestSideTaskContextFallbackRequiresUsableContext(t *testing.T) {
 	if history.Snapshot != nil {
 		t.Fatalf("empty task unexpectedly received a context snapshot: %s", w.Body.String())
 	}
-	w = f.call(t, "POST", path, map[string]string{"question": "没有上下文怎么办？", "client_request_id": "empty-context"}, 409)
-	if !strings.Contains(w.Body.String(), "任务上下文") {
+	w = f.call(t, "POST", path, map[string]string{"question": "æ²¡æœ‰ä¸Šä¸‹æ–‡æ€Žä¹ˆåŠžï¼Ÿ", "client_request_id": "empty-context"}, 409)
+	if !strings.Contains(w.Body.String(), "ä»»åŠ¡ä¸Šä¸‹æ–‡") {
 		t.Fatalf("unhelpful empty-context error: %s", w.Body.String())
 	}
 }
@@ -307,7 +307,7 @@ func TestSideTaskSyntheticSnapshotRebuildsCurrentEvidence(t *testing.T) {
 	if _, err := f.m.pg.AddFinding(id, iid, "OPEN_REDIRECT", "redirect validation", db.SeverityMedium, "redirect accepts an external target", "worker evidence marker", "worker", nil); err != nil {
 		t.Fatal(err)
 	}
-	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "最新发现是什么？", "client_request_id": "rebuild-current"}, 202))
+	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "æœ€æ–°å‘çŽ°æ˜¯ä»€ä¹ˆï¼Ÿ", "client_request_id": "rebuild-current"}, 202))
 	select {
 	case req := <-f.provider.started:
 		text := req.Messages[0].Text()
@@ -359,7 +359,7 @@ func TestSideTaskSyntheticSnapshotUsesCurrentTaskModel(t *testing.T) {
 	if err := f.m.pg.ReplaceTaskLLMProfiles(id, []int64{bID}, bID); err != nil {
 		t.Fatal(err)
 	}
-	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "模型切换后还能问吗？", "client_request_id": "model-switch"}, 202))
+	e := decodeSide(t, f.call(t, "POST", path, map[string]string{"question": "æ¨¡åž‹åˆ‡æ¢åŽè¿˜èƒ½é—®å—ï¼Ÿ", "client_request_id": "model-switch"}, 202))
 	if e.Model.ProfileID != bID {
 		t.Fatalf("side request retained stale model: %+v", e.Model)
 	}
@@ -433,8 +433,8 @@ func TestSideTaskContextModelUnavailableIsDistinct(t *testing.T) {
 	if w := f.call(t, "GET", path, nil, 200); !strings.Contains(w.Body.String(), "snapshot_error") {
 		t.Fatalf("GET did not expose model configuration reason: %s", w.Body.String())
 	}
-	w := f.call(t, "POST", path, map[string]string{"question": "配置是否可用？", "client_request_id": "model-error"}, 409)
-	if strings.Contains(w.Body.String(), "任务上下文") || !strings.Contains(w.Body.String(), "模型配置不可用") {
+	w := f.call(t, "POST", path, map[string]string{"question": "é…ç½®æ˜¯å¦å¯ç”¨ï¼Ÿ", "client_request_id": "model-error"}, 409)
+	if strings.Contains(w.Body.String(), "ä»»åŠ¡ä¸Šä¸‹æ–‡") || !strings.Contains(w.Body.String(), "æ¨¡åž‹é…ç½®ä¸å¯ç”¨") {
 		t.Fatalf("wrong model error: %s", w.Body.String())
 	}
 }
@@ -442,8 +442,8 @@ func TestSideTaskContextModelUnavailableIsDistinct(t *testing.T) {
 func TestSideConversationMissingSnapshotKeepsAgentCopy(t *testing.T) {
 	f := newSideHTTPFixture(t)
 	_, path := f.conversation(t)
-	w := f.call(t, "POST", path, map[string]string{"question": "没有快照", "client_request_id": "missing"}, 409)
-	if strings.Contains(w.Body.String(), "补充任务描述") || strings.Contains(w.Body.String(), "Planner/Worker") {
+	w := f.call(t, "POST", path, map[string]string{"question": "æ²¡æœ‰å¿«ç…§", "client_request_id": "missing"}, 409)
+	if strings.Contains(w.Body.String(), "è¡¥å……ä»»åŠ¡æè¿°") || strings.Contains(w.Body.String(), "Planner/Worker") {
 		t.Fatalf("conversation received task fallback copy: %s", w.Body.String())
 	}
 }
@@ -781,3 +781,4 @@ func TestSideRestoredWorkerRuntimePublishesNewCheckpoint(t *testing.T) {
 		t.Fatalf("restored runtime lost checkpoint publisher: %+v %v", snap, err)
 	}
 }
+

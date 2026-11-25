@@ -3,7 +3,7 @@ package server
 import (
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // A stored catalog entry that collides with a global runtime var (e.g. a legacy
@@ -56,3 +56,4 @@ func TestWithGlobalVarsKeepsDistinctVars(t *testing.T) {
 		t.Fatalf("stored var order not preserved: %+v", out)
 	}
 }
+

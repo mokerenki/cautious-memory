@@ -2,32 +2,32 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-artex}
+      POSTGRES_USER: ${POSTGRES_USER:-cautiousmemory}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Please set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: ${POSTGRES_DB:-artex}
+      POSTGRES_DB: ${POSTGRES_DB:-cautiousmemory}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-artex} -d ${POSTGRES_DB:-artex}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cautiousmemory} -d ${POSTGRES_DB:-cautiousmemory}"]
       interval: 5s
       timeout: 3s
       retries: 10
     restart: unless-stopped
 
-  artex:
-    image: ${ARTEX_IMAGE:-ruoji6/artex}:${ARTEX_TAG:-latest}
+  cautiousmemory:
+    image: ${CAUTIOUSMEMORY_IMAGE:-ruoji6/cautiousmemory}:${CAUTIOUSMEMORY_TAG:-latest}
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       TZ: Asia/Shanghai
-      ARTEX_PG_DSN: postgres://${POSTGRES_USER:-artex}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-artex}?sslmode=disable
+      CAUTIOUSMEMORY_PG_DSN: postgres://${POSTGRES_USER:-cautiousmemory}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cautiousmemory}?sslmode=disable
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ARTEX_LLM_PROVIDER: ${ARTEX_LLM_PROVIDER:-}
-      ARTEX_LLM_MODEL: ${ARTEX_LLM_MODEL:-}
-      ARTEX_LLM_BASE_URL: ${ARTEX_LLM_BASE_URL:-}
-      ARTEX_LLM_PROXY: ${ARTEX_LLM_PROXY:-}
+      CAUTIOUSMEMORY_LLM_PROVIDER: ${CAUTIOUSMEMORY_LLM_PROVIDER:-}
+      CAUTIOUSMEMORY_LLM_MODEL: ${CAUTIOUSMEMORY_LLM_MODEL:-}
+      CAUTIOUSMEMORY_LLM_BASE_URL: ${CAUTIOUSMEMORY_LLM_BASE_URL:-}
+      CAUTIOUSMEMORY_LLM_PROXY: ${CAUTIOUSMEMORY_LLM_PROXY:-}
     ports:
       - "8787:8787"
       - "127.0.0.1:8788:8788"
@@ -42,3 +42,4 @@ services:
 
 volumes:
   pgdata:
+

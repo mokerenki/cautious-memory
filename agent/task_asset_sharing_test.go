@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func TestTaskAssetSharingLiveToolPolicy(t *testing.T) {
@@ -74,3 +74,4 @@ func TestTaskAssetSharingLiveToolPolicy(t *testing.T) {
 		t.Fatalf("explicit opt-in should allow target and duplicate IDs: %v", err)
 	}
 }
+

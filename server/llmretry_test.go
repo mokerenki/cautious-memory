@@ -4,12 +4,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
-// 没有任何配置时，解析结果必须是全零 —— 也就是 SDK 与 task_llm 各自的内置默认，
-// 与「重试可配」这个特性上线之前逐字节一致。
+// æ²¡æœ‰ä»»ä½•é…ç½®æ—¶ï¼Œè§£æžç»“æžœå¿…é¡»æ˜¯å…¨é›¶ â€”â€” ä¹Ÿå°±æ˜¯ SDK ä¸Ž task_llm å„è‡ªçš„å†…ç½®é»˜è®¤ï¼Œ
+// ä¸Žã€Œé‡è¯•å¯é…ã€è¿™ä¸ªç‰¹æ€§ä¸Šçº¿ä¹‹å‰é€å­—èŠ‚ä¸€è‡´ã€‚
 func TestResolveRetryUnconfigured(t *testing.T) {
 	got := resolveRetry(db.RetryOverride{}, db.LLMRetryPolicy{})
 	if got != (agent.RetryConfig{}) {
@@ -95,3 +95,4 @@ func TestRetryRuleClamp(t *testing.T) {
 		t.Fatalf("stream=%d/%v, want the 20-attempt / 1h caps", got.StreamAttempts, got.StreamInterval)
 	}
 }
+

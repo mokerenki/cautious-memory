@@ -1,4 +1,4 @@
-package selfupdate
+﻿package selfupdate
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 // Repo is the release source. It is hardcoded rather than configurable: a configurable
 // update source would give anyone who can change configuration a remote code execution
 // channel, which is unacceptable for a penetration testing platform.
-const Repo = "RuoJi6/ARTEX"
+const Repo = "RuoJi6/CAUTIOUSMEMORY"
 
 // latestURL is GitHub's "latest stable release" endpoint. It automatically skips
 // prereleases and drafts.
@@ -128,7 +128,7 @@ func FetchLatest(ctx context.Context, c *http.Client) (*Release, error) {
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "artex-selfupdate")
+	req.Header.Set("User-Agent", "CAUTIOUSMEMORY-selfupdate")
 
 	resp, err := c.Do(req)
 	if err != nil {
@@ -158,9 +158,9 @@ func FetchLatest(ctx context.Context, c *http.Client) (*Release, error) {
 }
 
 // AssetName returns the release package name for the current platform, consistent with
-// package_binary in build.sh: artex-<version>-<os>-<arch>.zip (version without the v prefix).
+// package_binary in build.sh: CAUTIOUSMEMORY-<version>-<os>-<arch>.zip (version without the v prefix).
 func AssetName(tag, goos, goarch string) string {
-	return fmt.Sprintf("artex-%s-%s-%s.zip", strings.TrimPrefix(tag, "v"), goos, goarch)
+	return fmt.Sprintf("CAUTIOUSMEMORY-%s-%s-%s.zip", strings.TrimPrefix(tag, "v"), goos, goarch)
 }
 
 // FindAsset finds an asset in the Release by name.
@@ -172,3 +172,4 @@ func (r *Release) FindAsset(name string) (Asset, bool) {
 	}
 	return Asset{}, false
 }
+

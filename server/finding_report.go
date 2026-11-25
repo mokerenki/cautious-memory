@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // generateFindingReport requeues the existing reporter workflow for a finding.
@@ -58,7 +58,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	message := manualFindingReportMessage(f, taskID)
-	conversation, err := s.m.pg.CreateConversation("reporter", fmt.Sprintf("Vulnerability report · finding#%d", f.ID), nil)
+	conversation, err := s.m.pg.CreateConversation("reporter", fmt.Sprintf("Vulnerability report Â· finding#%d", f.ID), nil)
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "Failed to create report conversation: "+err.Error())
 		return
@@ -69,7 +69,7 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 	}
 	s.StartTriggeredRunWithConversation(
 		"reporter",
-		fmt.Sprintf("Manually generate steps and report · finding#%d", f.ID),
+		fmt.Sprintf("Manually generate steps and report Â· finding#%d", f.ID),
 		message,
 		taskID,
 		false,
@@ -88,12 +88,13 @@ func (s *Server) generateFindingReport(w http.ResponseWriter, r *http.Request) {
 func manualFindingReportMessage(f *db.DBFinding, taskID int64) string {
 	var b strings.Builder
 	b.WriteString("[Manually regenerate steps and report] This is a registered vulnerability; please supplement structured reproduction steps and a complete detailed report for it; do not create new vulnerability records, nor modify or delete original evidence.\n")
-	fmt.Fprintf(&b, "独立漏洞记录 ID（finding_id）=%d；探索节点 ID（finding_node_id）=%d。\n", f.ID, *f.NodeID)
+	fmt.Fprintf(&b, "ç‹¬ç«‹æ¼æ´žè®°å½• IDï¼ˆfinding_idï¼‰=%dï¼›æŽ¢ç´¢èŠ‚ç‚¹ IDï¼ˆfinding_node_idï¼‰=%dã€‚\n", f.ID, *f.NodeID)
 	if taskID > 0 {
-		fmt.Fprintf(&b, "来源任务 ID=%d。\n", taskID)
+		fmt.Fprintf(&b, "æ¥æºä»»åŠ¡ ID=%dã€‚\n", taskID)
 	}
-	b.WriteString("先读取 get_finding_traffic(finding_id) 的当前证据清单及 version，再读取节点详情和任务执行记录；只使用实际保存的请求、响应和执行证据，不臆造步骤或数据包。\n")
-	b.WriteString("报告必须包含“概述”“影响与危害”“受影响范围”“复现步骤”“根因分析”“修复建议”，并在复现步骤中按“步骤 1、步骤 2 …”完整展开。数据包只能引用该漏洞已绑定的真实流量。\n")
-	b.WriteString("最后调用 update_finding_report：finding_id 使用探索节点 ID，evidence_version 使用刚读取的证据版本；报告正文保存为 Markdown。")
+	b.WriteString("å…ˆè¯»å– get_finding_traffic(finding_id) çš„å½“å‰è¯æ®æ¸…å•åŠ versionï¼Œå†è¯»å–èŠ‚ç‚¹è¯¦æƒ…å’Œä»»åŠ¡æ‰§è¡Œè®°å½•ï¼›åªä½¿ç”¨å®žé™…ä¿å­˜çš„è¯·æ±‚ã€å“åº”å’Œæ‰§è¡Œè¯æ®ï¼Œä¸è‡†é€ æ­¥éª¤æˆ–æ•°æ®åŒ…ã€‚\n")
+	b.WriteString("æŠ¥å‘Šå¿…é¡»åŒ…å«â€œæ¦‚è¿°â€â€œå½±å“ä¸Žå±å®³â€â€œå—å½±å“èŒƒå›´â€â€œå¤çŽ°æ­¥éª¤â€â€œæ ¹å› åˆ†æžâ€â€œä¿®å¤å»ºè®®â€ï¼Œå¹¶åœ¨å¤çŽ°æ­¥éª¤ä¸­æŒ‰â€œæ­¥éª¤ 1ã€æ­¥éª¤ 2 â€¦â€å®Œæ•´å±•å¼€ã€‚æ•°æ®åŒ…åªèƒ½å¼•ç”¨è¯¥æ¼æ´žå·²ç»‘å®šçš„çœŸå®žæµé‡ã€‚\n")
+	b.WriteString("æœ€åŽè°ƒç”¨ update_finding_reportï¼šfinding_id ä½¿ç”¨æŽ¢ç´¢èŠ‚ç‚¹ IDï¼Œevidence_version ä½¿ç”¨åˆšè¯»å–çš„è¯æ®ç‰ˆæœ¬ï¼›æŠ¥å‘Šæ­£æ–‡ä¿å­˜ä¸º Markdownã€‚")
 	return b.String()
 }
+

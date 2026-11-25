@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // pgListCommands returns tool executions (any tool) from the activity table.
@@ -24,7 +24,7 @@ func (s *Server) pgListCommands(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgToolStats returns per-tool call counts for the tool-execution history, under
-// the same task/keyword filters the list takes — the summary describes the whole
+// the same task/keyword filters the list takes â€” the summary describes the whole
 // filtered set, not the page on screen.
 func (s *Server) pgToolStats(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
@@ -41,7 +41,7 @@ func (s *Server) pgToolStats(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"stats": stats})
 }
 
-// commandTaskFilter parses the ?task= exploration id. Absent or unparsable → nil
+// commandTaskFilter parses the ?task= exploration id. Absent or unparsable â†’ nil
 // (no filter), matching the list endpoint's long-standing lenient behaviour.
 func commandTaskFilter(v string) *int64 {
 	if v == "" {
@@ -119,7 +119,7 @@ func (s *Server) pgUsageStats(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgLLMTasks returns distinct recorded tasks with counts, for the page's task
-// picker (pick a task → filter the list, then delete its conversations).
+// picker (pick a task â†’ filter the list, then delete its conversations).
 func (s *Server) pgLLMTasks(w http.ResponseWriter, r *http.Request) {
 	tasks, err := s.m.PG().LLMTasks()
 	if err != nil {
@@ -130,7 +130,7 @@ func (s *Server) pgLLMTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // pgDeleteLLMRecords removes all LLM records for one exact task_id (the same
-// match the task picker uses). Empty task → 400. Returns rows deleted.
+// match the task picker uses). Empty task â†’ 400. Returns rows deleted.
 func (s *Server) pgDeleteLLMRecords(w http.ResponseWriter, r *http.Request) {
 	task := strings.TrimSpace(r.URL.Query().Get("task"))
 	if task == "" {
@@ -159,3 +159,4 @@ func (s *Server) pgGetLLMRecord(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, rec)
 }
+

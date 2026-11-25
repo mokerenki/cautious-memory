@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func intelligenceError(w http.ResponseWriter, err error) {
@@ -132,3 +132,4 @@ func (s *Server) updateIntelligence(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, map[string]bool{"updated": true})
 }
+

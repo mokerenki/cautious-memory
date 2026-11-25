@@ -10,12 +10,12 @@ Fixed on 2026-09-11. The original implementation directly treated the character 
 - [OpenCode session compaction](https://github.com/anomalyco/opencode/blob/b3f1a96c6dd7adeb28b36dd11add1998fc84d67b/packages/core/src/session/compaction.ts): full request estimation, output/buffer reservation, recent content plus rolling summary, no-tool summary request; this implementation defaults to a recent budget of 8000 and a summary output limit of 4096 tokens.
 - [OpenCode overflow recovery](https://github.com/anomalyco/opencode/blob/b3f1a96c6dd7adeb28b36dd11add1998fc84d67b/packages/core/src/session/runner/llm.ts): overflow recovery is attempted only before assistant output has started, and the call after recovery no longer enters the same overflow recovery path.
 
-ARTEX borrows the ideas of an independent output budget, recent content plus rolling summary, and limited recovery. It keeps norma v0.3.6's structured messages and tool pairing, does not copy Grok's text extraction; and does not write OpenCode's main session compaction events into the ARTEX main transcript.
+cautiousmemory borrows the ideas of an independent output budget, recent content plus rolling summary, and limited recovery. It keeps norma v0.3.6's structured messages and tool pairing, does not copy Grok's text extraction; and does not write OpenCode's main session compaction events into the cautiousmemory main transcript.
 
 ## Request Budget and Execution
 
 - Messages use norma's per-content-block UTF-8 byte estimation and a 4/3 margin; the system prompt, tool schema, and message-wrapping overhead are additionally counted. The estimation is not the model's exact token count.
-- The side output defaults to at most 8192 tokens, and also does not exceed the output limit already set in the main config. The service environment variable `ARTEX_BTW_MAX_OUTPUT_TOKENS` can set an upper limit of 256–32768; it does not modify the product default model or main task parameters.
+- The side output defaults to at most 8192 tokens, and also does not exceed the output limit already set in the main config. The service environment variable `CAUTIOUSMEMORY_BTW_MAX_OUTPUT_TOKENS` can set an upper limit of 256â€“32768; it does not modify the product default model or main task parameters.
 - The input budget is the context window minus the output limit and a safety margin; for an unknown window, the platform default of 200K is used. The safety margin is 5% of the window, with a minimum of 128 and a maximum of 8192 tokens.
 - Successful Q&A are loaded at most 20 groups per batch by incrementing ordinal. At most 20 groups of raw text are retained, whose token budget is at most 1/4 of the input budget, and no more than 16K.
 - Excess Q&A are updated into a rolling summary. The summary carries the historical source and context time; historical assistant answers are not equivalent to new tool evidence, and on conflict the latest main snapshot takes precedence.
@@ -39,7 +39,7 @@ POST first accepts and returns the request; preparation and compaction run in th
 - Summary failure/cancel/truncation/over-length/tool return, clearing race, call limit, only-once overflow recovery, and no retry on partial stream: automated checks passed.
 - Paging on an independent PostgreSQL, restart, v1/v2/v3 archiving, summary cache and budget metadata archive recovery, old v3 missing new fields, 20 parent sessions sharing four concurrency slots: passed.
 - Go candidate service build, frontend TypeScript check, Biome check of modified components, and Next.js production build in an independent directory: passed.
-- The built-in browser uses an independent UI fixture, verifying the organization phase, summary range prompt, draft recovery after failure, no floating error notification, no horizontal overflow, and no console errors at 1280×720 and 390×844. Temporary fixtures were removed.
+- The built-in browser uses an independent UI fixture, verifying the organization phase, summary range prompt, draft recovery after failure, no floating error notification, no horizontal overflow, and no console errors at 1280Ã—720 and 390Ã—844. Temporary fixtures were removed.
 - Read-only replay of the local existing Worker snapshot passed with the new budget check; for example, Worker #3's 293085-character snapshot is no longer mistakenly rejected by local character counting. This item had no external model call.
 - This time, sending a private Worker snapshot to Grok's real conversation test was rejected by the automated approval review and was not executed; it is not counted as a passing item.
 - At 2026-09-11 00:37 the local backend was restarted at the user's request, using the original database, data directory, and login configuration. The running binary matched the candidate binary's SHA-256; both the backend and the frontend proxy's `/api/health` returned normal.
@@ -48,9 +48,10 @@ Validation commands (using only the independent test database):
 
 ```sh
 go test -race ./sidequestion ./db ./server -run 'TestSide|TestCheckpoint|TestSnapshot|TestBuildRequest|TestService|TestMainSide|TestTaskArchive' -count=1
-go build ./cmd/artex
+go build ./cmd/cautiousmemory
 npx tsc --noEmit
 npm run build -- --webpack
 ```
 
-The frontend production build uses an independent copy to avoid overwriting the currently previewed `.next`. The candidate service is located at `/private/tmp/artex-btw-budget-candidate`, copied to `/private/tmp/artex-btw-preview/artex` and started; the original binary is backed up as `artex.before-context-budget` in the same directory.
+The frontend production build uses an independent copy to avoid overwriting the currently previewed `.next`. The candidate service is located at `/private/tmp/cautiousmemory-btw-budget-candidate`, copied to `/private/tmp/cautiousmemory-btw-preview/cautiousmemory` and started; the original binary is backed up as `cautiousmemory.before-context-budget` in the same directory.
+

@@ -19,25 +19,25 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/intercept"
-	"github.com/Autumn-27/artex/intercept/jev"
-	"github.com/Autumn-27/artex/llmpool"
-	"github.com/Autumn-27/artex/llmrec"
-	"github.com/Autumn-27/artex/report"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/intercept"
+	"github.com/Autumn-27/cautiousmemory/intercept/jev"
+	"github.com/Autumn-27/cautiousmemory/llmpool"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
+	"github.com/Autumn-27/cautiousmemory/report"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 	"github.com/Autumn-27/norma/llm"
 	actool "github.com/Autumn-27/norma/tool"
 	"github.com/Autumn-27/norma/transcript"
 )
 
-// BuildVersion is the backend application version, injected from cmd/artex at
+// BuildVersion is the backend application version, injected from cmd/CAUTIOUSMEMORY at
 // startup (which in turn gets it from -ldflags "-X main.version=<tag>").
 // Defaults to "dev" for local builds. Exposed via the authenticated GET /api/version.
 var BuildVersion = "dev"
 
-// Server exposes the ARTEX backend over a JSON HTTP API for the shadcn/ui
+// Server exposes the CAUTIOUSMEMORY backend over a JSON HTTP API for the shadcn/ui
 // frontend.
 type Server struct {
 	scheduleMu sync.Mutex
@@ -71,24 +71,24 @@ type Server struct {
 	// chatBusy guards the per-task main-agent run: the chat handler launches the
 	// agent on the server's background ctx (not the request ctx) and returns
 	// immediately, so a page reload / proxy timeout can't abort a live run. This
-	// map serializes turns per task — one main-agent run at a time per task, so
+	// map serializes turns per task â€” one main-agent run at a time per task, so
 	// concurrent messages don't corrupt the shared exp<id>-main transcript.
 	chatMu   sync.Mutex
 	chatBusy map[string]bool
 	// chatCancel holds the cancel func for each in-flight conversation run (keyed by
 	// convBusyKey), so a manual stop can abort JUST that session's agent run. Set/
 	// cleared alongside chatBusy under chatMu. Aborting a run does NOT touch the P3
-	// trigger queue — the drain goroutine simply proceeds to the next queued fire.
+	// trigger queue â€” the drain goroutine simply proceeds to the next queued fire.
 	chatCancel map[string]context.CancelCauseFunc
 
 	// triggerQ buffers P3 trigger fires PER AGENT. A per-agent "pump" launches runs up
-	// to a concurrency limit derived from the agent's策略: serial → limit 1 (+ optional
-	// merge); parallel → limit = trigger_max_parallel (0=∞), no merge. triggerActive
+	// to a concurrency limit derived from the agent'sç­–ç•¥: serial â†’ limit 1 (+ optional
+	// merge); parallel â†’ limit = trigger_max_parallel (0=âˆž), no merge. triggerActive
 	// counts in-flight runs per agent (replaces a boolean drain flag); a run's
 	// completion decrements it and re-pumps to fill the freed slot. triggerCfg caches
-	// the agent's last-read策略 so the pump never queries the DB while holding queueMu.
+	// the agent's last-readç­–ç•¥ so the pump never queries the DB while holding queueMu.
 	// Distinct agents always run concurrently. Queue is in-memory (matches chatBusy); a
-	// restart drops pending fires — the scheduler re-fires from watermarks next tick.
+	// restart drops pending fires â€” the scheduler re-fires from watermarks next tick.
 	queueMu       sync.Mutex
 	triggerQ      map[string][]triggeredRun
 	triggerActive map[string]int
@@ -101,7 +101,7 @@ type Server struct {
 	profChatAgents map[int64]*agent.ChatAgent // per-profile ChatAgent cache (chat page)
 
 	// provByProfile caches ONE provider per LLM profile id so every agent bound or
-	// pinned to the same profile shares a single provider instance — hence one rate
+	// pinned to the same profile shares a single provider instance â€” hence one rate
 	// limiter. applyLLM also resolves the persisted global-active profile through this
 	// cache, so global fallback and task chains do not accidentally double the
 	// configured request rate. Cleared on profile edits, then repopulated by active reapply.
@@ -112,7 +112,7 @@ type Server struct {
 	// to the non-persisted global config; persisted profiles use their DB IDs.
 	requestLimiters map[int64]*agent.RequestLimiter
 
-	// llmHealth is the process-wide circuit-breaker state for LLM failover (轮询).
+	// llmHealth is the process-wide circuit-breaker state for LLM failover (è½®è¯¢).
 	// It deliberately lives OUTSIDE the provider caches: rebuilding the chain
 	// (saving an unrelated profile, flipping a setting) must not erase what we
 	// learned about which backends are out of credit / rate-limited.
@@ -157,10 +157,10 @@ type triggeredRun struct {
 
 	agentKey  string
 	title     string
-	message   string // 事件正文(触发语 + 工具/入参/返回等);不含任务描述/目标头
+	message   string // äº‹ä»¶æ­£æ–‡(è§¦å‘è¯­ + å·¥å…·/å…¥å‚/è¿”å›žç­‰);ä¸å«ä»»åŠ¡æè¿°/ç›®æ ‡å¤´
 	taskID    int64  // source task for finding/goal triggers; 0 for interval/none
-	taskDesc  string // 任务描述(任务级,同任务相同);合并时只渲染一次
-	taskGoal  string // 任务目标(任务级,同任务相同);合并时只渲染一次
+	taskDesc  string // ä»»åŠ¡æè¿°(ä»»åŠ¡çº§,åŒä»»åŠ¡ç›¸åŒ);åˆå¹¶æ—¶åªæ¸²æŸ“ä¸€æ¬¡
+	taskGoal  string // ä»»åŠ¡ç›®æ ‡(ä»»åŠ¡çº§,åŒä»»åŠ¡ç›¸åŒ);åˆå¹¶æ—¶åªæ¸²æŸ“ä¸€æ¬¡
 	mergeable bool   // true for finding/goal event triggers (merge by taskID)
 }
 
@@ -182,8 +182,8 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 			log.Fatalf("[auth] load HTTP Basic Auth: %v", err)
 		}
 	}
-	// 熔断阈值/冷却是失败路径上的热参数，启动时把全局重试策略推给 Registry 一次；
-	// 之后每次保存策略再推一次（saveLLMRetryPolicy）。
+	// ç†”æ–­é˜ˆå€¼/å†·å´æ˜¯å¤±è´¥è·¯å¾„ä¸Šçš„çƒ­å‚æ•°ï¼Œå¯åŠ¨æ—¶æŠŠå…¨å±€é‡è¯•ç­–ç•¥æŽ¨ç»™ Registry ä¸€æ¬¡ï¼›
+	// ä¹‹åŽæ¯æ¬¡ä¿å­˜ç­–ç•¥å†æŽ¨ä¸€æ¬¡ï¼ˆsaveLLMRetryPolicyï¼‰ã€‚
 	s.applyRetryPolicy()
 	// Every task uses a stable task router. An empty explicit chain is resolved by
 	// that router through Agent bindings and then the global provider, so adding a
@@ -199,7 +199,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 		return s.workerForTaskSlot(t, slot)
 	})
 	// Global readiness (Ready()/llm_configured): a global active LLM provider is
-	// installed. Task-level runnability is separate (ReadyFor → the resolver above).
+	// installed. Task-level runnability is separate (ReadyFor â†’ the resolver above).
 	s.engine.SetReadiness(func() bool {
 		s.cfgMu.Lock()
 		defer s.cfgMu.Unlock()
@@ -209,8 +209,8 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 	if m.traffic != nil {
 		m.traffic.SetUpstreamFailureHandler(s.handleProxyTrafficFailure)
 	}
-	// Wire DB-stored prompt templates into the agents (新版方案 §3.3 / §5a). With no
-	// override row, agents keep their built-in defaults — behavior is unchanged.
+	// Wire DB-stored prompt templates into the agents (æ–°ç‰ˆæ–¹æ¡ˆ Â§3.3 / Â§5a). With no
+	// override row, agents keep their built-in defaults â€” behavior is unchanged.
 	if m.pg != nil {
 		agent.OpsecEnabled = func() bool { return m.pg.GetBool(settingOpsecEnabled, false) }
 		agent.PromptOverride = func(key string) (string, bool) {
@@ -225,12 +225,12 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 			if key == "reporter" && m.pg.GetBool(settingBrowserScreenshot, false) {
 				t += `
 
-【报告步骤截图已开启】
-				报告撰写时，针对每个复现步骤中真实出现且仍可访问的 HTTP 页面，使用 browser MCP 的 browser_navigate 和 browser_take_screenshot 截取页面证据。只导航到漏洞证据中出现的目标 URL，不要自行扩大测试范围。将截图保存到当前工作目录下的 findings/screenshots/ 目录，文件名使用 finding-<finding_id>-step-<n>.png；确认文件存在后，在对应步骤中**统一使用工作区相对路径**加入 Markdown 图片：![步骤 <n> 截图](findings/screenshots/finding-<finding_id>-step-<n>.png)。禁止使用绝对路径、workspace://、file://，也不要混用相对路径和绝对路径；报告中所有截图都必须使用这一种格式。截图失败时如实写明，不要用占位图或把截图描述冒充图片。`
+ã€æŠ¥å‘Šæ­¥éª¤æˆªå›¾å·²å¼€å¯ã€‘
+				æŠ¥å‘Šæ’°å†™æ—¶ï¼Œé’ˆå¯¹æ¯ä¸ªå¤çŽ°æ­¥éª¤ä¸­çœŸå®žå‡ºçŽ°ä¸”ä»å¯è®¿é—®çš„ HTTP é¡µé¢ï¼Œä½¿ç”¨ browser MCP çš„ browser_navigate å’Œ browser_take_screenshot æˆªå–é¡µé¢è¯æ®ã€‚åªå¯¼èˆªåˆ°æ¼æ´žè¯æ®ä¸­å‡ºçŽ°çš„ç›®æ ‡ URLï¼Œä¸è¦è‡ªè¡Œæ‰©å¤§æµ‹è¯•èŒƒå›´ã€‚å°†æˆªå›¾ä¿å­˜åˆ°å½“å‰å·¥ä½œç›®å½•ä¸‹çš„ findings/screenshots/ ç›®å½•ï¼Œæ–‡ä»¶åä½¿ç”¨ finding-<finding_id>-step-<n>.pngï¼›ç¡®è®¤æ–‡ä»¶å­˜åœ¨åŽï¼Œåœ¨å¯¹åº”æ­¥éª¤ä¸­**ç»Ÿä¸€ä½¿ç”¨å·¥ä½œåŒºç›¸å¯¹è·¯å¾„**åŠ å…¥ Markdown å›¾ç‰‡ï¼š![æ­¥éª¤ <n> æˆªå›¾](findings/screenshots/finding-<finding_id>-step-<n>.png)ã€‚ç¦æ­¢ä½¿ç”¨ç»å¯¹è·¯å¾„ã€workspace://ã€file://ï¼Œä¹Ÿä¸è¦æ··ç”¨ç›¸å¯¹è·¯å¾„å’Œç»å¯¹è·¯å¾„ï¼›æŠ¥å‘Šä¸­æ‰€æœ‰æˆªå›¾éƒ½å¿…é¡»ä½¿ç”¨è¿™ä¸€ç§æ ¼å¼ã€‚æˆªå›¾å¤±è´¥æ—¶å¦‚å®žå†™æ˜Žï¼Œä¸è¦ç”¨å ä½å›¾æˆ–æŠŠæˆªå›¾æè¿°å†’å……å›¾ç‰‡ã€‚`
 			}
 			return t, true
 		}
-		// Wire DB-stored wrap-up (settlement) prompts. Empty column → built-in default.
+		// Wire DB-stored wrap-up (settlement) prompts. Empty column â†’ built-in default.
 		agent.WrapupOverride = func(key string) (string, bool) {
 			a, err := m.pg.GetAgentByKey(key)
 			if err != nil || a == nil || a.WrapupPrompt == "" {
@@ -238,7 +238,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 			}
 			return a.WrapupPrompt, true
 		}
-		// Wire DB-stored wrap-up turn budgets. 0 / missing → built-in per-agent default.
+		// Wire DB-stored wrap-up turn budgets. 0 / missing â†’ built-in per-agent default.
 		agent.WrapupMaxTurnsOverride = func(key string) (int, bool) {
 			a, err := m.pg.GetAgentByKey(key)
 			if err != nil || a == nil || a.WrapupMaxTurns <= 0 {
@@ -246,7 +246,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 			}
 			return a.WrapupMaxTurns, true
 		}
-		// Wire DB-stored TASK-TIMEOUT wrap-up prompt/turns (worker/planner). Empty/0 → default.
+		// Wire DB-stored TASK-TIMEOUT wrap-up prompt/turns (worker/planner). Empty/0 â†’ default.
 		agent.WrapupTaskTimeoutOverride = func(key string) (string, bool) {
 			a, err := m.pg.GetAgentByKey(key)
 			if err != nil || a == nil || a.TaskTimeoutWrapupPrompt == "" {
@@ -261,19 +261,19 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 			}
 			return a.TaskTimeoutWrapupMaxTurns, true
 		}
-		wireAgentAugment(m.pg, s.skillDir, s.hostTools) // 可见 skills/MCP + 流量/编排 host 工具装配进 agent 工具集
+		wireAgentAugment(m.pg, s.skillDir, s.hostTools) // å¯è§ skills/MCP + æµé‡/ç¼–æŽ’ host å·¥å…·è£…é…è¿› agent å·¥å…·é›†
 		domainReg := buildDomainReg(m.Assets())
-		wireTools(m.pg, domainReg) // 内置工具表：按 agent 过滤 + 覆盖描述/schema + 注入默认值
-		seedPrompts(m.pg)          // 内置 agent 默认提示词正文播种进 agent_prompts(仅空时)
-		s.seedOrchestrationTools() // P2 跨任务编排工具 seed 进 tools 表(可按 agent 绑定)
+		wireTools(m.pg, domainReg) // å†…ç½®å·¥å…·è¡¨ï¼šæŒ‰ agent è¿‡æ»¤ + è¦†ç›–æè¿°/schema + æ³¨å…¥é»˜è®¤å€¼
+		seedPrompts(m.pg)          // å†…ç½® agent é»˜è®¤æç¤ºè¯æ­£æ–‡æ’­ç§è¿› agent_prompts(ä»…ç©ºæ—¶)
+		s.seedOrchestrationTools() // P2 è·¨ä»»åŠ¡ç¼–æŽ’å·¥å…· seed è¿› tools è¡¨(å¯æŒ‰ agent ç»‘å®š)
 		if err := s.seedFindingRetester(); err != nil {
 			log.Printf("[retester] seed: %v", err)
 		}
 		go s.evidenceStore().RunGC(s.ctx)
-		s.seedPythonInterpreter() // 自定义脚本工具:开机检测 python 解释器入库(仅空时)
+		s.seedPythonInterpreter() // è‡ªå®šä¹‰è„šæœ¬å·¥å…·:å¼€æœºæ£€æµ‹ python è§£é‡Šå™¨å…¥åº“(ä»…ç©ºæ—¶)
 		// Calendar scheduler starts after persisted tasks are restored.
-		// 漏洞 IM 推送投递引擎。与 Scheduler 并列但独立：推送的实时性要求(3s)
-		// 与触发器的业务节奏不同，且两者失败互不牵连——推送卡住不该影响 agent 触发。
+		// æ¼æ´ž IM æŽ¨é€æŠ•é€’å¼•æ“Žã€‚ä¸Ž Scheduler å¹¶åˆ—ä½†ç‹¬ç«‹ï¼šæŽ¨é€çš„å®žæ—¶æ€§è¦æ±‚(3s)
+		// ä¸Žè§¦å‘å™¨çš„ä¸šåŠ¡èŠ‚å¥ä¸åŒï¼Œä¸”ä¸¤è€…å¤±è´¥äº’ä¸ç‰µè¿žâ€”â€”æŽ¨é€å¡ä½ä¸è¯¥å½±å“ agent è§¦å‘ã€‚
 		go newNotifier(s).Run(s.ctx)
 		// Fill the tool cache for any enabled MCP that has none yet (notably the
 		// seeded browser MCP on first run). Async so it never blocks startup.
@@ -283,18 +283,18 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 	// precedence: persisted DB config > env.
 	if cfg, ok := s.loadLLMConfig(); ok {
 		if err := s.applyLLM(cfg); err != nil {
-			log.Printf("[engine] saved LLM config init failed — engine idle: %v", err)
+			log.Printf("[engine] saved LLM config init failed â€” engine idle: %v", err)
 		} else {
 			log.Printf("[engine] LLM configured from DB: %s / %s", cfg.Provider(), cfg.Model)
 		}
 	} else if cfg, ok := agent.FromEnv(); ok {
 		if err := s.applyLLM(cfg); err != nil {
-			log.Printf("[engine] env provider init failed — engine idle: %v", err)
+			log.Printf("[engine] env provider init failed â€” engine idle: %v", err)
 		} else {
 			log.Printf("[engine] LLM configured from env: %s / %s", cfg.Provider(), cfg.Model)
 		}
 	} else {
-		log.Printf("[engine] no LLM provider configured — engine idle until set via /api/llm or env")
+		log.Printf("[engine] no LLM provider configured â€” engine idle until set via /api/llm or env")
 	}
 	s.restoreTaskRuntimes()
 	s.ensureProxySupervisor()
@@ -312,7 +312,7 @@ func New(ctx context.Context, m *Manager, skillDir string, dataDir string, keyDi
 		s.seedCredentialProcessor()
 		go s.runCredentialProcessor()
 	}
-	s.wireInterceptReviewer() // LLM 兜底审批:未命中拦截规则的命令交给模型判定
+	s.wireInterceptReviewer() // LLM å…œåº•å®¡æ‰¹:æœªå‘½ä¸­æ‹¦æˆªè§„åˆ™çš„å‘½ä»¤äº¤ç»™æ¨¡åž‹åˆ¤å®š
 	return s
 }
 
@@ -334,13 +334,13 @@ func (s *Server) restoreTaskRuntimes() {
 		// clear stale 'running' intents from a prior crash/restart (no live worker
 		// owns them) so they re-claim instead of spinning forever in the UI.
 		if n, _ := t.Store.ResetRunningIntents(); n > 0 {
-			log.Printf("[engine] task %s 重置 %d 个残留 running 意图为 open", t.ID, n)
+			log.Printf("[engine] task %s é‡ç½® %d ä¸ªæ®‹ç•™ running æ„å›¾ä¸º open", t.ID, n)
 		}
 		if lifecycle.Paused {
 			s.engine.Pause(t.ID, agent.AbortPausedOnReload)
 		}
-		// 任务级超时:为每个未终态、带 timeout 的任务起 deadline 协调器,独立于 planner/worker
-		// loop——非活跃任务重启后也能在到点后被收尾(deadline 已过则立即走收尾时序)。
+		// ä»»åŠ¡çº§è¶…æ—¶:ä¸ºæ¯ä¸ªæœªç»ˆæ€ã€å¸¦ timeout çš„ä»»åŠ¡èµ· deadline åè°ƒå™¨,ç‹¬ç«‹äºŽ planner/worker
+		// loopâ€”â€”éžæ´»è·ƒä»»åŠ¡é‡å¯åŽä¹Ÿèƒ½åœ¨åˆ°ç‚¹åŽè¢«æ”¶å°¾(deadline å·²è¿‡åˆ™ç«‹å³èµ°æ”¶å°¾æ—¶åº)ã€‚
 		if !isTerminalStatus(lifecycle.Status) {
 			s.engine.startDeadlineCoordinator(s.ctx, t)
 		}
@@ -421,12 +421,12 @@ func (s *Server) saveLLMConfig(cfg agent.Config) error {
 	// Jev is intentionally handled by the dedicated intercept path.
 	format := cfg.Provider()
 	var id int64
-	// 这个 legacy 端点的请求体不含轮询/收发/输出上限参数,故把库里已存的值原样带回 —
-	// 否则每次保存都会把 profile 的 priority、pool_exclude、streaming 以及输出上限
-	// (max_tokens / max_tokens_field)悄悄重置成零值。
+	// è¿™ä¸ª legacy ç«¯ç‚¹çš„è¯·æ±‚ä½“ä¸å«è½®è¯¢/æ”¶å‘/è¾“å‡ºä¸Šé™å‚æ•°,æ•…æŠŠåº“é‡Œå·²å­˜çš„å€¼åŽŸæ ·å¸¦å›ž â€”
+	// å¦åˆ™æ¯æ¬¡ä¿å­˜éƒ½ä¼šæŠŠ profile çš„ priorityã€pool_excludeã€streaming ä»¥åŠè¾“å‡ºä¸Šé™
+	// (max_tokens / max_tokens_field)æ‚„æ‚„é‡ç½®æˆé›¶å€¼ã€‚
 	var priority int
 	var poolExclude bool
-	streaming := true // 旧库/新建默认流式
+	streaming := true // æ—§åº“/æ–°å»ºé»˜è®¤æµå¼
 	var maxTokens int
 	var maxTokensField string
 	var sessionHeaderKey string
@@ -525,9 +525,9 @@ func (s *Server) applyLLM(cfg agent.Config) error {
 	s.cfgMu.Lock()
 	s.llmDirect = prov
 	s.cfgMu.Unlock()
-	// LLM 轮询(默认关):把激活配置包进故障转移链,当前配置不可用时自动切下一个。
-	// 只影响「走全局激活配置」的这条路径——agent 绑定 / 任务 pin 的走 providerForProfile,
-	// 默认仍然独占该配置(见 poolForBinding)。关闭或无备选时返回原 provider,行为不变。
+	// LLM è½®è¯¢(é»˜è®¤å…³):æŠŠæ¿€æ´»é…ç½®åŒ…è¿›æ•…éšœè½¬ç§»é“¾,å½“å‰é…ç½®ä¸å¯ç”¨æ—¶è‡ªåŠ¨åˆ‡ä¸‹ä¸€ä¸ªã€‚
+	// åªå½±å“ã€Œèµ°å…¨å±€æ¿€æ´»é…ç½®ã€çš„è¿™æ¡è·¯å¾„â€”â€”agent ç»‘å®š / ä»»åŠ¡ pin çš„èµ° providerForProfile,
+	// é»˜è®¤ä»ç„¶ç‹¬å è¯¥é…ç½®(è§ poolForBinding)ã€‚å…³é—­æˆ–æ— å¤‡é€‰æ—¶è¿”å›žåŽŸ provider,è¡Œä¸ºä¸å˜ã€‚
 	if act, err := s.m.pg.ActiveProfile(); err == nil && act != nil {
 		prov = s.poolForActive(act.ID, prov, cfg)
 	}
@@ -537,13 +537,13 @@ func (s *Server) applyLLM(cfg agent.Config) error {
 
 	tx := transcript.NewStore(filepath.Join(s.m.dir, "transcripts"))
 	win := cfg.CompactionWindow()
-	// chat stays the GLOBAL fallback since one ChatAgent serves many agent keys — its
-	// per-agent binding is resolved at Chat time (runConversationSync →
+	// chat stays the GLOBAL fallback since one ChatAgent serves many agent keys â€” its
+	// per-agent binding is resolved at Chat time (runConversationSync â†’
 	// chatAgentForProfile). The main-agent has no global instance: each task builds its
 	// own via agentsForTask (task-routed), so nothing is constructed for it here.
 	s.cfgMu.Lock()
-	// chat agent serves MANY custom agents by key → it holds the GLOBAL opts
-	// (backend/key) and gates Enabled per-conversation-agent at Chat time. 对话始终用激活配置。
+	// chat agent serves MANY custom agents by key â†’ it holds the GLOBAL opts
+	// (backend/key) and gates Enabled per-conversation-agent at Chat time. å¯¹è¯å§‹ç»ˆç”¨æ¿€æ´»é…ç½®ã€‚
 	s.chatAgent = agent.NewChatAgent(prov, cfg.Model, s.m.dir, tx, win) // chat page runner
 	s.chatAgent.SetProxy(s.m.ProxyAddr(), s.m.ProxyCACert())
 	s.chatAgent.SetProxyProvider(s.m.ProxyAddr)
@@ -551,7 +551,7 @@ func (s *Server) applyLLM(cfg agent.Config) error {
 	s.chatAgent.SetGuard(s.chatGuard())
 	s.chatAgent.SetNonStreaming(nonStreamingResolver(cfg))
 	s.chatAgent.SetMaxTokens(maxTokensResolver(cfg))
-	s.chatAgent.SetNoaEnabled(s.m.NoaCompactionEnabled) // 实验功能:noa 上下文压缩(每 run 读)
+	s.chatAgent.SetNoaEnabled(s.m.NoaCompactionEnabled) // å®žéªŒåŠŸèƒ½:noa ä¸Šä¸‹æ–‡åŽ‹ç¼©(æ¯ run è¯»)
 	s.llmProv = prov
 	s.llmCfg = cfg
 	s.llmOn = true
@@ -598,7 +598,7 @@ func (s *Server) profileConfig(p *db.LLMProfile) (agent.Config, bool) {
 }
 
 // effectiveProfileForAgent resolves the LLM profile id an agent should run on, by
-// precedence: agent binding (agents.llm_profile_id) → pin (task/conversation) → nil
+// precedence: agent binding (agents.llm_profile_id) â†’ pin (task/conversation) â†’ nil
 // (caller falls back to the global active profile). A binding to a deleted profile
 // can't happen (FK ON DELETE SET NULL); an otherwise-invalid one is dropped downstream
 // by loadProfileConfig, letting the caller fall back.
@@ -614,8 +614,8 @@ func (s *Server) effectiveProfileForAgent(agentKey string, pinID *int64) *int64 
 // resolveChatAgent picks the ChatAgent for one conversation: the agent's own
 // binding or this conversation's chosen profile first, the global active config
 // only as a fallback. Both the send precheck and the background runner MUST use
-// this — resolving differently in the two paths is how a conversation that had
-// picked a valid profile still got rejected with "LLM 未配置" when no global
+// this â€” resolving differently in the two paths is how a conversation that had
+// picked a valid profile still got rejected with "LLM æœªé…ç½®" when no global
 // config was active.
 func (s *Server) resolveChatAgent(c *db.Conversation) *agent.ChatAgent {
 	ca := s.chatAgentRef()
@@ -629,17 +629,17 @@ func (s *Server) resolveChatAgent(c *db.Conversation) *agent.ChatAgent {
 
 // chatUnavailableReason explains why no ChatAgent could be resolved, so the user
 // knows whether to add a config, activate one, or pick one for this conversation
-// — rather than a flat "not configured" that hides which of those it is.
+// â€” rather than a flat "not configured" that hides which of those it is.
 func (s *Server) chatUnavailableReason() string {
 	if s.m.pg != nil {
 		if profiles, err := s.m.pg.ListProfiles(); err == nil && len(profiles) == 0 {
-			return "尚未配置 LLM：请到 系统 → LLM 配置 添加一个配置"
+			return "å°šæœªé…ç½® LLMï¼šè¯·åˆ° ç³»ç»Ÿ â†’ LLM é…ç½® æ·»åŠ ä¸€ä¸ªé…ç½®"
 		}
 		if active, err := s.m.pg.ActiveProfile(); err == nil && active == nil {
-			return "没有已激活的 LLM 配置：请到 系统 → LLM 配置 激活一个，或在本对话为该会话指定一个配置"
+			return "æ²¡æœ‰å·²æ¿€æ´»çš„ LLM é…ç½®ï¼šè¯·åˆ° ç³»ç»Ÿ â†’ LLM é…ç½® æ¿€æ´»ä¸€ä¸ªï¼Œæˆ–åœ¨æœ¬å¯¹è¯ä¸ºè¯¥ä¼šè¯æŒ‡å®šä¸€ä¸ªé…ç½®"
 		}
 	}
-	return "LLM 未就绪，无法对话：请检查 系统 → LLM 配置是否有可用且已激活的配置"
+	return "LLM æœªå°±ç»ªï¼Œæ— æ³•å¯¹è¯ï¼šè¯·æ£€æŸ¥ ç³»ç»Ÿ â†’ LLM é…ç½®æ˜¯å¦æœ‰å¯ç”¨ä¸”å·²æ¿€æ´»çš„é…ç½®"
 }
 
 // providerForProfile returns a cached provider+cfg for a profile id, so every agent
@@ -691,7 +691,7 @@ func (s *Server) providerForProfile(id int64) (llm.Provider, agent.Config, bool)
 		s.provCacheMu.Unlock()
 		return s.providerForProfile(id)
 	}
-	if e := s.provByProfile[id]; e != nil { // lost the race → keep the winner
+	if e := s.provByProfile[id]; e != nil { // lost the race â†’ keep the winner
 		if e.jev {
 			s.provCacheMu.Unlock()
 			return nil, agent.Config{}, false
@@ -755,9 +755,9 @@ func (s *Server) chatAgentForProfile(id int64) *agent.ChatAgent {
 	ca.SetGuard(s.chatGuard())
 	ca.SetNonStreaming(nonStreamingResolver(cfg))
 	ca.SetMaxTokens(maxTokensResolver(cfg))
-	ca.SetNoaEnabled(s.m.NoaCompactionEnabled) // 实验功能:noa 上下文压缩(每 run 读)
+	ca.SetNoaEnabled(s.m.NoaCompactionEnabled) // å®žéªŒåŠŸèƒ½:noa ä¸Šä¸‹æ–‡åŽ‹ç¼©(æ¯ run è¯»)
 	s.profMu.Lock()
-	if ex := s.profChatAgents[id]; ex != nil { // lost the race → keep the winner
+	if ex := s.profChatAgents[id]; ex != nil { // lost the race â†’ keep the winner
 		ca = ex
 	} else {
 		s.profChatAgents[id] = ca
@@ -767,7 +767,7 @@ func (s *Server) chatAgentForProfile(id int64) *agent.ChatAgent {
 }
 
 // invalidateProfileAgents drops the per-profile ChatAgent + provider caches so a profile
-// save/activate/delete — or an agent's binding change — rebuilds pinned tasks' agents
+// save/activate/delete â€” or an agent's binding change â€” rebuilds pinned tasks' agents
 // (and re-resolves each agent's bound model) on their next round.
 func (s *Server) invalidateProfileAgents() {
 	s.profMu.Lock()
@@ -790,7 +790,7 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	s.registerSideRoutes(mux)
 
-	// Auth routes — exempt from JWT check (handled in requireAuth)
+	// Auth routes â€” exempt from JWT check (handled in requireAuth)
 	mux.HandleFunc("GET /api/auth/status", s.authStatus)
 	mux.HandleFunc("POST /api/auth/init", s.authInit)
 	mux.HandleFunc("POST /api/auth/login", s.authLogin)
@@ -810,8 +810,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/logs/history", s.getLogsHistory)
 	mux.HandleFunc("GET /api/logs/stream", s.streamLogs)
 
-	// 页面一键更新。走的是默认的 JWT 鉴权（auth.go 只放行 /api/auth/* 和
-	// /api/health），所以这几个改动程序自身的接口天然需要登录。
+	// é¡µé¢ä¸€é”®æ›´æ–°ã€‚èµ°çš„æ˜¯é»˜è®¤çš„ JWT é‰´æƒï¼ˆauth.go åªæ”¾è¡Œ /api/auth/* å’Œ
+	// /api/healthï¼‰ï¼Œæ‰€ä»¥è¿™å‡ ä¸ªæ”¹åŠ¨ç¨‹åºè‡ªèº«çš„æŽ¥å£å¤©ç„¶éœ€è¦ç™»å½•ã€‚
 	mux.HandleFunc("GET /api/update/settings", s.getUpdateSettings)
 	mux.HandleFunc("PUT /api/update/settings", s.putUpdateSettings)
 	mux.HandleFunc("GET /api/update/check", s.updateCheck)
@@ -843,7 +843,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/tasks/{id}", s.getTask)
 	mux.HandleFunc("PATCH /api/tasks/{id}", s.updateTaskMetadata)
 	mux.HandleFunc("PATCH /api/tasks/{id}/category", s.updateTaskCategory)
-	// 任务级资产拦截/允许规则
+	// ä»»åŠ¡çº§èµ„äº§æ‹¦æˆª/å…è®¸è§„åˆ™
 	mux.HandleFunc("GET /api/tasks/{id}/intercept-rules", s.taskInterceptListRules)
 	mux.HandleFunc("POST /api/tasks/{id}/intercept-rules", s.taskInterceptCreateRule)
 	mux.HandleFunc("PUT /api/tasks/{id}/intercept-rules/{rid}", s.taskInterceptUpdateRule)
@@ -872,7 +872,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/tasks/{id}/assets/{assetID}", s.detachTaskAsset)
 	mux.HandleFunc("GET /api/tasks/{id}/intent-assets", s.taskIntentAssets)
 
-	// 工作空间文件管理器（针对 workDir）
+	// å·¥ä½œç©ºé—´æ–‡ä»¶ç®¡ç†å™¨ï¼ˆé’ˆå¯¹ workDirï¼‰
 	mux.HandleFunc("GET /api/workspace/list", s.wsList)
 	mux.HandleFunc("GET /api/workspace/read", s.wsRead)
 	mux.HandleFunc("POST /api/workspace/write", s.wsWrite)
@@ -884,21 +884,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/tasks/{id}/scope", s.taskScopeList)
 	mux.HandleFunc("POST /api/tasks/{id}/scope", s.taskScopeAdd)
 	mux.HandleFunc("DELETE /api/tasks/{id}/scope/{sid}", s.taskScopeDelete)
-	mux.HandleFunc("GET /api/tasks/{id}/goals", s.listGoals)                       // 目标管理:列出本任务全部目标
-	mux.HandleFunc("POST /api/tasks/{id}/goals", s.addGoal)                        // 目标管理:人工新增目标(复活任务)
-	mux.HandleFunc("PATCH /api/tasks/{id}/goals/{gid}", s.editGoal)                // 目标管理:修改目标(复活任务)
-	mux.HandleFunc("DELETE /api/tasks/{id}/goals/{gid}", s.deleteGoal)             // 目标管理:硬删除目标(不复活)
-	mux.HandleFunc("GET /api/tasks/{id}/constraints", s.listConstraints)           // 约束管理:列出本任务操作约束
-	mux.HandleFunc("POST /api/tasks/{id}/constraints", s.addConstraint)            // 约束管理:新增约束(不通知 planner)
-	mux.HandleFunc("PATCH /api/tasks/{id}/constraints/{cid}", s.editConstraint)    // 约束管理:修改约束
-	mux.HandleFunc("DELETE /api/tasks/{id}/constraints/{cid}", s.deleteConstraint) // 约束管理:删除约束
+	mux.HandleFunc("GET /api/tasks/{id}/goals", s.listGoals)                       // ç›®æ ‡ç®¡ç†:åˆ—å‡ºæœ¬ä»»åŠ¡å…¨éƒ¨ç›®æ ‡
+	mux.HandleFunc("POST /api/tasks/{id}/goals", s.addGoal)                        // ç›®æ ‡ç®¡ç†:äººå·¥æ–°å¢žç›®æ ‡(å¤æ´»ä»»åŠ¡)
+	mux.HandleFunc("PATCH /api/tasks/{id}/goals/{gid}", s.editGoal)                // ç›®æ ‡ç®¡ç†:ä¿®æ”¹ç›®æ ‡(å¤æ´»ä»»åŠ¡)
+	mux.HandleFunc("DELETE /api/tasks/{id}/goals/{gid}", s.deleteGoal)             // ç›®æ ‡ç®¡ç†:ç¡¬åˆ é™¤ç›®æ ‡(ä¸å¤æ´»)
+	mux.HandleFunc("GET /api/tasks/{id}/constraints", s.listConstraints)           // çº¦æŸç®¡ç†:åˆ—å‡ºæœ¬ä»»åŠ¡æ“ä½œçº¦æŸ
+	mux.HandleFunc("POST /api/tasks/{id}/constraints", s.addConstraint)            // çº¦æŸç®¡ç†:æ–°å¢žçº¦æŸ(ä¸é€šçŸ¥ planner)
+	mux.HandleFunc("PATCH /api/tasks/{id}/constraints/{cid}", s.editConstraint)    // çº¦æŸç®¡ç†:ä¿®æ”¹çº¦æŸ
+	mux.HandleFunc("DELETE /api/tasks/{id}/constraints/{cid}", s.deleteConstraint) // çº¦æŸç®¡ç†:åˆ é™¤çº¦æŸ
 	mux.HandleFunc("POST /api/tasks/{id}/control", s.control)
 	mux.HandleFunc("PUT /api/tasks/{id}/llm", s.updateTaskLLMProfiles)
 	mux.HandleFunc("GET /api/tasks/{id}/llm/resolution", s.taskLLMResolutionHandler)
 	mux.HandleFunc("POST /api/tasks/{id}/intents/{iid}/control", s.controlIntent)
 	mux.HandleFunc("POST /api/tasks/{id}/intents/{iid}/messages", s.sendWorkerMessage)
-	mux.HandleFunc("POST /api/tasks/{id}/intents/{iid}/rerun", s.rerunIntent)    // 重跑单条 blocked/exhausted/stopped 意图
-	mux.HandleFunc("POST /api/tasks/{id}/intents/rerun-blocked", s.rerunBlocked) // 批量重跑本任务全部 blocked 意图
+	mux.HandleFunc("POST /api/tasks/{id}/intents/{iid}/rerun", s.rerunIntent)    // é‡è·‘å•æ¡ blocked/exhausted/stopped æ„å›¾
+	mux.HandleFunc("POST /api/tasks/{id}/intents/rerun-blocked", s.rerunBlocked) // æ‰¹é‡é‡è·‘æœ¬ä»»åŠ¡å…¨éƒ¨ blocked æ„å›¾
 	mux.HandleFunc("POST /api/active", s.setActive)
 
 	mux.HandleFunc("GET /api/llm", s.getLLM)
@@ -958,7 +958,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/exploration/tokens", s.tokenStats)
 	mux.HandleFunc("GET /api/tokens/daily", s.tokenDailyStats)
 	mux.HandleFunc("GET /api/tokens/conversations", s.conversationTokens)
-	mux.HandleFunc("GET /api/tokens/usage", s.pgUsageStats) // 全局 llm_usage 聚合（仪表盘新版视图）
+	mux.HandleFunc("GET /api/tokens/usage", s.pgUsageStats) // å…¨å±€ llm_usage èšåˆï¼ˆä»ªè¡¨ç›˜æ–°ç‰ˆè§†å›¾ï¼‰
 
 	mux.HandleFunc("GET /api/audit", s.getAudit)
 	mux.HandleFunc("POST /api/gc", s.gc)
@@ -970,11 +970,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/traffic/exchange", s.getTrafficExchange)
 	mux.HandleFunc("GET /api/traffic/blob", s.getTrafficBlob)
 	mux.HandleFunc("GET /api/commands", s.pgListCommands)
-	mux.HandleFunc("GET /api/commands/stats", s.pgToolStats) // 按工具聚合调用次数
+	mux.HandleFunc("GET /api/commands/stats", s.pgToolStats) // æŒ‰å·¥å…·èšåˆè°ƒç”¨æ¬¡æ•°
 	mux.HandleFunc("GET /api/llm/records", s.pgListLLMRecords)
 	mux.HandleFunc("DELETE /api/llm/records", s.pgDeleteLLMRecords)
 	mux.HandleFunc("GET /api/llm/records/tasks", s.pgLLMTasks)
-	mux.HandleFunc("GET /api/llm/records/by-model", s.pgTokenByModel) // 按模型聚合本任务 token 用量
+	mux.HandleFunc("GET /api/llm/records/by-model", s.pgTokenByModel) // æŒ‰æ¨¡åž‹èšåˆæœ¬ä»»åŠ¡ token ç”¨é‡
 	mux.HandleFunc("GET /api/llm/records/{id}", s.pgGetLLMRecord)
 	mux.HandleFunc("GET /api/tasks/{id}/intelligence", s.listIntelligence)
 	mux.HandleFunc("GET /api/tasks/{id}/intelligence/{intelID}", s.getIntelligence)
@@ -995,8 +995,8 @@ func (s *Server) Handler() http.Handler {
 	})
 	mux.HandleFunc("GET /api/settings", s.getSettings)
 	mux.HandleFunc("PUT /api/settings", s.putSettings)
-	// 漏洞 IM 推送。渠道是「多实例 + 各自过滤规则」的资源，因此独立成一组
-	// REST 接口，而不是塞进扁平的 /api/settings 键值里。
+	// æ¼æ´ž IM æŽ¨é€ã€‚æ¸ é“æ˜¯ã€Œå¤šå®žä¾‹ + å„è‡ªè¿‡æ»¤è§„åˆ™ã€çš„èµ„æºï¼Œå› æ­¤ç‹¬ç«‹æˆä¸€ç»„
+	// REST æŽ¥å£ï¼Œè€Œä¸æ˜¯å¡žè¿›æ‰å¹³çš„ /api/settings é”®å€¼é‡Œã€‚
 	mux.HandleFunc("GET /api/notify/meta", s.notifyMeta)
 	mux.HandleFunc("GET /api/notify/channels", s.notifyListChannels)
 	mux.HandleFunc("POST /api/notify/channels", s.notifyCreateChannel)
@@ -1006,7 +1006,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/notify/deliveries", s.notifyListDeliveries)
 	mux.HandleFunc("POST /api/notify/deliveries/{id}/retry", s.notifyRetryDelivery)
 	mux.HandleFunc("POST /api/settings/web-search/test", s.testWebSearch)
-	// 出口代理连通性测试：发真实请求验证 global_proxy 是否可用，并回显出口 IP。
+	// å‡ºå£ä»£ç†è¿žé€šæ€§æµ‹è¯•ï¼šå‘çœŸå®žè¯·æ±‚éªŒè¯ global_proxy æ˜¯å¦å¯ç”¨ï¼Œå¹¶å›žæ˜¾å‡ºå£ IPã€‚
 	mux.HandleFunc("POST /api/settings/proxy/test", s.testEgressProxy)
 	mux.HandleFunc("GET /api/settings/proxy-pool", s.getProxyPool)
 	mux.HandleFunc("POST /api/settings/proxy-pool/import", s.importProxyPool)
@@ -1019,11 +1019,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/report", s.getReport)
 	mux.HandleFunc("GET /api/chat/mentions", s.searchChatMentions)
 	mux.HandleFunc("POST /api/chat", s.chat)
-	mux.HandleFunc("POST /api/chat/upload", s.chatUpload) // 方式1 文件上传:落到会话/任务工作目录 uploads/
+	mux.HandleFunc("POST /api/chat/upload", s.chatUpload) // æ–¹å¼1 æ–‡ä»¶ä¸Šä¼ :è½åˆ°ä¼šè¯/ä»»åŠ¡å·¥ä½œç›®å½• uploads/
 	mux.HandleFunc("GET /api/tasks/{id}/chat/status", s.taskChatStatus)
 	mux.HandleFunc("POST /api/tasks/{id}/chat/stop", s.stopChat)
 
-	// --- 管理后台 API (PostgreSQL 数据源; 新版数据库与管理后台方案) ---
+	// --- ç®¡ç†åŽå° API (PostgreSQL æ•°æ®æº; æ–°ç‰ˆæ•°æ®åº“ä¸Žç®¡ç†åŽå°æ–¹æ¡ˆ) ---
 	mux.HandleFunc("DELETE /api/tasks/{id}", s.pgDeleteTask)
 	// Agents
 	// conversations (chat page)
@@ -1059,7 +1059,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/agents/{key}/prompt/preview", s.pgPreviewPrompt)
 	mux.HandleFunc("GET /api/agents/{key}/visibility", s.pgGetAgentVisibility)
 	mux.HandleFunc("PUT /api/agents/{key}/visibility", s.pgSetAgentVisibility)
-	// 内置工具目录（描述/参数默认值可改、按 agent 绑定；key 与 handler 在代码层）
+	// å†…ç½®å·¥å…·ç›®å½•ï¼ˆæè¿°/å‚æ•°é»˜è®¤å€¼å¯æ”¹ã€æŒ‰ agent ç»‘å®šï¼›key ä¸Ž handler åœ¨ä»£ç å±‚ï¼‰
 	mux.HandleFunc("GET /api/tools", s.pgListTools)
 	mux.HandleFunc("PUT /api/tools/{key}", s.pgUpdateTool)
 	mux.HandleFunc("POST /api/tools/custom", s.pgCreateCustomTool)
@@ -1074,19 +1074,19 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/mcp/{id}", s.pgDeleteMCP)
 	mux.HandleFunc("GET /api/mcp/{id}/tools", s.pgMCPTools)
 	mux.HandleFunc("POST /api/mcp/{id}/refresh", s.pgRefreshMCP)
-	// 资产同步 — ScopeSentry 数据源
+	// èµ„äº§åŒæ­¥ â€” ScopeSentry æ•°æ®æº
 	mux.HandleFunc("GET /api/sync/scopesentry/status", s.syncSSStatus)
 	mux.HandleFunc("POST /api/sync/scopesentry/datasource", s.syncSSDatasource)
 	mux.HandleFunc("GET /api/sync/scopesentry/projects", s.syncSSProjects)
 	mux.HandleFunc("GET /api/sync/scopesentry/tasks", s.syncSSTasks)
 	mux.HandleFunc("POST /api/sync/scopesentry/sync", s.syncSSRun)
-	// Skill CRUD (文件系统)
+	// Skill CRUD (æ–‡ä»¶ç³»ç»Ÿ)
 	mux.HandleFunc("GET /api/skills", s.fsListSkills)
 	mux.HandleFunc("POST /api/skills", s.fsCreateSkill)
 	mux.HandleFunc("POST /api/skills/upload", s.fsUploadSkill)
 	mux.HandleFunc("DELETE /api/skills/{name}", s.fsDeleteSkill)
-	mux.HandleFunc("GET /api/skills/missing", s.fsMissingSkills)   // 未命中(想调但不存在)的 skill 名
-	mux.HandleFunc("GET /api/skills/{name}/usage", s.fsSkillUsage) // 单个 skill 的最近调用
+	mux.HandleFunc("GET /api/skills/missing", s.fsMissingSkills)   // æœªå‘½ä¸­(æƒ³è°ƒä½†ä¸å­˜åœ¨)çš„ skill å
+	mux.HandleFunc("GET /api/skills/{name}/usage", s.fsSkillUsage) // å•ä¸ª skill çš„æœ€è¿‘è°ƒç”¨
 	mux.HandleFunc("PUT /api/skills/{name}/meta", s.fsUpdateSkillMeta)
 	mux.HandleFunc("POST /api/skills/{name}/dirs", s.fsCreateDir)
 	mux.HandleFunc("GET /api/skills/{name}/files", s.fsListFiles)
@@ -1094,13 +1094,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/skills/{name}/files/{file...}", s.fsReadFile)
 	mux.HandleFunc("PUT /api/skills/{name}/files/{file...}", s.fsWriteFile)
 	mux.HandleFunc("DELETE /api/skills/{name}/files/{file...}", s.fsDeletePath)
-	// MCP 资源侧可见性（更具体的 skill 路由会优先匹配）
+	// MCP èµ„æºä¾§å¯è§æ€§ï¼ˆæ›´å…·ä½“çš„ skill è·¯ç”±ä¼šä¼˜å…ˆåŒ¹é…ï¼‰
 	mux.HandleFunc("GET /api/visibility/{kind}/{id}", s.pgResourceVisibility)
 	mux.HandleFunc("POST /api/visibility/toggle", s.pgToggleVisibility)
-	// Skill 可见性（按名称，更具体，优先于上面的通配路由）
+	// Skill å¯è§æ€§ï¼ˆæŒ‰åç§°ï¼Œæ›´å…·ä½“ï¼Œä¼˜å…ˆäºŽä¸Šé¢çš„é€šé…è·¯ç”±ï¼‰
 	mux.HandleFunc("GET /api/visibility/skill/{name}", s.pgSkillVisibility)
 	mux.HandleFunc("POST /api/visibility/skill/toggle", s.pgToggleSkillVisibility)
-	// LLM 多 profile
+	// LLM å¤š profile
 	mux.HandleFunc("GET /api/llm/profiles", s.pgListProfiles)
 	mux.HandleFunc("POST /api/llm/profiles", s.pgSaveProfile)
 	mux.HandleFunc("DELETE /api/llm/profiles/{id}", s.pgDeleteProfile)
@@ -1111,14 +1111,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/llm/pool/reset", s.pgLLMPoolReset)
 	mux.HandleFunc("POST /api/llm/models", s.pgListModels)
 
-	// 拦截规则管理
+	// æ‹¦æˆªè§„åˆ™ç®¡ç†
 	mux.HandleFunc("GET /api/intercept/rules", s.interceptListRules)
 	mux.HandleFunc("POST /api/intercept/rules", s.interceptCreateRule)
 	mux.HandleFunc("PUT /api/intercept/rules/{id}", s.interceptUpdateRule)
 	mux.HandleFunc("DELETE /api/intercept/rules/{id}", s.interceptDeleteRule)
 	mux.HandleFunc("POST /api/intercept/rules/{id}/toggle", s.interceptToggleRule)
 
-	// 资产拦截规则管理（全局黑名单：域名/IP/URL/CIDR）
+	// èµ„äº§æ‹¦æˆªè§„åˆ™ç®¡ç†ï¼ˆå…¨å±€é»‘åå•ï¼šåŸŸå/IP/URL/CIDRï¼‰
 	mux.HandleFunc("GET /api/asset-intercept/rules", s.assetInterceptListRules)
 	mux.HandleFunc("POST /api/asset-intercept/rules", s.assetInterceptCreateRule)
 	mux.HandleFunc("PUT /api/asset-intercept/rules/{id}", s.assetInterceptUpdateRule)
@@ -1136,7 +1136,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("PUT /api/intercept/tool-config", s.interceptSetToolConfig)
 	mux.HandleFunc("GET /api/intercept/judge", s.interceptGetJudgeConfig)
 	mux.HandleFunc("PUT /api/intercept/judge", s.interceptSetJudgeConfig)
-	mux.HandleFunc("GET /api/intercept/judge/usage", s.interceptJudgeUsage) // 兜底审批累计 token 用量
+	mux.HandleFunc("GET /api/intercept/judge/usage", s.interceptJudgeUsage) // å…œåº•å®¡æ‰¹ç´¯è®¡ token ç”¨é‡
 
 	// /api/* goes through CORS + JWT; everything else is served by the embedded
 	// frontend (no JWT required; the optional Basic Auth gate wraps both). With the
@@ -1318,8 +1318,8 @@ func (s *Server) setActive(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "task not found")
 		return
 	}
-	// resume the engine for the opened task (idempotent — no-op if already running).
-	// 排队中的任务:仅设为活跃可查看,不启动引擎(维持并发上限,由 reconcile 补位)。
+	// resume the engine for the opened task (idempotent â€” no-op if already running).
+	// æŽ’é˜Ÿä¸­çš„ä»»åŠ¡:ä»…è®¾ä¸ºæ´»è·ƒå¯æŸ¥çœ‹,ä¸å¯åŠ¨å¼•æ“Ž(ç»´æŒå¹¶å‘ä¸Šé™,ç”± reconcile è¡¥ä½)ã€‚
 	if t, ok := s.m.Task(req.ID); ok && !t.lifecycleSnapshot().Queued {
 		s.engine.Run(s.ctx, t)
 	}
@@ -1374,8 +1374,8 @@ func (s *Server) controlIntent(w http.ResponseWriter, r *http.Request) {
 	}
 	var req struct {
 		Action string `json:"action"`
-		Reason string `json:"reason"` // cancel(删除)时必填:删除原因
-		Mode   string `json:"mode"`   // cancel 专用:soft(默认,假删除)| hard(真删除,级联移除独占子孙)
+		Reason string `json:"reason"` // cancel(åˆ é™¤)æ—¶å¿…å¡«:åˆ é™¤åŽŸå› 
+		Mode   string `json:"mode"`   // cancel ä¸“ç”¨:soft(é»˜è®¤,å‡åˆ é™¤)| hard(çœŸåˆ é™¤,çº§è”ç§»é™¤ç‹¬å å­å­™)
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, 400, "bad json: "+err.Error())
@@ -1394,9 +1394,9 @@ func (s *Server) controlIntent(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, result)
 }
 
-// rerunIntent 重跑一条没跑成功的意图(blocked/exhausted/stopped):把它置回 open,worker
-// 会重新认领、从头再跑(已写回图谱的 fact/finding/asset 保留);若任务已终态/暂停则顺带复活。
-// 用于「出错的 work 点击继续运行」——网络/LLM 抖动导致 blocked 后可一键重试。
+// rerunIntent é‡è·‘ä¸€æ¡æ²¡è·‘æˆåŠŸçš„æ„å›¾(blocked/exhausted/stopped):æŠŠå®ƒç½®å›ž open,worker
+// ä¼šé‡æ–°è®¤é¢†ã€ä»Žå¤´å†è·‘(å·²å†™å›žå›¾è°±çš„ fact/finding/asset ä¿ç•™);è‹¥ä»»åŠ¡å·²ç»ˆæ€/æš‚åœåˆ™é¡ºå¸¦å¤æ´»ã€‚
+// ç”¨äºŽã€Œå‡ºé”™çš„ work ç‚¹å‡»ç»§ç»­è¿è¡Œã€â€”â€”ç½‘ç»œ/LLM æŠ–åŠ¨å¯¼è‡´ blocked åŽå¯ä¸€é”®é‡è¯•ã€‚
 func restoreRerunIntent(t *Task, before *db.Node) error {
 	if t == nil || before == nil {
 		return fmt.Errorf("missing intent rollback snapshot")
@@ -1445,12 +1445,12 @@ func (s *Server) rerunIntent(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	log.Printf("[task] #%s 意图 #%d 已重开(重跑)", t.ID, iid)
+	log.Printf("[task] #%s æ„å›¾ #%d å·²é‡å¼€(é‡è·‘)", t.ID, iid)
 	writeJSON(w, 200, map[string]any{"id": t.ID, "reopened": iid, "queued": queued})
 }
 
-// rerunBlocked 批量重跑本任务全部 blocked 意图(适合一次网络/LLM 断连导致多条 blocked 后
-// 一键全部重试),置回 open 并复活任务;返回重开的条数。
+// rerunBlocked æ‰¹é‡é‡è·‘æœ¬ä»»åŠ¡å…¨éƒ¨ blocked æ„å›¾(é€‚åˆä¸€æ¬¡ç½‘ç»œ/LLM æ–­è¿žå¯¼è‡´å¤šæ¡ blocked åŽ
+// ä¸€é”®å…¨éƒ¨é‡è¯•),ç½®å›ž open å¹¶å¤æ´»ä»»åŠ¡;è¿”å›žé‡å¼€çš„æ¡æ•°ã€‚
 func (s *Server) rerunBlocked(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -1495,7 +1495,7 @@ func (s *Server) rerunBlocked(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, 500, err.Error())
 			return
 		}
-		log.Printf("[task] #%s 批量重开 %d 条 blocked 意图", t.ID, n)
+		log.Printf("[task] #%s æ‰¹é‡é‡å¼€ %d æ¡ blocked æ„å›¾", t.ID, n)
 	}
 	writeJSON(w, 200, map[string]any{"id": t.ID, "reopened": n, "queued": queued})
 }
@@ -1588,9 +1588,9 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 		APIKey           string `json:"api_key"`
 		ThinkingType     string `json:"thinking_type"`
 		ReasoningEffort  string `json:"reasoning_effort"`
-		ProfileID        *int64 `json:"profile_id"`         // 测已存 profile 时传入：api_key 为空则用它存的 key
-		Streaming        *bool  `json:"streaming"`          // 省略=流式，与保存 profile 时同一套默认
-		SessionHeaderKey string `json:"session_header_key"` // 非空=测试时也带该自定义会话头，值为一次性随机 session id
+		ProfileID        *int64 `json:"profile_id"`         // æµ‹å·²å­˜ profile æ—¶ä¼ å…¥ï¼šapi_key ä¸ºç©ºåˆ™ç”¨å®ƒå­˜çš„ key
+		Streaming        *bool  `json:"streaming"`          // çœç•¥=æµå¼ï¼Œä¸Žä¿å­˜ profile æ—¶åŒä¸€å¥—é»˜è®¤
+		SessionHeaderKey string `json:"session_header_key"` // éžç©º=æµ‹è¯•æ—¶ä¹Ÿå¸¦è¯¥è‡ªå®šä¹‰ä¼šè¯å¤´ï¼Œå€¼ä¸ºä¸€æ¬¡æ€§éšæœº session id
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, 400, err.Error())
@@ -1613,7 +1613,7 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if apiKey == "" {
-			writeJSON(w, 200, map[string]any{"ok": false, "error": "未提供 API Key"})
+			writeJSON(w, 200, map[string]any{"ok": false, "error": "æœªæä¾› API Key"})
 			return
 		}
 		if model == "" {
@@ -1640,18 +1640,18 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 	// reasoning_effort/thinking field fails the test too (no false "test ok, run 400").
 	cfg.ThinkingType = req.ThinkingType
 	cfg.ReasoningEffort = req.ReasoningEffort
-	// 同理，收发模式也照该 profile 的选择来：只支持其中一种通道的端点必须在这里就
-	// 暴露，而不是等会话里才发现"测试通过的配置根本跑不动"。
+	// åŒç†ï¼Œæ”¶å‘æ¨¡å¼ä¹Ÿç…§è¯¥ profile çš„é€‰æ‹©æ¥ï¼šåªæ”¯æŒå…¶ä¸­ä¸€ç§é€šé“çš„ç«¯ç‚¹å¿…é¡»åœ¨è¿™é‡Œå°±
+	// æš´éœ²ï¼Œè€Œä¸æ˜¯ç­‰ä¼šè¯é‡Œæ‰å‘çŽ°"æµ‹è¯•é€šè¿‡çš„é…ç½®æ ¹æœ¬è·‘ä¸åŠ¨"ã€‚
 	if req.Streaming != nil {
 		cfg.Stream = *req.Streaming
 	}
-	// 自定义会话头名照该配置来：非空则测试请求也发这个头(值为一次性随机 session id，
-	// 见 TestConnection)。opencode zen 等强制要求 x-opencode-session 的端点，缺了它
-	// 直接 400，必须在测试路径上也带上，否则"对话通、测试 400"。
+	// è‡ªå®šä¹‰ä¼šè¯å¤´åç…§è¯¥é…ç½®æ¥ï¼šéžç©ºåˆ™æµ‹è¯•è¯·æ±‚ä¹Ÿå‘è¿™ä¸ªå¤´(å€¼ä¸ºä¸€æ¬¡æ€§éšæœº session idï¼Œ
+	// è§ TestConnection)ã€‚opencode zen ç­‰å¼ºåˆ¶è¦æ±‚ x-opencode-session çš„ç«¯ç‚¹ï¼Œç¼ºäº†å®ƒ
+	// ç›´æŽ¥ 400ï¼Œå¿…é¡»åœ¨æµ‹è¯•è·¯å¾„ä¸Šä¹Ÿå¸¦ä¸Šï¼Œå¦åˆ™"å¯¹è¯é€šã€æµ‹è¯• 400"ã€‚
 	cfg.SessionHeaderKey = req.SessionHeaderKey
-	// API Key 解析优先级：表单输入 > 指定 profile 存的 key > 全局配置的 key。
-	// 已存 profile 的 key 不回传浏览器，所以测试已存配置时表单为空，需从 DB 取。
-	// 会话头名同理：表单未带时用已存 profile 的值兜底。
+	// API Key è§£æžä¼˜å…ˆçº§ï¼šè¡¨å•è¾“å…¥ > æŒ‡å®š profile å­˜çš„ key > å…¨å±€é…ç½®çš„ keyã€‚
+	// å·²å­˜ profile çš„ key ä¸å›žä¼ æµè§ˆå™¨ï¼Œæ‰€ä»¥æµ‹è¯•å·²å­˜é…ç½®æ—¶è¡¨å•ä¸ºç©ºï¼Œéœ€ä»Ž DB å–ã€‚
+	// ä¼šè¯å¤´ååŒç†ï¼šè¡¨å•æœªå¸¦æ—¶ç”¨å·²å­˜ profile çš„å€¼å…œåº•ã€‚
 	if req.ProfileID != nil && (cfg.APIKey == "" || cfg.SessionHeaderKey == "") {
 		if p, err := s.m.pg.ProfileByID(*req.ProfileID); err == nil && p != nil {
 			if cfg.APIKey == "" {
@@ -1668,18 +1668,18 @@ func (s *Server) testLLM(w http.ResponseWriter, r *http.Request) {
 		s.cfgMu.Unlock()
 	}
 	if cfg.APIKey == "" {
-		writeJSON(w, 200, map[string]any{"ok": false, "error": "未提供 API Key"})
+		writeJSON(w, 200, map[string]any{"ok": false, "error": "æœªæä¾› API Key"})
 		return
 	}
-	// 重试参数【不】带进连接测试:测试有 30s 硬超时,把配置的重试次数/长间隔叠上去
-	// 只会让一个本来能用的端点测成"超时失败"。测试看的是"这个端点通不通",重试节奏
-	// 是跑起来之后的事。
+	// é‡è¯•å‚æ•°ã€ä¸ã€‘å¸¦è¿›è¿žæŽ¥æµ‹è¯•:æµ‹è¯•æœ‰ 30s ç¡¬è¶…æ—¶,æŠŠé…ç½®çš„é‡è¯•æ¬¡æ•°/é•¿é—´éš”å ä¸ŠåŽ»
+	// åªä¼šè®©ä¸€ä¸ªæœ¬æ¥èƒ½ç”¨çš„ç«¯ç‚¹æµ‹æˆ"è¶…æ—¶å¤±è´¥"ã€‚æµ‹è¯•çœ‹çš„æ˜¯"è¿™ä¸ªç«¯ç‚¹é€šä¸é€š",é‡è¯•èŠ‚å¥
+	// æ˜¯è·‘èµ·æ¥ä¹‹åŽçš„äº‹ã€‚
 	lat, reply, err := agent.TestConnection(r.Context(), cfg)
 	if err != nil {
 		writeJSON(w, 200, map[string]any{"ok": false, "error": err.Error()})
 		return
 	}
-	// 回传模型实际回复，让"测试通过"有据可查：看得见它确实说了话，而不只是 HTTP 200。
+	// å›žä¼ æ¨¡åž‹å®žé™…å›žå¤ï¼Œè®©"æµ‹è¯•é€šè¿‡"æœ‰æ®å¯æŸ¥ï¼šçœ‹å¾—è§å®ƒç¡®å®žè¯´äº†è¯ï¼Œè€Œä¸åªæ˜¯ HTTP 200ã€‚
 	writeJSON(w, 200, map[string]any{
 		"ok": true, "latency_ms": lat.Milliseconds(), "model": cfg.Model, "reply": truncateReply(reply),
 	})
@@ -1694,27 +1694,27 @@ func truncateReply(s string) string {
 	if len(r) <= max {
 		return s
 	}
-	return string(r[:max]) + "…"
+	return string(r[:max]) + "â€¦"
 }
 
 type createTaskReq struct {
 	Schedule             *scheduleRequest `json:"schedule,omitempty"`
-	Name                 string           `json:"name,omitempty"` // 可选任务名称;省略/空=未命名
+	Name                 string           `json:"name,omitempty"` // å¯é€‰ä»»åŠ¡åç§°;çœç•¥/ç©º=æœªå‘½å
 	CategoryID           *int64           `json:"category_id,omitempty"`
 	Description          string           `json:"description"`
 	Goal                 string           `json:"goal"`
-	LLMProfileID         *int64           `json:"llm_profile_id,omitempty"`    // 指定运行本任务的 LLM 配置;省略/null=用激活配置
-	LLMProfileIDs        []int64          `json:"llm_profile_ids,omitempty"`   // 有序任务级配置链;第一项初始生效
-	SourceTaskIDs        []string         `json:"source_task_ids,omitempty"`   // 仅直接、只读继承的来源任务
-	CompanyIDs           []int64          `json:"company_ids,omitempty"`       // 关联企业范围并快照关联当前企业资产;不复制资产或强制生成意图
-	TimeoutSeconds       int              `json:"timeout_seconds"`             // 任务级超时(秒);0/省略=不限时
-	PlanHeartbeatSeconds int              `json:"plan_heartbeat_seconds"`      // planner 心跳触发间隔(秒);0/省略=默认600(10min);下限=默认=600,低于自动抬到600
-	SeedFirstIntent      *bool            `json:"seed_first_intent,omitempty"` // 创建时直接下发一条种子意图(内容=描述+目标),让 worker 免等首轮 planner 直接开跑;省略/null=默认关闭,走标准先规划再执行。显式传 true 才开(CTF 常一 work 解决时可省掉开跑前的 planner 轮)。
+	LLMProfileID         *int64           `json:"llm_profile_id,omitempty"`    // æŒ‡å®šè¿è¡Œæœ¬ä»»åŠ¡çš„ LLM é…ç½®;çœç•¥/null=ç”¨æ¿€æ´»é…ç½®
+	LLMProfileIDs        []int64          `json:"llm_profile_ids,omitempty"`   // æœ‰åºä»»åŠ¡çº§é…ç½®é“¾;ç¬¬ä¸€é¡¹åˆå§‹ç”Ÿæ•ˆ
+	SourceTaskIDs        []string         `json:"source_task_ids,omitempty"`   // ä»…ç›´æŽ¥ã€åªè¯»ç»§æ‰¿çš„æ¥æºä»»åŠ¡
+	CompanyIDs           []int64          `json:"company_ids,omitempty"`       // å…³è”ä¼ä¸šèŒƒå›´å¹¶å¿«ç…§å…³è”å½“å‰ä¼ä¸šèµ„äº§;ä¸å¤åˆ¶èµ„äº§æˆ–å¼ºåˆ¶ç”Ÿæˆæ„å›¾
+	TimeoutSeconds       int              `json:"timeout_seconds"`             // ä»»åŠ¡çº§è¶…æ—¶(ç§’);0/çœç•¥=ä¸é™æ—¶
+	PlanHeartbeatSeconds int              `json:"plan_heartbeat_seconds"`      // planner å¿ƒè·³è§¦å‘é—´éš”(ç§’);0/çœç•¥=é»˜è®¤600(10min);ä¸‹é™=é»˜è®¤=600,ä½ŽäºŽè‡ªåŠ¨æŠ¬åˆ°600
+	SeedFirstIntent      *bool            `json:"seed_first_intent,omitempty"` // åˆ›å»ºæ—¶ç›´æŽ¥ä¸‹å‘ä¸€æ¡ç§å­æ„å›¾(å†…å®¹=æè¿°+ç›®æ ‡),è®© worker å…ç­‰é¦–è½® planner ç›´æŽ¥å¼€è·‘;çœç•¥/null=é»˜è®¤å…³é—­,èµ°æ ‡å‡†å…ˆè§„åˆ’å†æ‰§è¡Œã€‚æ˜¾å¼ä¼  true æ‰å¼€(CTF å¸¸ä¸€ work è§£å†³æ—¶å¯çœæŽ‰å¼€è·‘å‰çš„ planner è½®)ã€‚
 	ShareGlobalAssets    bool             `json:"share_global_assets"`
-	CoverageEnabled      *bool            `json:"coverage_enabled,omitempty"` // 资产覆盖度功能;省略/null=默认开(true)。false=关闭覆盖度计算/展示/自动累积范围+隐藏 add_task_scope/list_untested_assets。company 关联不受影响。
-	Remark               string           `json:"remark,omitempty"`           // 任务备注(最多2000字);空=无
-	WorkerCount          int              `json:"worker_count,omitempty"`     // 本任务 Worker 数;0/省略=用全局默认;上限50
-	// InterceptRules 任务级资产拦截/允许规则(创建时录入,存 task_intercept_rules,不进全局表)。
+	CoverageEnabled      *bool            `json:"coverage_enabled,omitempty"` // èµ„äº§è¦†ç›–åº¦åŠŸèƒ½;çœç•¥/null=é»˜è®¤å¼€(true)ã€‚false=å…³é—­è¦†ç›–åº¦è®¡ç®—/å±•ç¤º/è‡ªåŠ¨ç´¯ç§¯èŒƒå›´+éšè— add_task_scope/list_untested_assetsã€‚company å…³è”ä¸å—å½±å“ã€‚
+	Remark               string           `json:"remark,omitempty"`           // ä»»åŠ¡å¤‡æ³¨(æœ€å¤š2000å­—);ç©º=æ— 
+	WorkerCount          int              `json:"worker_count,omitempty"`     // æœ¬ä»»åŠ¡ Worker æ•°;0/çœç•¥=ç”¨å…¨å±€é»˜è®¤;ä¸Šé™50
+	// InterceptRules ä»»åŠ¡çº§èµ„äº§æ‹¦æˆª/å…è®¸è§„åˆ™(åˆ›å»ºæ—¶å½•å…¥,å­˜ task_intercept_rules,ä¸è¿›å…¨å±€è¡¨)ã€‚
 	InterceptRules []taskInterceptRuleReq `json:"intercept_rules,omitempty"`
 }
 
@@ -1725,7 +1725,7 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if strings.TrimSpace(req.Description) == "" {
-		req.Description = "未命名任务"
+		req.Description = "æœªå‘½åä»»åŠ¡"
 	}
 	if len(req.LLMProfileIDs) == 0 && req.LLMProfileID != nil {
 		req.LLMProfileIDs = []int64{*req.LLMProfileID}
@@ -1813,9 +1813,9 @@ func (s *Server) createTask(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 500, err.Error())
 		return
 	}
-	log.Printf("[task] 新建任务 #%s «%s» 目标: %s", t.ID, req.Description, req.Goal)
-	// 共享的建后流程(seed + 种子意图 + 后台目标分解 + engine.Run),与 spawn_task 复用同一段。
-	// launchTask 内部异步,不阻塞 UI —— 目标分解在后台可见地进行。
+	log.Printf("[task] æ–°å»ºä»»åŠ¡ #%s Â«%sÂ» ç›®æ ‡: %s", t.ID, req.Description, req.Goal)
+	// å…±äº«çš„å»ºåŽæµç¨‹(seed + ç§å­æ„å›¾ + åŽå°ç›®æ ‡åˆ†è§£ + engine.Run),ä¸Ž spawn_task å¤ç”¨åŒä¸€æ®µã€‚
+	// launchTask å†…éƒ¨å¼‚æ­¥,ä¸é˜»å¡ž UI â€”â€” ç›®æ ‡åˆ†è§£åœ¨åŽå°å¯è§åœ°è¿›è¡Œã€‚
 	if schedule == nil || schedule.StartImmediately {
 		s.launchTask(t, req.Description+" "+req.Goal, req.SeedFirstIntent != nil && *req.SeedFirstIntent)
 	} else {
@@ -1847,8 +1847,8 @@ func (s *Server) updateTaskLLMProfiles(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "task not found")
 		return
 	}
-	// 任何生命周期状态(含终态)都可以改链:任务结束后主 Agent 对话仍走这条链,
-	// 模型不可用时不换链就等于把已完成任务的交互一起锁死。
+	// ä»»ä½•ç”Ÿå‘½å‘¨æœŸçŠ¶æ€(å«ç»ˆæ€)éƒ½å¯ä»¥æ”¹é“¾:ä»»åŠ¡ç»“æŸåŽä¸» Agent å¯¹è¯ä»èµ°è¿™æ¡é“¾,
+	// æ¨¡åž‹ä¸å¯ç”¨æ—¶ä¸æ¢é“¾å°±ç­‰äºŽæŠŠå·²å®Œæˆä»»åŠ¡çš„äº¤äº’ä¸€èµ·é”æ­»ã€‚
 	before := t.llmStateSnapshot()
 	var req struct {
 		LLMProfileIDs      []int64 `json:"llm_profile_ids"`
@@ -1960,12 +1960,12 @@ func (s *Server) llmHost() string {
 func (s *Server) seed(t *Task, text string) {
 	scheme, host, port, ok := parseTarget(text)
 	if !ok {
-		log.Printf("[seed] task %s: 未能从 %q 解析出目标 host/IP，不创建站点（请手动配置 scope）", t.ID, text)
+		log.Printf("[seed] task %s: æœªèƒ½ä»Ž %q è§£æžå‡ºç›®æ ‡ host/IPï¼Œä¸åˆ›å»ºç«™ç‚¹ï¼ˆè¯·æ‰‹åŠ¨é…ç½® scopeï¼‰", t.ID, text)
 		return
 	}
 	// P0-1 guard: never treat the configured LLM gateway as a target.
 	if gw := s.llmHost(); gw != "" && host == gw {
-		log.Printf("[seed] task %s: 目标 %q 是 LLM 网关，拒绝作为渗透目标", t.ID, host)
+		log.Printf("[seed] task %s: ç›®æ ‡ %q æ˜¯ LLM ç½‘å…³ï¼Œæ‹’ç»ä½œä¸ºæ¸—é€ç›®æ ‡", t.ID, host)
 		return
 	}
 
@@ -1984,7 +1984,7 @@ func (s *Server) seed(t *Task, text string) {
 			rootID, _ = as.UpsertRootDomain(db.UpsertRootDomainReq{Domain: host, TaskID: taskID})
 		}
 		if rootID > 0 {
-			_ = as.SetTaskAssetSource(taskID, rootID, "task", "由任务描述或目标初始化", nil)
+			_ = as.SetTaskAssetSource(taskID, rootID, "task", "ç”±ä»»åŠ¡æè¿°æˆ–ç›®æ ‡åˆå§‹åŒ–", nil)
 		}
 	}
 	// anchor the seeded assets to this task's begin root as lineage/provenance
@@ -1994,28 +1994,28 @@ func (s *Server) seed(t *Task, text string) {
 			_ = t.Store.Anchor(begin, rootID)
 		}
 	}
-	log.Printf("[seed] task %s: 目标站点 %s", t.ID, u)
-	// 不在这里 Notify:首轮是否触发统一由 engine.Run 的 HasActiveIntent 决定(种子意图任务
-	// 跳过首轮)。seed 早于 Run 执行,若在此 Notify 会 buffered 到通道、被 plannerLoop 启动时
-	// 消费掉而绕过 Run 的门控 → 种子任务仍误触发首轮。
+	log.Printf("[seed] task %s: ç›®æ ‡ç«™ç‚¹ %s", t.ID, u)
+	// ä¸åœ¨è¿™é‡Œ Notify:é¦–è½®æ˜¯å¦è§¦å‘ç»Ÿä¸€ç”± engine.Run çš„ HasActiveIntent å†³å®š(ç§å­æ„å›¾ä»»åŠ¡
+	// è·³è¿‡é¦–è½®)ã€‚seed æ—©äºŽ Run æ‰§è¡Œ,è‹¥åœ¨æ­¤ Notify ä¼š buffered åˆ°é€šé“ã€è¢« plannerLoop å¯åŠ¨æ—¶
+	// æ¶ˆè´¹æŽ‰è€Œç»•è¿‡ Run çš„é—¨æŽ§ â†’ ç§å­ä»»åŠ¡ä»è¯¯è§¦å‘é¦–è½®ã€‚
 }
 
-// seedFirstIntent writes ONE open intent (summary = 描述+目标) into the task's
+// seedFirstIntent writes ONE open intent (summary = æè¿°+ç›®æ ‡) into the task's
 // frontier at creation, so a worker can claim and run it immediately without first
 // waiting a planner round. Mirrors a planner top-level intent: it links from the
-// origin fact (RelDerivedFrom) so it still traces back to a fact node. Best-effort —
+// origin fact (RelDerivedFrom) so it still traces back to a fact node. Best-effort â€”
 // a failure just falls back to the normal planner-driven flow.
 func (s *Server) seedFirstIntent(t *Task) {
-	summary := fmt.Sprintf("完成任务目标：%s（任务：%s）", t.Goal, t.Description)
+	summary := fmt.Sprintf("å®Œæˆä»»åŠ¡ç›®æ ‡ï¼š%sï¼ˆä»»åŠ¡ï¼š%sï¼‰", t.Goal, t.Description)
 	id, err := t.Store.AddIntent(map[string]any{"summary": summary}, 8, nil, "seed")
 	if err != nil {
-		log.Printf("[seed] task %s: 下发种子意图失败: %v", t.ID, err)
+		log.Printf("[seed] task %s: ä¸‹å‘ç§å­æ„å›¾å¤±è´¥: %v", t.ID, err)
 		return
 	}
 	if origin, _ := t.Store.OriginFactID(); origin > 0 {
 		_ = t.Store.Link(origin, db.RelDerivedFrom, id)
 	}
-	log.Printf("[seed] task %s: 已下发种子意图 #%d", t.ID, id)
+	log.Printf("[seed] task %s: å·²ä¸‹å‘ç§å­æ„å›¾ #%d", t.ID, id)
 }
 
 func (s *Server) getTask(w http.ResponseWriter, r *http.Request) {
@@ -2042,7 +2042,7 @@ func (s *Server) taskCoverage(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 503, "asset store not enabled")
 		return
 	}
-	// 资产覆盖度功能关闭 → 短路返回 {enabled:false}，前端据此隐藏覆盖度卡片/进度。
+	// èµ„äº§è¦†ç›–åº¦åŠŸèƒ½å…³é—­ â†’ çŸ­è·¯è¿”å›ž {enabled:false}ï¼Œå‰ç«¯æ®æ­¤éšè—è¦†ç›–åº¦å¡ç‰‡/è¿›åº¦ã€‚
 	if !t.CoverageEnabled {
 		writeJSON(w, 200, &db.Coverage{Enabled: false, ByType: []db.CoverageByType{}})
 		return
@@ -2058,7 +2058,7 @@ func (s *Server) taskCoverage(w http.ResponseWriter, r *http.Request) {
 }
 
 // taskCoverageGraph returns the force-directed asset coverage graph for a task:
-// all in-scope assets (每种类型) + 连接用的根域名/公司节点, each carrying tested/in_scope.
+// all in-scope assets (æ¯ç§ç±»åž‹) + è¿žæŽ¥ç”¨çš„æ ¹åŸŸå/å…¬å¸èŠ‚ç‚¹, each carrying tested/in_scope.
 func (s *Server) taskCoverageGraph(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -2080,7 +2080,7 @@ func (s *Server) taskCoverageGraph(w http.ResponseWriter, r *http.Request) {
 }
 
 // taskAssetRefs returns the intents / facts / findings in this task anchored to a
-// given asset id — powers the coverage-graph node drawer's「关联意图 / 关联事实」。
+// given asset id â€” powers the coverage-graph node drawer'sã€Œå…³è”æ„å›¾ / å…³è”äº‹å®žã€ã€‚
 func (s *Server) taskAssetRefs(w http.ResponseWriter, r *http.Request) {
 	t, ok := s.m.Task(r.PathValue("id"))
 	if !ok {
@@ -2204,13 +2204,13 @@ func (s *Server) frontier(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) findings(w http.ResponseWriter, r *http.Request) {
-	// 无 task 参数 → 全局「发现」页：从独立 findings 表读取（任务删除后 finding 依然保留）。
-	// 带 task 参数 → 仅该任务（任务概览/发现 Tab 用），从 exploration_nodes 读（任务在则节点在）。
+	// æ—  task å‚æ•° â†’ å…¨å±€ã€Œå‘çŽ°ã€é¡µï¼šä»Žç‹¬ç«‹ findings è¡¨è¯»å–ï¼ˆä»»åŠ¡åˆ é™¤åŽ finding ä¾ç„¶ä¿ç•™ï¼‰ã€‚
+	// å¸¦ task å‚æ•° â†’ ä»…è¯¥ä»»åŠ¡ï¼ˆä»»åŠ¡æ¦‚è§ˆ/å‘çŽ° Tab ç”¨ï¼‰ï¼Œä»Ž exploration_nodes è¯»ï¼ˆä»»åŠ¡åœ¨åˆ™èŠ‚ç‚¹åœ¨ï¼‰ã€‚
 	q := r.URL.Query()
 	taskParam := q.Get("task")
 	if taskParam == "" {
-		// 带 page/limit → 服务端分页 {items,total,...}；不带 → 裸数组（dashboard 汇总用，
-		// 与 intents 端点的兼容策略一致）。筛选/排序统一下推到 SQL。
+		// å¸¦ page/limit â†’ æœåŠ¡ç«¯åˆ†é¡µ {items,total,...}ï¼›ä¸å¸¦ â†’ è£¸æ•°ç»„ï¼ˆdashboard æ±‡æ€»ç”¨ï¼Œ
+		// ä¸Ž intents ç«¯ç‚¹çš„å…¼å®¹ç­–ç•¥ä¸€è‡´ï¼‰ã€‚ç­›é€‰/æŽ’åºç»Ÿä¸€ä¸‹æŽ¨åˆ° SQLã€‚
 		if q.Get("page") == "" && q.Get("limit") == "" {
 			fs, _ := s.m.pg.ListFindings(500)
 			assets := s.resolveFindingAssets(fs)
@@ -2313,7 +2313,7 @@ func (s *Server) resolveFindingAssets(fs []*db.DBFinding) map[int64]*db.Asset {
 	return s.resolveAssetIDs(ids)
 }
 
-// resolveAssetIDs de-dupes ids and loads their asset rows into an id→asset map.
+// resolveAssetIDs de-dupes ids and loads their asset rows into an idâ†’asset map.
 func (s *Server) resolveAssetIDs(ids []int64) map[int64]*db.Asset {
 	assets := map[int64]*db.Asset{}
 	seen := map[int64]bool{}
@@ -2338,7 +2338,7 @@ func (s *Server) resolveAssetIDs(ids []int64) map[int64]*db.Asset {
 }
 
 // findingStats serves the whole-table aggregates (stat cards + vuln-class filter)
-// for the paginated 发现 page.
+// for the paginated å‘çŽ° page.
 func (s *Server) findingStats(w http.ResponseWriter, r *http.Request) {
 	st, err := s.m.pg.FindingStats()
 	if err != nil {
@@ -2397,13 +2397,13 @@ func (s *Server) getFinding(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, dto)
 }
 
-// findingsExport 导出发现页的漏洞。
+// findingsExport å¯¼å‡ºå‘çŽ°é¡µçš„æ¼æ´žã€‚
 //
-//	scope   = filtered（沿用页面筛选）| all（全部）| selected（勾选的 ids）
-//	format  = md-single（整合一份 .md）| md-zip（一漏洞一 .md,打包 zip）
+//	scope   = filteredï¼ˆæ²¿ç”¨é¡µé¢ç­›é€‰ï¼‰| allï¼ˆå…¨éƒ¨ï¼‰| selectedï¼ˆå‹¾é€‰çš„ idsï¼‰
+//	format  = md-singleï¼ˆæ•´åˆä¸€ä»½ .mdï¼‰| md-zipï¼ˆä¸€æ¼æ´žä¸€ .md,æ‰“åŒ… zipï¼‰
 //	          | csv | json
-//	ids     = 逗号分隔的 finding id（scope=selected 时必填）
-//	筛选参数 severity/status/vulnclass/task_id/q/sort 与列表接口一致（scope=filtered 用）。
+//	ids     = é€—å·åˆ†éš”çš„ finding idï¼ˆscope=selected æ—¶å¿…å¡«ï¼‰
+//	ç­›é€‰å‚æ•° severity/status/vulnclass/task_id/q/sort ä¸Žåˆ—è¡¨æŽ¥å£ä¸€è‡´ï¼ˆscope=filtered ç”¨ï¼‰ã€‚
 func (s *Server) findingsExport(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	scope := q.Get("scope")
@@ -2430,7 +2430,7 @@ func (s *Server) findingsExport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "all":
-		// 空 filter = 不加任何条件。
+		// ç©º filter = ä¸åŠ ä»»ä½•æ¡ä»¶ã€‚
 	case "filtered", "":
 		filter = findingFilterFromQuery(q)
 	default:
@@ -2452,7 +2452,7 @@ func (s *Server) findingsExport(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	stage, err := os.MkdirTemp("", "artex-finding-export-")
+	stage, err := os.MkdirTemp("", "CAUTIOUSMEMORY-finding-export-")
 	if err != nil {
 		writeErr(w, 500, err.Error())
 		return
@@ -2539,7 +2539,7 @@ func findingProvenanceInTask(contextTask *Task, findingTaskID *int64) (sourceTas
 }
 
 // findingLineage returns the exploration sub-DAG from the task root to this
-// finding's node — the finding node + all its ancestors + edges among them — so
+// finding's node â€” the finding node + all its ancestors + edges among them â€” so
 // the detail page can show "how this finding was reached". Empty {nodes,edges}
 // when the finding has no node/task (e.g. the originating task was deleted).
 func (s *Server) findingLineage(w http.ResponseWriter, r *http.Request) {
@@ -2604,9 +2604,9 @@ func (s *Server) patchFinding(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, 400, "bad status: "+*body.Status)
 			return
 		}
-		// 走带通知的版本：状态更新与「状态变更推送事件」在同一事务里落库，
-		// 避免出现状态已改而推送事件丢失的窗口。事件登记失败不影响状态更新，
-		// 所以只记日志、不向调用方报错。
+		// èµ°å¸¦é€šçŸ¥çš„ç‰ˆæœ¬ï¼šçŠ¶æ€æ›´æ–°ä¸Žã€ŒçŠ¶æ€å˜æ›´æŽ¨é€äº‹ä»¶ã€åœ¨åŒä¸€äº‹åŠ¡é‡Œè½åº“ï¼Œ
+		// é¿å…å‡ºçŽ°çŠ¶æ€å·²æ”¹è€ŒæŽ¨é€äº‹ä»¶ä¸¢å¤±çš„çª—å£ã€‚äº‹ä»¶ç™»è®°å¤±è´¥ä¸å½±å“çŠ¶æ€æ›´æ–°ï¼Œ
+		// æ‰€ä»¥åªè®°æ—¥å¿—ã€ä¸å‘è°ƒç”¨æ–¹æŠ¥é”™ã€‚
 		from, found, notified, err := s.m.pg.SetFindingStatusWithNotify(r.Context(), id, *body.Status)
 		if err != nil {
 			writeErr(w, 500, err.Error())
@@ -2617,7 +2617,7 @@ func (s *Server) patchFinding(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if !notified && from != *body.Status {
-			log.Printf("[notify] 状态变更事件未登记 finding=%d %s→%s（状态已更新）", id, from, *body.Status)
+			log.Printf("[notify] çŠ¶æ€å˜æ›´äº‹ä»¶æœªç™»è®° finding=%d %sâ†’%sï¼ˆçŠ¶æ€å·²æ›´æ–°ï¼‰", id, from, *body.Status)
 		}
 	}
 	if body.Severity != nil {
@@ -2698,7 +2698,7 @@ func (s *Server) intents(w http.ResponseWriter, r *http.Request) {
 	}
 	q := r.URL.Query()
 	limit := min(atoiDefault(q.Get("limit"), 300), 500)
-	// No paging params → preserve the legacy bare-array response so existing callers
+	// No paging params â†’ preserve the legacy bare-array response so existing callers
 	// (and the poll) keep working unchanged.
 	if q.Get("before") == "" && q.Get("page") == "" {
 		in, err := t.Store.ListByKind(db.KindIntent, limit)
@@ -2710,7 +2710,7 @@ func (s *Server) intents(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, 200, taskNodeDTOs(in))
 		return
 	}
-	// Paged form: ?before=<id> (or ?page as a marker) → {items, has_more} so the
+	// Paged form: ?before=<id> (or ?page as a marker) â†’ {items, has_more} so the
 	// worker session list can reach past the old fixed 300 boundary on scroll. It
 	// also includes immutable intent results from directly related tasks; those
 	// rows never participate in this task's frontier or claim path.
@@ -2853,9 +2853,9 @@ func (s *Server) explorationGraph(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"nodes": taskNodeDTOs(nodes), "edges": edgeDTOs(edges)})
 }
 
-// explorationNodes serves the 播报板: this task's own exploration nodes as a
+// explorationNodes serves the æ’­æŠ¥æ¿: this task's own exploration nodes as a
 // paged time series (newest first unless ?order=asc), filterable by kind/state
-// and a payload substring. Inherited nodes are deliberately out of scope — the
+// and a payload substring. Inherited nodes are deliberately out of scope â€” the
 // board reports what this task is doing right now, and paging across the source
 // tasks' stores would make the cursor meaningless.
 // Response also carries the edges touching the page plus the neighbour nodes
@@ -2929,7 +2929,7 @@ func (s *Server) explorationNodes(w http.ResponseWriter, r *http.Request) {
 
 // nodeAnchoredAssets resolves the exploration_anchors of the given nodes into
 // display-ready asset labels, keyed by node id. Anchors are provenance decoration
-// for the 播报板 — a failure here must not cost the caller its page, so errors are
+// for the æ’­æŠ¥æ¿ â€” a failure here must not cost the caller its page, so errors are
 // logged and degrade to "no assets".
 func (s *Server) nodeAnchoredAssets(t *Task, nodeIDs []int64) map[string][]FindingAssetDTO {
 	out := map[string][]FindingAssetDTO{}
@@ -3055,7 +3055,7 @@ func activitySessionStore(t *Task, filter db.ActivitySessionFilter) (*db.Explora
 
 // activityHistory serves one reverse-paginated page of a session's activity history.
 // The latest page (no ?before) opens a session; ?before=<id> pulls the older page on
-// scroll-up. snapshot_cursor is the TASK-level max id at query time — the client uses
+// scroll-up. snapshot_cursor is the TASK-level max id at query time â€” the client uses
 // it to open the single task SSE at since=snapshot_cursor so history (id<=cursor) and
 // the live tail (id>cursor) meet with no gap and no overlap.
 func (s *Server) activityHistory(w http.ResponseWriter, r *http.Request) {
@@ -3071,7 +3071,7 @@ func (s *Server) activityHistory(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, "bad session")
 		return
 	}
-	if filter.Main && filter.MainSeg == nil { // bare "main" → the current segment
+	if filter.Main && filter.MainSeg == nil { // bare "main" â†’ the current segment
 		seg, err := t.Store.CurrentMainSeg()
 		if err != nil {
 			writeErr(w, 500, err.Error())
@@ -3131,7 +3131,7 @@ func (s *Server) activityHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 // tokenStats returns per-worker token usage (input/output/cache read/write) for a
-// task — main agent, planner, and each work#N.
+// task â€” main agent, planner, and each work#N.
 func (s *Server) tokenStats(w http.ResponseWriter, r *http.Request) {
 	t := s.m.ResolveTask(r.URL.Query().Get("task"))
 	if t == nil {
@@ -3180,7 +3180,7 @@ func (s *Server) tokenDailyStats(w http.ResponseWriter, r *http.Request) {
 }
 
 // conversationTokens returns per-conversation token summaries so the dashboard can
-// merge chat (conversation) usage into its per-profile / daily token stats — which
+// merge chat (conversation) usage into its per-profile / daily token stats â€” which
 // otherwise count only task (exploration) usage.
 func (s *Server) conversationTokens(w http.ResponseWriter, r *http.Request) {
 	if s.m.pg == nil {
@@ -3318,7 +3318,7 @@ func (s *Server) streamActivity(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// Cursor precedence: the browser's automatic reconnect sends Last-Event-ID (the
-	// last id it received) — trust it over the query so an auto-reconnect resumes
+	// last id it received) â€” trust it over the query so an auto-reconnect resumes
 	// exactly where it dropped. A fresh/manual connect has no header and passes
 	// since=<snapshot_cursor> from the history page instead.
 	since := int64(atoiDefault(r.URL.Query().Get("since"), 0))
@@ -3347,10 +3347,10 @@ func (s *Server) streamActivity(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Compensate the DB backlog after `since` in batches until caught up. This is the
-	// gap between the history snapshot and the live tail — NOT the first-page history
+	// gap between the history snapshot and the live tail â€” NOT the first-page history
 	// (that's the /activity/history endpoint). A long task can have far more than one
 	// batch, so loop instead of a single fixed read; on a query error log it and close
-	// so the client reconnects and retries from its last id (broadcast is lossy — the
+	// so the client reconnects and retries from its last id (broadcast is lossy â€” the
 	// DB is the source of truth). The Broadcaster keeps buffering live events meanwhile;
 	// the id<=since skip below drops any that this replay already covered.
 	const replayBatch = 500
@@ -3485,7 +3485,7 @@ func (s *Server) getTraffic(w http.ResponseWriter, r *http.Request) {
 }
 
 // getTrafficHosts returns distinct recorded hosts with counts, for the page's
-// target picker (pick a host → filter the list, then delete it).
+// target picker (pick a host â†’ filter the list, then delete it).
 func (s *Server) getTrafficHosts(w http.ResponseWriter, r *http.Request) {
 	tr := s.m.Traffic()
 	if tr == nil {
@@ -3524,7 +3524,7 @@ func (s *Server) getTrafficHosts(w http.ResponseWriter, r *http.Request) {
 // deleteTraffic removes recorded traffic for every host containing the query's
 // host substring (the page's host filter is substring-based, so what you
 // filtered is what gets deleted): index rows + each host's file tree, then
-// garbage-collects blobs no remaining exchange references. Empty host → 400.
+// garbage-collects blobs no remaining exchange references. Empty host â†’ 400.
 // Returns the number of exchanges deleted.
 func (s *Server) deleteTraffic(w http.ResponseWriter, r *http.Request) {
 	tr := s.m.Traffic()
@@ -3546,7 +3546,7 @@ func (s *Server) deleteTraffic(w http.ResponseWriter, r *http.Request) {
 }
 
 // deleteTrafficHosts removes traffic for a set of EXACT hosts (JSON body
-// {"hosts": [...]}) — the batch path for the page's multi-select delete. Exact
+// {"hosts": [...]}) â€” the batch path for the page's multi-select delete. Exact
 // match, so picking "api.example.com" never sweeps "api.example.com.cn".
 // Returns the number of exchanges deleted.
 func (s *Server) deleteTrafficHosts(w http.ResponseWriter, r *http.Request) {
@@ -3581,7 +3581,7 @@ func (s *Server) deleteTrafficHosts(w http.ResponseWriter, r *http.Request) {
 }
 
 // deleteAllTraffic purges every recorded exchange, then compacts the index so
-// the space is actually returned to the filesystem — an emptied index is the one
+// the space is actually returned to the filesystem â€” an emptied index is the one
 // moment a full rewrite is cheap. Evidence already bound to a finding lives in
 // the evidence store and is deliberately left alone. Returns the number of
 // exchanges deleted and the bytes of index reclaimed.
@@ -3621,8 +3621,8 @@ func (s *Server) getTrafficExchange(w http.ResponseWriter, r *http.Request) {
 }
 
 // getTrafficBlob streams one oversized body by its sha256. Bodies past the inline
-// threshold are not carried by the exchange endpoint — it returns a preview plus
-// an "@blob sha256:<hash>" pointer — so this is how the UI fetches them whole.
+// threshold are not carried by the exchange endpoint â€” it returns a preview plus
+// an "@blob sha256:<hash>" pointer â€” so this is how the UI fetches them whole.
 // Streamed rather than buffered: these are the bodies too large to hold in memory.
 func (s *Server) getTrafficBlob(w http.ResponseWriter, r *http.Request) {
 	tr := s.m.Traffic()
@@ -3645,7 +3645,7 @@ func (s *Server) getTrafficBlob(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Length", strconv.FormatInt(size, 10))
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", hash+".bin"))
 	if _, err := io.Copy(w, f); err != nil {
-		log.Printf("[traffic] 下载 blob %s 中断：%v", hash, err)
+		log.Printf("[traffic] ä¸‹è½½ blob %s ä¸­æ–­ï¼š%v", hash, err)
 	}
 }
 
@@ -3661,7 +3661,7 @@ func (s *Server) settingsPayload() map[string]any {
 	pyStored, _, _ := s.m.pg.GetSetting(settingPythonInterp)
 	concOn, concLimit := s.m.ConcurrencyLimit()
 	if concLimit == 0 {
-		concLimit = defaultConcurrencyLimit // 关闭时也回显一个合理默认值给 UI
+		concLimit = defaultConcurrencyLimit // å…³é—­æ—¶ä¹Ÿå›žæ˜¾ä¸€ä¸ªåˆç†é»˜è®¤å€¼ç»™ UI
 	}
 	return map[string]any{
 		"traffic_capture":                      s.m.TrafficEnabled(),
@@ -3680,8 +3680,8 @@ func (s *Server) settingsPayload() map[string]any {
 		"brave_key_set":                        strings.TrimSpace(braveKey) != "",
 		"tavily_key_set":                       strings.TrimSpace(tavilyKey) != "",
 		"deepseek_search_key_set":              s.m.deepSeekSearchKey() != "",
-		"web_search_proxy":                     maskSecrets(proxy),             // 独立出口代理(http/https/socks5)，空=直连
-		"global_proxy":                         maskSecrets(s.m.GlobalProxy()), // 全局出口代理(http/https/socks5)，所有目标流量走它，空=直连
+		"web_search_proxy":                     maskSecrets(proxy),             // ç‹¬ç«‹å‡ºå£ä»£ç†(http/https/socks5)ï¼Œç©º=ç›´è¿ž
+		"global_proxy":                         maskSecrets(s.m.GlobalProxy()), // å…¨å±€å‡ºå£ä»£ç†(http/https/socks5)ï¼Œæ‰€æœ‰ç›®æ ‡æµé‡èµ°å®ƒï¼Œç©º=ç›´è¿ž
 		"proxy_pool":                           func() []ProxyPoolEntry { e, _, _ := s.m.ProxyPoolSnapshot(); return e }(),
 		"proxy_pool_active_id":                 func() string { _, a, _ := s.m.ProxyPoolSnapshot(); return a }(),
 		"proxy_pool_switch_log":                func() []ProxySwitchLog { _, _, l := s.m.ProxyPoolSnapshot(); return l }(),
@@ -3702,37 +3702,37 @@ func (s *Server) settingsPayload() map[string]any {
 		"proxy_reconnect_interval_seconds":    func() int { _, d := s.proxyReconnectConfig(); return int(d / time.Second) }(),
 		"show_egress_ip":                      s.m.pg.GetBool(settingShowEgressIP, false),
 		"egress_probe_url":                    s.m.EgressProbeURL(),
-		"python_interpreter":                  strings.TrimSpace(pyStored), // 用户/自动设的值(空=用运行时检测)
-		"workers":                             s.m.Workers(),               // 并发工作 agent 数(默认3)；对之后启动的任务生效
-		"worker_pools":                        s.m.WorkerPools(),           // 非空时按池顺序绑定 worker 会话
-		"task_concurrency_enabled":            concOn,                      // 任务并发上限开关(默认关)
-		"task_concurrency_limit":              concLimit,                   // 同时运行任务上限(开启后默认5)
-		// LLM 轮询(故障转移)。默认关；开启后走全局激活配置的 agent 在当前配置不可用时
-		// 自动切到下一个配置。bind_fallback 仅在轮询开启时有意义(默认关)。
+		"python_interpreter":                  strings.TrimSpace(pyStored), // ç”¨æˆ·/è‡ªåŠ¨è®¾çš„å€¼(ç©º=ç”¨è¿è¡Œæ—¶æ£€æµ‹)
+		"workers":                             s.m.Workers(),               // å¹¶å‘å·¥ä½œ agent æ•°(é»˜è®¤3)ï¼›å¯¹ä¹‹åŽå¯åŠ¨çš„ä»»åŠ¡ç”Ÿæ•ˆ
+		"worker_pools":                        s.m.WorkerPools(),           // éžç©ºæ—¶æŒ‰æ± é¡ºåºç»‘å®š worker ä¼šè¯
+		"task_concurrency_enabled":            concOn,                      // ä»»åŠ¡å¹¶å‘ä¸Šé™å¼€å…³(é»˜è®¤å…³)
+		"task_concurrency_limit":              concLimit,                   // åŒæ—¶è¿è¡Œä»»åŠ¡ä¸Šé™(å¼€å¯åŽé»˜è®¤5)
+		// LLM è½®è¯¢(æ•…éšœè½¬ç§»)ã€‚é»˜è®¤å…³ï¼›å¼€å¯åŽèµ°å…¨å±€æ¿€æ´»é…ç½®çš„ agent åœ¨å½“å‰é…ç½®ä¸å¯ç”¨æ—¶
+		// è‡ªåŠ¨åˆ‡åˆ°ä¸‹ä¸€ä¸ªé…ç½®ã€‚bind_fallback ä»…åœ¨è½®è¯¢å¼€å¯æ—¶æœ‰æ„ä¹‰(é»˜è®¤å…³)ã€‚
 		"llm_pool_enabled":       s.m.LLMPoolEnabled(),
 		"llm_pool_bind_fallback": s.m.LLMPoolBindFallback(),
-		// 操作约束注入范围(默认都开):把本任务的 allow/deny 约束拼进对应 agent 的系统提示。
+		// æ“ä½œçº¦æŸæ³¨å…¥èŒƒå›´(é»˜è®¤éƒ½å¼€):æŠŠæœ¬ä»»åŠ¡çš„ allow/deny çº¦æŸæ‹¼è¿›å¯¹åº” agent çš„ç³»ç»Ÿæç¤ºã€‚
 		"constraints_inject_planner": s.constraintInjectPlanner(),
 		"constraints_inject_worker":  s.constraintInjectWorker(),
-		// 实验功能:noa 模型驱动上下文压缩(默认关)。开启后平台接入的四类 agent 由 noa
-		// 接管上下文压缩,取代内置 compaction;每 run 读一次,对之后启动的 run 生效。
+		// å®žéªŒåŠŸèƒ½:noa æ¨¡åž‹é©±åŠ¨ä¸Šä¸‹æ–‡åŽ‹ç¼©(é»˜è®¤å…³)ã€‚å¼€å¯åŽå¹³å°æŽ¥å…¥çš„å››ç±» agent ç”± noa
+		// æŽ¥ç®¡ä¸Šä¸‹æ–‡åŽ‹ç¼©,å–ä»£å†…ç½® compaction;æ¯ run è¯»ä¸€æ¬¡,å¯¹ä¹‹åŽå¯åŠ¨çš„ run ç”Ÿæ•ˆã€‚
 		"noa_compaction": s.m.NoaCompactionEnabled(),
-		// 漏洞 IM 推送的全局项。渠道本身是独立资源，走 /api/notify/* 管理；
-		// 这里只放「作用于全部渠道」的三项。
+		// æ¼æ´ž IM æŽ¨é€çš„å…¨å±€é¡¹ã€‚æ¸ é“æœ¬èº«æ˜¯ç‹¬ç«‹èµ„æºï¼Œèµ° /api/notify/* ç®¡ç†ï¼›
+		// è¿™é‡Œåªæ”¾ã€Œä½œç”¨äºŽå…¨éƒ¨æ¸ é“ã€çš„ä¸‰é¡¹ã€‚
 		"notify_enabled":             s.m.pg.GetBool(settingNotifyEnabled, true),
 		"notify_public_base_url":     notifyPublicBaseURL(s.m.pg),
 		"notify_digest_interval_min": notifyDigestIntervalMin(s.m.pg),
 	}
 }
 
-// notifyPublicBaseURL 读推送回链用的外部地址。
+// notifyPublicBaseURL è¯»æŽ¨é€å›žé“¾ç”¨çš„å¤–éƒ¨åœ°å€ã€‚
 func notifyPublicBaseURL(pg *db.DB) string {
 	v, _, _ := pg.GetSetting(settingNotifyPublicBaseURL)
 	return v
 }
 
-// notifyDigestIntervalMin 读汇总周期（分钟），非法或未配置时回落到默认值。
-// 回显默认值而不是空串，UI 才能把当前生效值填进输入框。
+// notifyDigestIntervalMin è¯»æ±‡æ€»å‘¨æœŸï¼ˆåˆ†é’Ÿï¼‰ï¼Œéžæ³•æˆ–æœªé…ç½®æ—¶å›žè½åˆ°é»˜è®¤å€¼ã€‚
+// å›žæ˜¾é»˜è®¤å€¼è€Œä¸æ˜¯ç©ºä¸²ï¼ŒUI æ‰èƒ½æŠŠå½“å‰ç”Ÿæ•ˆå€¼å¡«è¿›è¾“å…¥æ¡†ã€‚
 func notifyDigestIntervalMin(pg *db.DB) int {
 	v, ok, _ := pg.GetSetting(settingNotifyDigestMinutes)
 	if !ok {
@@ -3760,7 +3760,7 @@ func (s *Server) pgDetectPython(w http.ResponseWriter, r *http.Request) {
 }
 
 // putSettings applies a settings change. Toggling traffic_capture rebuilds the
-// agents (applyLLM) so the new proxy/traffic-tools/prompt state takes hold — when
+// agents (applyLLM) so the new proxy/traffic-tools/prompt state takes hold â€” when
 // off, agents get no proxy config, no traffic tools, and no proxy prompt content.
 func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -3774,16 +3774,16 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		ChatAutoTitle       *bool `json:"chat_auto_title_enabled"`
 		CredentialAgent     *bool `json:"credential_agent_enabled"`
 		CredentialTraffic   *bool `json:"credential_traffic_binding"`
-		LLMRecord           *bool `json:"llm_record"` // LLM 录制开关（默认关）；即时生效，无需重建 agent
+		LLMRecord           *bool `json:"llm_record"` // LLM å½•åˆ¶å¼€å…³ï¼ˆé»˜è®¤å…³ï¼‰ï¼›å³æ—¶ç”Ÿæ•ˆï¼Œæ— éœ€é‡å»º agent
 		// Web search. WebSearchEnabled/Backend toggle the tool + backend; BraveKey/TavilyKey
-		// are optional — omit (null) to leave a stored key untouched, send "" to clear.
+		// are optional â€” omit (null) to leave a stored key untouched, send "" to clear.
 		WebSearchEnabled       *bool         `json:"web_search_enabled"`
 		WebSearchBackend       *string       `json:"web_search_backend"`
 		BraveKey               *string       `json:"brave_search_api_key"`
 		TavilyKey              *string       `json:"tavily_search_api_key"`
 		DeepSeekSearchKey      *string       `json:"deepseek_search_api_key"`
-		WebSearchProxy         *string       `json:"web_search_proxy"` // 独立出口代理(http/https/socks5)；null=不改，""=清空
-		GlobalProxy            *string       `json:"global_proxy"`     // 全局出口代理(http/https/socks5)；null=不改，""=清空(直连)
+		WebSearchProxy         *string       `json:"web_search_proxy"` // ç‹¬ç«‹å‡ºå£ä»£ç†(http/https/socks5)ï¼›null=ä¸æ”¹ï¼Œ""=æ¸…ç©º
+		GlobalProxy            *string       `json:"global_proxy"`     // å…¨å±€å‡ºå£ä»£ç†(http/https/socks5)ï¼›null=ä¸æ”¹ï¼Œ""=æ¸…ç©º(ç›´è¿ž)
 		ProxyRotateTimed       *bool         `json:"proxy_rotate_timed_enabled"`
 		ProxyRotateInterval    *int          `json:"proxy_rotate_interval_seconds"`
 		ProxyRotateFailure     *bool         `json:"proxy_rotate_on_failure"`
@@ -3793,25 +3793,25 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		ProxyHealthInterval    *int          `json:"proxy_health_check_interval_seconds"`
 		ProxyReconnectMax      *int          `json:"proxy_reconnect_max_attempts"`
 		ProxyReconnectInterval *int          `json:"proxy_reconnect_interval_seconds"`
-		ShowEgressIP           *bool         `json:"show_egress_ip"`     // 在顶栏显示直连/全局代理出口 IP；默认关
-		EgressProbeURL         *string       `json:"egress_probe_url"`   // null=不改；空串=默认公共探测服务
-		PythonInterp           *string       `json:"python_interpreter"` // 自定义脚本工具的 python 解释器路径
-		Workers                *int          `json:"workers"`            // 并发工作 agent 数(>0)；对之后启动的任务生效
+		ShowEgressIP           *bool         `json:"show_egress_ip"`     // åœ¨é¡¶æ æ˜¾ç¤ºç›´è¿ž/å…¨å±€ä»£ç†å‡ºå£ IPï¼›é»˜è®¤å…³
+		EgressProbeURL         *string       `json:"egress_probe_url"`   // null=ä¸æ”¹ï¼›ç©ºä¸²=é»˜è®¤å…¬å…±æŽ¢æµ‹æœåŠ¡
+		PythonInterp           *string       `json:"python_interpreter"` // è‡ªå®šä¹‰è„šæœ¬å·¥å…·çš„ python è§£é‡Šå™¨è·¯å¾„
+		Workers                *int          `json:"workers"`            // å¹¶å‘å·¥ä½œ agent æ•°(>0)ï¼›å¯¹ä¹‹åŽå¯åŠ¨çš„ä»»åŠ¡ç”Ÿæ•ˆ
 		WorkerPools            *[]WorkerPool `json:"worker_pools"`
-		// 任务并发上限:同时「运行中」的任务数上限。关闭=不限;开启后新建任务超限则排队,有空位自动启动。
+		// ä»»åŠ¡å¹¶å‘ä¸Šé™:åŒæ—¶ã€Œè¿è¡Œä¸­ã€çš„ä»»åŠ¡æ•°ä¸Šé™ã€‚å…³é—­=ä¸é™;å¼€å¯åŽæ–°å»ºä»»åŠ¡è¶…é™åˆ™æŽ’é˜Ÿ,æœ‰ç©ºä½è‡ªåŠ¨å¯åŠ¨ã€‚
 		ConcurrencyEnabled *bool `json:"task_concurrency_enabled"`
 		ConcurrencyLimit   *int  `json:"task_concurrency_limit"`
-		// LLM 轮询(故障转移)开关 + 「绑定配置失败也兜底回轮询链」开关。两者都需要
-		// 重建 provider 链才生效，走下面的 changed → applyLLM 路径。
+		// LLM è½®è¯¢(æ•…éšœè½¬ç§»)å¼€å…³ + ã€Œç»‘å®šé…ç½®å¤±è´¥ä¹Ÿå…œåº•å›žè½®è¯¢é“¾ã€å¼€å…³ã€‚ä¸¤è€…éƒ½éœ€è¦
+		// é‡å»º provider é“¾æ‰ç”Ÿæ•ˆï¼Œèµ°ä¸‹é¢çš„ changed â†’ applyLLM è·¯å¾„ã€‚
 		LLMPoolEnabled      *bool `json:"llm_pool_enabled"`
 		LLMPoolBindFallback *bool `json:"llm_pool_bind_fallback"`
-		// 操作约束注入范围开关(默认都开);即时生效(planner/worker 每轮读),无需重建 agent。
+		// æ“ä½œçº¦æŸæ³¨å…¥èŒƒå›´å¼€å…³(é»˜è®¤éƒ½å¼€);å³æ—¶ç”Ÿæ•ˆ(planner/worker æ¯è½®è¯»),æ— éœ€é‡å»º agentã€‚
 		ConstraintsInjectPlanner *bool `json:"constraints_inject_planner"`
 		ConstraintsInjectWorker  *bool `json:"constraints_inject_worker"`
-		// 实验功能:noa 上下文压缩开关(默认关);每 run 读,对之后启动的 run 生效,无需重建 agent。
+		// å®žéªŒåŠŸèƒ½:noa ä¸Šä¸‹æ–‡åŽ‹ç¼©å¼€å…³(é»˜è®¤å…³);æ¯ run è¯»,å¯¹ä¹‹åŽå¯åŠ¨çš„ run ç”Ÿæ•ˆ,æ— éœ€é‡å»º agentã€‚
 		NoaCompaction *bool `json:"noa_compaction"`
-		// 漏洞 IM 推送的全局项。三者都由投递引擎每轮读一次，改完即时生效，
-		// 不需要重建 agent 或重启。
+		// æ¼æ´ž IM æŽ¨é€çš„å…¨å±€é¡¹ã€‚ä¸‰è€…éƒ½ç”±æŠ•é€’å¼•æ“Žæ¯è½®è¯»ä¸€æ¬¡ï¼Œæ”¹å®Œå³æ—¶ç”Ÿæ•ˆï¼Œ
+		// ä¸éœ€è¦é‡å»º agent æˆ–é‡å¯ã€‚
 		NotifyEnabled    *bool   `json:"notify_enabled"`
 		NotifyBaseURL    *string `json:"notify_public_base_url"`
 		NotifyDigestMins *int    `json:"notify_digest_interval_min"`
@@ -3845,13 +3845,13 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.NoaCompaction != nil {
-		// 每 run 读的解析器,切换即时对之后启动的 run 生效,无需 applyLLM 重建。
+		// æ¯ run è¯»çš„è§£æžå™¨,åˆ‡æ¢å³æ—¶å¯¹ä¹‹åŽå¯åŠ¨çš„ run ç”Ÿæ•ˆ,æ— éœ€ applyLLM é‡å»ºã€‚
 		if err := s.m.SetNoaCompaction(*req.NoaCompaction); err != nil {
 			writeErr(w, 500, err.Error())
 			return
 		}
 	}
-	// 推送全局项:投递引擎每轮重新读取,所以即时生效、无需重启。
+	// æŽ¨é€å…¨å±€é¡¹:æŠ•é€’å¼•æ“Žæ¯è½®é‡æ–°è¯»å–,æ‰€ä»¥å³æ—¶ç”Ÿæ•ˆã€æ— éœ€é‡å¯ã€‚
 	if req.NotifyEnabled != nil {
 		if err := s.m.pg.SetBool(settingNotifyEnabled, *req.NotifyEnabled); err != nil {
 			writeErr(w, 500, err.Error())
@@ -3859,8 +3859,8 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.NotifyBaseURL != nil {
-		// 统一裁掉尾部斜杠:回链拼接用的是 fmt.Sprintf("%s/function/..."),
-		// 留着尾部斜杠会产出 "//function/..." 这种双斜杠路径。
+		// ç»Ÿä¸€è£æŽ‰å°¾éƒ¨æ–œæ :å›žé“¾æ‹¼æŽ¥ç”¨çš„æ˜¯ fmt.Sprintf("%s/function/..."),
+		// ç•™ç€å°¾éƒ¨æ–œæ ä¼šäº§å‡º "//function/..." è¿™ç§åŒæ–œæ è·¯å¾„ã€‚
 		base := trimTrailingSlash(strings.TrimSpace(*req.NotifyBaseURL))
 		if base != "" && !strings.HasPrefix(base, "http://") && !strings.HasPrefix(base, "https://") {
 			writeErr(w, 400, "Callback URL must start with http:// or https://")
@@ -3872,7 +3872,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.NotifyDigestMins != nil {
-		// 下限 1 分钟:更短的周期等于实时推送,那样应该直接把渠道改成 realtime 模式。
+		// ä¸‹é™ 1 åˆ†é’Ÿ:æ›´çŸ­çš„å‘¨æœŸç­‰äºŽå®žæ—¶æŽ¨é€,é‚£æ ·åº”è¯¥ç›´æŽ¥æŠŠæ¸ é“æ”¹æˆ realtime æ¨¡å¼ã€‚
 		if *req.NotifyDigestMins < 1 || *req.NotifyDigestMins > 24*60 {
 			writeErr(w, 400, "Digest interval must be between 1 and 1440 minutes")
 			return
@@ -3910,7 +3910,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.ConcurrencyEnabled != nil || req.ConcurrencyLimit != nil {
-		// 部分 PUT:未给的字段用当前值兜底,避免只改一个把另一个重置。
+		// éƒ¨åˆ† PUT:æœªç»™çš„å­—æ®µç”¨å½“å‰å€¼å…œåº•,é¿å…åªæ”¹ä¸€ä¸ªæŠŠå¦ä¸€ä¸ªé‡ç½®ã€‚
 		curOn, curLimit := s.m.ConcurrencyLimit()
 		if curLimit == 0 {
 			curLimit = defaultConcurrencyLimit
@@ -3926,7 +3926,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, 400, err.Error())
 			return
 		}
-		// 立即协调一次:关闭时放行全部排队,调高上限时补位启动,不必等下一个 tick。
+		// ç«‹å³åè°ƒä¸€æ¬¡:å…³é—­æ—¶æ”¾è¡Œå…¨éƒ¨æŽ’é˜Ÿ,è°ƒé«˜ä¸Šé™æ—¶è¡¥ä½å¯åŠ¨,ä¸å¿…ç­‰ä¸‹ä¸€ä¸ª tickã€‚
 		go s.reconcileConcurrency()
 	}
 	if req.PythonInterp != nil {
@@ -3936,7 +3936,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if req.LLMRecord != nil {
-		// 录制器每次调用读取该标志，切换即时生效，无需 applyLLM 重建。
+		// å½•åˆ¶å™¨æ¯æ¬¡è°ƒç”¨è¯»å–è¯¥æ ‡å¿—ï¼Œåˆ‡æ¢å³æ—¶ç”Ÿæ•ˆï¼Œæ— éœ€ applyLLM é‡å»ºã€‚
 		if err := s.m.SetLLMRecordEnabled(*req.LLMRecord); err != nil {
 			writeErr(w, 500, err.Error())
 			return
@@ -3948,7 +3948,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 			writeErr(w, 500, err.Error())
 			return
 		}
-		changed = true // the provider chain itself changes shape → rebuild
+		changed = true // the provider chain itself changes shape â†’ rebuild
 	}
 	if req.LLMPoolBindFallback != nil {
 		if err := s.m.SetLLMPoolBindFallback(*req.LLMPoolBindFallback); err != nil {
@@ -3959,7 +3959,7 @@ func (s *Server) putSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.LLMPoolEnabled != nil || req.LLMPoolBindFallback != nil {
 		// Pinned tasks' planner/worker and per-profile chat agents hold providers
-		// built under the OLD switch state — drop them so they pick up the new one.
+		// built under the OLD switch state â€” drop them so they pick up the new one.
 		s.invalidateProfileAgents()
 	}
 	if req.TaskIntelligence != nil || req.CredentialAgent != nil || req.CredentialTraffic != nil {
@@ -4166,7 +4166,7 @@ func (s *Server) setReporterBrowserScreenshotVisibility(enabled bool) error {
 }
 
 // testWebSearch runs a real "test" search with the given (or currently saved)
-// backend/proxy/key to verify the config can actually reach a search backend —
+// backend/proxy/key to verify the config can actually reach a search backend â€”
 // mirroring testLLM. Backend/proxy come from the request (so the form's unsaved
 // edits are tested); empty API keys fall back to stored values so the user need
 // not retype them. Always 200 with {ok, error?, count?, backend?}.
@@ -4178,7 +4178,7 @@ func (s *Server) testWebSearch(w http.ResponseWriter, r *http.Request) {
 		TavilyKey         string `json:"tavily_search_api_key"`
 		DeepSeekSearchKey string `json:"deepseek_search_api_key"`
 	}
-	// Empty body is fine — fall back entirely to the saved config below.
+	// Empty body is fine â€” fall back entirely to the saved config below.
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil && err != io.EOF {
 		writeErr(w, 400, err.Error())
 		return
@@ -4188,7 +4188,7 @@ func (s *Server) testWebSearch(w http.ResponseWriter, r *http.Request) {
 		backend = req.Backend
 	}
 	// Proxy is taken from the form as-is (empty = direct), so testing reflects exactly
-	// what's shown — including an intentional "clear proxy to test direct" before saving.
+	// what's shown â€” including an intentional "clear proxy to test direct" before saving.
 	proxy := strings.TrimSpace(req.Proxy)
 	// API keys are secrets the form omits when already saved, so fall back to stored.
 	braveKey := storedBraveKey
@@ -4226,14 +4226,14 @@ func (s *Server) testWebSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(results) == 0 {
-		writeJSON(w, 200, map[string]any{"ok": false, "error": "搜索返回 0 条结果（可能被限流或代理不通）", "backend": backend})
+		writeJSON(w, 200, map[string]any{"ok": false, "error": "æœç´¢è¿”å›ž 0 æ¡ç»“æžœï¼ˆå¯èƒ½è¢«é™æµæˆ–ä»£ç†ä¸é€šï¼‰", "backend": backend})
 		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": true, "count": len(results), "backend": backend})
 }
 
 // mainSessions lists the task's main-agent conversation segments (newest-first) and
-// the current one. The frontend renders these as switchable sessions under 主 Agent.
+// the current one. The frontend renders these as switchable sessions under ä¸» Agent.
 func (s *Server) mainSessions(w http.ResponseWriter, r *http.Request) {
 	t := s.m.ResolveTask(r.URL.Query().Get("task"))
 	if t == nil {
@@ -4253,7 +4253,7 @@ func (s *Server) mainSessions(w http.ResponseWriter, r *http.Request) {
 }
 
 // newMainSession starts a fresh main-agent conversation segment. Only the segment
-// counter advances — the task's exploration graph, assets and goal are untouched, so
+// counter advances â€” the task's exploration graph, assets and goal are untouched, so
 // the main agent continues over the same task with a clean transcript/context.
 func (s *Server) newMainSession(w http.ResponseWriter, r *http.Request) {
 	t := s.m.ResolveTask(r.URL.Query().Get("task"))
@@ -4283,12 +4283,12 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 409, "Task is being deleted, cannot send new message")
 		return
 	}
-	// 注意:任务暂停(paused)不拦截主 Agent 对话。主 Agent 编排会话独立于 planner/
-	// worker 的暂停,暂停中仍可继续对话(暂停只终止其正在进行的那一轮,见 control())。
+	// æ³¨æ„:ä»»åŠ¡æš‚åœ(paused)ä¸æ‹¦æˆªä¸» Agent å¯¹è¯ã€‚ä¸» Agent ç¼–æŽ’ä¼šè¯ç‹¬ç«‹äºŽ planner/
+	// worker çš„æš‚åœ,æš‚åœä¸­ä»å¯ç»§ç»­å¯¹è¯(æš‚åœåªç»ˆæ­¢å…¶æ­£åœ¨è¿›è¡Œçš„é‚£ä¸€è½®,è§ control())ã€‚
 	var req struct {
 		Message     string           `json:"message"`
-		Attachments []chatAttachment `json:"attachments,omitempty"` // 方式1 上传的文件(路径相对任务工作目录)
-		Seg         *int             `json:"seg,omitempty"`         // 目标主会话分段;缺省=最新段
+		Attachments []chatAttachment `json:"attachments,omitempty"` // æ–¹å¼1 ä¸Šä¼ çš„æ–‡ä»¶(è·¯å¾„ç›¸å¯¹ä»»åŠ¡å·¥ä½œç›®å½•)
+		Seg         *int             `json:"seg,omitempty"`         // ç›®æ ‡ä¸»ä¼šè¯åˆ†æ®µ;ç¼ºçœ=æœ€æ–°æ®µ
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeErr(w, 400, err.Error())
@@ -4330,7 +4330,7 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 	}
 	segPtr := &mainSeg
 
-	// Persist + broadcast the human turn so the 主 Agent 编排会话 survives page
+	// Persist + broadcast the human turn so the ä¸» Agent ç¼–æŽ’ä¼šè¯ survives page
 	// reloads and updates live: the conversation lives in the activity stream as
 	// worker="mainagent" (the per-task activity table, replayed via SSE). With
 	// attachments, the activity's Detail carries {text, attachments} so the transcript
@@ -4354,22 +4354,22 @@ func (s *Server) chat(w http.ResponseWriter, r *http.Request) {
 			}()
 			// emit every step (thinking/tool_use/tool_result/text/result) so the main
 			// agent session shows its work live, like worker/planner. The final answer
-			// is the captured "result" step — no separate reply emit (would duplicate).
+			// is the captured "result" step â€” no separate reply emit (would duplicate).
 			emit := func(rec db.Activity) {
 				rec.MainSeg = segPtr
 				s.engine.emitActivity(t, rec)
 			}
 			maTaskID, _ := strconv.ParseInt(t.ID, 10, 64)
-			resume := func() { s.reviveTask(t) } // set_goals 新增目标 → 把任务拉回 running
-			// 把上传附件的【绝对路径】清单拼进发给 agent 的消息,它据此用 Read/Bash 打开文件。
-			// taskDir = agent 的工作目录(CWD),与 chatUpload 落盘、ensureRunDir 一致。
+			resume := func() { s.reviveTask(t) } // set_goals æ–°å¢žç›®æ ‡ â†’ æŠŠä»»åŠ¡æ‹‰å›ž running
+			// æŠŠä¸Šä¼ é™„ä»¶çš„ã€ç»å¯¹è·¯å¾„ã€‘æ¸…å•æ‹¼è¿›å‘ç»™ agent çš„æ¶ˆæ¯,å®ƒæ®æ­¤ç”¨ Read/Bash æ‰“å¼€æ–‡ä»¶ã€‚
+			// taskDir = agent çš„å·¥ä½œç›®å½•(CWD),ä¸Ž chatUpload è½ç›˜ã€ensureRunDir ä¸€è‡´ã€‚
 			taskDir := filepath.Join(s.m.dir, "tasks", t.ID)
 			agentMsg := composeAgentMessage(agentMessage, req.Attachments, taskDir)
 			s.engine.BeginLLMCall(t.ID)
 			_, err := ma.Chat(ctx, maTaskID, mainSeg, s.m.Assets(), t.Store, t.Goal, agentMsg, emit, t.Notify, resume, t.NotifyGoal, t.NotifyHint)
 			s.engine.EndLLMCall(t.ID)
 			if err != nil && ctx.Err() == nil {
-				s.engine.emitActivity(t, db.Activity{Worker: "mainagent", Kind: "text", IsError: true, Summary: "（主 Agent 出错：" + err.Error() + "）", MainSeg: segPtr})
+				s.engine.emitActivity(t, db.Activity{Worker: "mainagent", Kind: "text", IsError: true, Summary: "ï¼ˆä¸» Agent å‡ºé”™ï¼š" + err.Error() + "ï¼‰", MainSeg: segPtr})
 			}
 		}()
 		writeJSON(w, 202, map[string]any{"status": "accepted", "mode": "llm"})
@@ -4430,17 +4430,17 @@ func (s *Server) stopChat(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"status": "stopping"})
 }
 
-// fallbackChat is the no-LLM human-steering handler: simple命令 + 态势摘要.
+// fallbackChat is the no-LLM human-steering handler: simpleå‘½ä»¤ + æ€åŠ¿æ‘˜è¦.
 func (s *Server) fallbackChat(t *Task, msg string) string {
 	m := strings.TrimSpace(msg)
 	lower := strings.ToLower(m)
 	switch {
-	case strings.HasPrefix(m, "意图") || strings.HasPrefix(lower, "intent"):
-		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "意图"), "intent"))
+	case strings.HasPrefix(m, "æ„å›¾") || strings.HasPrefix(lower, "intent"):
+		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "æ„å›¾"), "intent"))
 		_, _ = t.Store.AddIntent(map[string]any{"summary": text}, 9, nil, "human")
 		return "Injected a high-priority intent: " + text
-	case strings.HasPrefix(m, "提示") || strings.HasPrefix(lower, "hint"):
-		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "提示"), "hint"))
+	case strings.HasPrefix(m, "æç¤º") || strings.HasPrefix(lower, "hint"):
+		text := strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(m, "æç¤º"), "hint"))
 		_, _ = t.Store.AddNode(db.KindHint, map[string]any{"text": text}, 0, "active", "human", nil)
 		return "Hint recorded; the planner will read it next round: " + text
 	default:
@@ -4461,7 +4461,7 @@ func (s *Server) getReport(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 404, "no active task")
 		return
 	}
-	findings, _ := t.Store.ListByKind(db.KindFinding, 1000) // 纯漏洞（事实是独立的 KindFact，不进报告）
+	findings, _ := t.Store.ListByKind(db.KindFinding, 1000) // çº¯æ¼æ´žï¼ˆäº‹å®žæ˜¯ç‹¬ç«‹çš„ KindFactï¼Œä¸è¿›æŠ¥å‘Šï¼‰
 	counts := map[string]int{}
 	for _, ty := range []string{"root_domain", "ip", "subdomain", "app", "service", "endpoint"} {
 		ns, _ := s.m.Assets().QueryByType(ty, 100000, 0)
@@ -4537,3 +4537,4 @@ func atoiDefault(s string, d int) int {
 	}
 	return d
 }
+

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/notify"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/notify"
 )
 
 // This file contains the HTTP API for push notifications. All routes are mounted after requireAuth (see Handler()),
@@ -18,7 +18,7 @@ import (
 // notifyChannelDTO is the external representation of a channel.
 //
 // Config is the **masked** configuration: credential fields are replaced with values prefixed by notify.MaskedPrefix.
-// The frontend submits the masked value unchanged to indicate “this field hasn't changed”; the server uses this to preserve the original value in the database
+// The frontend submits the masked value unchanged to indicate â€œthis field hasn't changedâ€; the server uses this to preserve the original value in the database
 // (see notify.MergeConfig).
 type notifyChannelDTO struct {
 	ID         int64          `json:"id"`
@@ -31,7 +31,7 @@ type notifyChannelDTO struct {
 	RatePerMin int            `json:"rate_per_min"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  time.Time      `json:"updated_at"`
-	// SecretKeys tells the frontend which fields are credentials, so it can render password inputs and the “leave blank to keep unchanged” hint.
+	// SecretKeys tells the frontend which fields are credentials, so it can render password inputs and the â€œleave blank to keep unchangedâ€ hint.
 	// Declared by each channel (notify.Channel.SecretKeys); the frontend doesn't hard-code channel-specific knowledge.
 	SecretKeys []string `json:"secret_keys"`
 }
@@ -163,7 +163,7 @@ func (s *Server) notifyListChannels(w http.ResponseWriter, r *http.Request) {
 
 // notifyChannelRequest is the request body for creating/updating a channel.
 //
-// All business fields are pointers to distinguish “not provided” from “provided with a zero value”: under PATCH semantics,
+// All business fields are pointers to distinguish â€œnot providedâ€ from â€œprovided with a zero valueâ€: under PATCH semantics,
 // fields that are not provided must retain their original database values.
 type notifyChannelRequest struct {
 	Name       *string        `json:"name"`
@@ -217,15 +217,15 @@ func (s *Server) notifyCreateChannel(w http.ResponseWriter, r *http.Request) {
 		ch.Mode = *req.Mode
 	}
 	if req.RatePerMin != nil {
-		// If explicitly provided, use as is—including 0, which means “no rate limit” and is a valid configuration.
+		// If explicitly provided, use as isâ€”including 0, which means â€œno rate limitâ€ and is a valid configuration.
 		if *req.RatePerMin < 0 {
 			writeErr(w, 400, "Rate limit value cannot be negative")
 			return
 		}
 		ch.RatePerMin = *req.RatePerMin
 	}
-	// Apply channel defaults only when a field is “omitted.” Defaults must be determined here, not in the db layer:
-	// only the request body can distinguish “field not provided” from “explicitly provided as 0,” and they mean entirely different things
+	// Apply channel defaults only when a field is â€œomitted.â€ Defaults must be determined here, not in the db layer:
+	// only the request body can distinguish â€œfield not providedâ€ from â€œexplicitly provided as 0,â€ and they mean entirely different things
 	// (the former=use the default, the latter=no rate limit). If the db layer treats 0 as unspecified, no-rate-limit configurations become unreachable.
 	if req.RatePerMin == nil {
 		ch.RatePerMin = channel.DefaultRatePerMin()
@@ -293,7 +293,7 @@ func (s *Server) notifyUpdateChannel(w http.ResponseWriter, r *http.Request) {
 		stored = map[string]any{}
 	}
 	// Use PrepareConfigUpdate rather than bare MergeConfig: when the destination address changes, the operator must
-	// explicitly reconfirm the credential fields; otherwise, “change only the address, keep the credentials” would send the real credentials in the database to the new address.
+	// explicitly reconfirm the credential fields; otherwise, â€œchange only the address, keep the credentialsâ€ would send the real credentials in the database to the new address.
 	merged, err := notify.PrepareConfigUpdate(kind, stored, req.Config)
 	if err != nil {
 		writeErr(w, 400, err.Error())
@@ -348,7 +348,7 @@ func (s *Server) notifyUpdateChannel(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Use the SetNotificationChannelEnabled path rather than SaveNotificationChannel
-	// so that “disable” also marks pending deliveries as skipped, preventing a batch of
+	// so that â€œdisableâ€ also marks pending deliveries as skipped, preventing a batch of
 	// stale queued messages from being received when the channel is re-enabled.
 	enabledChanged := ch.Enabled != nil && current.Enabled != nil && *ch.Enabled != *current.Enabled
 	if enabledChanged {
@@ -429,7 +429,7 @@ func (s *Server) notifyTestChannel(w http.ResponseWriter, r *http.Request) {
 	// There is only one test message, so the delivered count is not needed here (the channel's length limit for a single message
 	// is handled by truncation; no splitting is involved).
 	if _, err := channel.Send(r.Context(), cfg, msg); err != nil {
-		// Return the raw error from the channel to the user as-is—it's their only clue for debugging the configuration.
+		// Return the raw error from the channel to the user as-isâ€”it's their only clue for debugging the configuration.
 		writeErr(w, 502, err.Error())
 		return
 	}
@@ -445,11 +445,11 @@ func notifyTestMessage(baseURL string) notify.Message {
 	return notify.Message{
 		Items: []notify.Item{{
 			FindingID: 0,
-			Name:      "测试消息 · 渠道配置正常",
-			VulnClass: "连通性测试",
+			Name:      "æµ‹è¯•æ¶ˆæ¯ Â· æ¸ é“é…ç½®æ­£å¸¸",
+			VulnClass: "è¿žé€šæ€§æµ‹è¯•",
 			Severity:  "low",
-			Summary:   "这是 ARTEX 推送渠道的测试消息，收到即表示该渠道配置可用。",
-			Assets:    []string{"artex.example.com"},
+			Summary:   "è¿™æ˜¯ CAUTIOUSMEMORY æŽ¨é€æ¸ é“çš„æµ‹è¯•æ¶ˆæ¯ï¼Œæ”¶åˆ°å³è¡¨ç¤ºè¯¥æ¸ é“é…ç½®å¯ç”¨ã€‚",
+			Assets:    []string{"CAUTIOUSMEMORY.example.com"},
 			DetailURL: baseURL,
 		}},
 		HomeURL: baseURL,
@@ -505,7 +505,7 @@ func (s *Server) notifyRetryDelivery(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]any{"ok": true})
 }
 
-// notifyChannelLookupErr maps “channel not found” to 404 and other errors to 500.
+// notifyChannelLookupErr maps â€œchannel not foundâ€ to 404 and other errors to 500.
 func notifyChannelLookupErr(w http.ResponseWriter, err error) {
 	if errors.Is(err, db.ErrNotificationChannelNotFound) {
 		writeErr(w, 404, "Notification channel not found")
@@ -513,3 +513,4 @@ func notifyChannelLookupErr(w http.ResponseWriter, err error) {
 	}
 	writeErr(w, 500, err.Error())
 }
+

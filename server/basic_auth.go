@@ -1,4 +1,4 @@
-package server
+﻿package server
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 )
 
 const basicAuthKey = "auth.http_basic"
-const basicAuthCookie = "artex_basic_auth"
+const basicAuthCookie = "CAUTIOUSMEMORY_basic_auth"
 const basicAuthTTL = 12 * time.Hour
 const basicAuthSaveTimeout = 10 * time.Second
 
@@ -84,7 +84,7 @@ func validBasicUsername(username string) bool {
 // A separate signing key prevents a gate cookie from being used as an admin JWT.
 func (s *Server) basicAuthSigningKey() []byte {
 	m := hmac.New(sha256.New, s.jwtKey)
-	m.Write([]byte("artex/http-basic-auth/session/v1"))
+	m.Write([]byte("CAUTIOUSMEMORY/http-basic-auth/session/v1"))
 	return m.Sum(nil)
 }
 
@@ -97,7 +97,7 @@ func (s *Server) validBasicAuthCookie(r *http.Request, cfg basicAuthConfig) bool
 	_, err = jwt.ParseWithClaims(cookie.Value, claims, func(*jwt.Token) (any, error) {
 		return s.basicAuthSigningKey(), nil
 	}, jwt.WithValidMethods([]string{"HS256"}), jwt.WithExpirationRequired(),
-		jwt.WithAudience("artex-basic-auth"), jwt.WithSubject(cfg.Revision))
+		jwt.WithAudience("CAUTIOUSMEMORY-basic-auth"), jwt.WithSubject(cfg.Revision))
 	return err == nil
 }
 
@@ -110,7 +110,7 @@ func (s *Server) setBasicAuthCookie(w http.ResponseWriter, r *http.Request, cfg 
 	if cfg.Enabled {
 		now := time.Now()
 		token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
-			Subject: cfg.Revision, Audience: jwt.ClaimStrings{"artex-basic-auth"},
+			Subject: cfg.Revision, Audience: jwt.ClaimStrings{"CAUTIOUSMEMORY-basic-auth"},
 			IssuedAt: jwt.NewNumericDate(now), ExpiresAt: jwt.NewNumericDate(now.Add(basicAuthTTL)),
 		}).SignedString(s.basicAuthSigningKey())
 		if err != nil {
@@ -231,3 +231,4 @@ func (s *Server) saveBasicAuthSettings(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, basicAuthPublicSettings(cfg))
 }
+

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	pgdb "github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	pgdb "github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 func TestSeedAssociatesTargetAssetWithTask(t *testing.T) {
@@ -278,3 +278,4 @@ func assertPathExists(t *testing.T, path string) {
 		t.Fatalf("expected %s to remain: %v", path, err)
 	}
 }
+

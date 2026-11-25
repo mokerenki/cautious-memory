@@ -9,19 +9,19 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
 )
 
-// Full chain against a real PG: Recorder → norma provider → capturing transport
-// → llm_records. The unit tests cover each hop; this proves the raw bodies
+// Full chain against a real PG: Recorder â†’ norma provider â†’ capturing transport
+// â†’ llm_records. The unit tests cover each hop; this proves the raw bodies
 // actually survive all the way into the row an operator opens when debugging.
 func TestRecorderPersistsRawWireBodies(t *testing.T) {
 	m, err := NewManager(t.TempDir(), "")
 	if err != nil {
-		t.Skipf("postgres unavailable (%v) — skipping", err)
+		t.Skipf("postgres unavailable (%v) â€” skipping", err)
 	}
 	defer m.Close()
 	pg := m.PG()
@@ -67,7 +67,7 @@ func TestRecorderPersistsRawWireBodies(t *testing.T) {
 	rec := llmrec.Wrap(inner, pg, cfg.Model, "raw-test-profile", "", "", func() bool { return true })
 
 	// Clean up whatever this test writes, whether or not it passes. Must be a
-	// defer registered after `defer m.Close()` (LIFO puts it first) — a
+	// defer registered after `defer m.Close()` (LIFO puts it first) â€” a
 	// t.Cleanup would run after the manager already closed the pool.
 	defer func() {
 		if _, err := pg.Exec(`DELETE FROM llm_records WHERE session_id = $1`, session); err != nil {
@@ -104,7 +104,7 @@ func TestRecorderPersistsRawWireBodies(t *testing.T) {
 		t.Errorf("raw_response is not the wire bytes:\n got: %q\nwant: %q", got.RawResponse, sse)
 	}
 	// The tool call is absent from the normalized body but present in the raw one
-	// — the specific gap this feature closes.
+	// â€” the specific gap this feature closes.
 	if strings.Contains(got.ResponseBody, "toolu_raw") {
 		t.Error("normalized body unexpectedly contains the tool_use block; test no longer proves the gap")
 	}
@@ -131,3 +131,4 @@ func TestRecorderPersistsRawWireBodies(t *testing.T) {
 		t.Error("normalized request unexpectedly carries schemas; test no longer proves the gap")
 	}
 }
+

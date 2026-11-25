@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Autumn-27/artex/llmrec"
+	"github.com/Autumn-27/cautiousmemory/llmrec"
 )
 
 // The transport is the only layer that still sees the wire bodies: norma builds
@@ -123,3 +123,4 @@ func TestRoundTripWithoutCaptureIsUnchanged(t *testing.T) {
 		t.Fatalf("body=%q", got)
 	}
 }
+

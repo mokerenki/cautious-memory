@@ -10,11 +10,11 @@ import (
 	"github.com/Autumn-27/norma/skill"
 	actool "github.com/Autumn-27/norma/tool"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
-// maxLedgerSkillName caps the skill name stored for a MISS — that string comes
+// maxLedgerSkillName caps the skill name stored for a MISS â€” that string comes
 // straight from the model and is otherwise unbounded.
 const maxLedgerSkillName = 128
 
@@ -22,7 +22,7 @@ const maxLedgerSkillName = 128
 // The metering lives here rather than in Registry.OnInvoke because OnInvoke only
 // receives the resolved Skill: it never fires for an unknown skill name (norma
 // returns a tool error before the hook) and it cannot see the caller's args. Both
-// matter — a miss tells you which procedure the agents wished existed.
+// matter â€” a miss tells you which procedure the agents wished existed.
 type meteredSkill struct {
 	actool.CoreTool
 	pg       *db.DB
@@ -86,3 +86,4 @@ func (m *meteredSkill) record(input json.RawMessage) {
 		log.Printf("[skillusage] insert: %v", err)
 	}
 }
+

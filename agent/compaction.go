@@ -1,18 +1,18 @@
 package agent
 
-// cold-digest §4/§5/§7: the Compactor ties the pure algorithms (coldgraph.go)
+// cold-digest Â§4/Â§5/Â§7: the Compactor ties the pure algorithms (coldgraph.go)
 // to the store (db/digest.go) and the LLM. It runs in two modes:
 //
-//	maintain — cheap, synchronous, once per planner round: bump round_no,
-//	           recompute hot/cold, stamp/clear cold_since_round (§2.3). This is
+//	maintain â€” cheap, synchronous, once per planner round: bump round_no,
+//	           recompute hot/cold, stamp/clear cold_since_round (Â§2.3). This is
 //	           the bookkeeping the planner does anyway; it never calls the LLM.
-//	minor/major — background, off the planner hot path (§7): group cold nodes
-//	           and compress each ≥2 block into a digest via the LLM. minor folds
+//	minor/major â€” background, off the planner hot path (Â§7): group cold nodes
+//	           and compress each â‰¥2 block into a digest via the LLM. minor folds
 //	           only the not-yet-covered cold set (tiered append); major re-derives
-//	           the whole grouping from source and merges fragments (§5.1/§5.2),
-//	           reusing bodies whose signature is unchanged (§5.3).
+//	           the whole grouping from source and merges fragments (Â§5.1/Â§5.2),
+//	           reusing bodies whose signature is unchanged (Â§5.3).
 //
-// Concurrency: one compaction per task at a time (mutex), ≥cooldown between runs,
+// Concurrency: one compaction per task at a time (mutex), â‰¥cooldown between runs,
 // and a commit-time liveness recheck drops any member that revived while the body
 // was being generated so a digest never covers a hot node.
 
@@ -26,7 +26,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/llm"
 	"github.com/Autumn-27/norma/transcript"
 )
@@ -36,8 +36,8 @@ type Compactor struct {
 	prov     llm.Provider
 	model    string
 	params   coldParams
-	n, m     int           // minor / major thresholds (§7 N=20, M=8)
-	cooldown time.Duration // min gap between compactions per task (§7 60s)
+	n, m     int           // minor / major thresholds (Â§7 N=20, M=8)
+	cooldown time.Duration // min gap between compactions per task (Â§7 60s)
 	maxDur   time.Duration // hard cap on one background compaction
 
 	mu      sync.Mutex
@@ -45,8 +45,8 @@ type Compactor struct {
 	lastRun map[int64]time.Time
 }
 
-// NewCompactor builds a compactor. prov/model are used for the §4 body LLM call
-// (same model the agent runs on, per §4). A nil Compactor is a safe no-op.
+// NewCompactor builds a compactor. prov/model are used for the Â§4 body LLM call
+// (same model the agent runs on, per Â§4). A nil Compactor is a safe no-op.
 func NewCompactor(prov llm.Provider, model string) *Compactor {
 	return &Compactor{
 		prov:     prov,
@@ -80,7 +80,7 @@ func (c *Compactor) OnPlannerRound(ctx context.Context, ts *db.ExplorationStore)
 		return
 	}
 	if !c.tryStart(ts.ID()) {
-		return // already running, or within cooldown — eventual consistency for derived state, retry next round
+		return // already running, or within cooldown â€” eventual consistency for derived state, retry next round
 	}
 	go func() {
 		defer c.finish(ts.ID())
@@ -101,7 +101,7 @@ func (c *Compactor) OnPlannerRound(ctx context.Context, ts *db.ExplorationStore)
 }
 
 // maintain bumps round_no, recomputes hot/cold over the whole graph, and applies
-// the cold_since_round stamp/clear ops (§2.3). Returns the new round plus the
+// the cold_since_round stamp/clear ops (Â§2.3). Returns the new round plus the
 // counts that drive the trigger: how many eligible-cold nodes are not yet covered
 // (minor) and how many active digests exist (major).
 func (c *Compactor) maintain(ts *db.ExplorationStore) (round int64, uncompressed, activeDigests int, err error) {
@@ -143,7 +143,7 @@ func (c *Compactor) maintain(ts *db.ExplorationStore) (round int64, uncompressed
 }
 
 // minor folds the not-yet-covered eligible-cold set into new digest segments
-// (tiered append, §5). Existing digests are untouched.
+// (tiered append, Â§5). Existing digests are untouched.
 func (c *Compactor) minor(ctx context.Context, ts *db.ExplorationStore) {
 	round, err := ts.RoundNo()
 	if err != nil {
@@ -175,22 +175,22 @@ func (c *Compactor) minor(ctx context.Context, ts *db.ExplorationStore) {
 	}
 	blocks := g.group(uncompressed, c.params)
 	if len(blocks) == 0 {
-		return // this batch has no ≥2 connected/shared-parent block — nothing to fold (§7)
+		return // this batch has no â‰¥2 connected/shared-parent block â€” nothing to fold (Â§7)
 	}
 	for _, b := range blocks {
 		c.foldBlock(ctx, ts, g, b, nodeByID, cvers, c.generationFor(b, nil))
 	}
-	// A minor may have pushed the segment count over M → merge in the same run.
+	// A minor may have pushed the segment count over M â†’ merge in the same run.
 	if ad, e := ts.ActiveDigests(); e == nil && len(ad) >= c.m {
 		c.major(ctx, ts)
 	}
 }
 
 // major re-derives the whole grouping from source over ALL eligible-cold nodes
-// (§5.1 source re-compress), then reconciles against the active digests by signature:
+// (Â§5.1 source re-compress), then reconciles against the active digests by signature:
 // unchanged blocks keep their digest (no LLM), stale digests are superseded, and
 // new/changed blocks are compressed afresh. This is where tiered fragments of one
-// direction merge and where "later became connected" blocks unify (§5.2).
+// direction merge and where "later became connected" blocks unify (Â§5.2).
 func (c *Compactor) major(ctx context.Context, ts *db.ExplorationStore) {
 	round, err := ts.RoundNo()
 	if err != nil {
@@ -227,12 +227,12 @@ func (c *Compactor) major(ctx context.Context, ts *db.ExplorationStore) {
 		sig := blockSignature(b, cvers)
 		desired[sig] = true
 		if _, ok := bySig[sig]; ok {
-			continue // unchanged → reuse the existing digest, skip LLM (§5.3)
+			continue // unchanged â†’ reuse the existing digest, skip LLM (Â§5.3)
 		}
 		toCreate = append(toCreate, b)
 	}
 	// Supersede stale digests FIRST (atomic drop of their covers edges) so a member
-	// is never covered by both an old and a new digest (§5.1 one-member-one-digest).
+	// is never covered by both an old and a new digest (Â§5.1 one-member-one-digest).
 	var stale []int64
 	for _, d := range active {
 		sig, _ := digestSigGen(d)
@@ -248,8 +248,8 @@ func (c *Compactor) major(ctx context.Context, ts *db.ExplorationStore) {
 	}
 }
 
-// foldBlock compresses one block and writes its digest — with a commit-time
-// liveness recheck (§ concurrency): between grouping and write the graph may have
+// foldBlock compresses one block and writes its digest â€” with a commit-time
+// liveness recheck (Â§ concurrency): between grouping and write the graph may have
 // changed, so any member that has since gone hot (revived) is dropped from the
 // covers set. If the block dissolves below K it is skipped.
 func (c *Compactor) foldBlock(ctx context.Context, ts *db.ExplorationStore, g *coldGraph, b block, nodeByID map[int64]*db.Node, cvers map[int64]int, generation int) {
@@ -271,7 +271,7 @@ func (c *Compactor) foldBlock(ctx context.Context, ts *db.ExplorationStore, g *c
 		}
 	}
 	if len(members) < c.params.K {
-		return // block revived out from under us — leave those nodes hot, don't fold
+		return // block revived out from under us â€” leave those nodes hot, don't fold
 	}
 	final := block{Members: members, Anchors: b.Anchors}
 	payload := digestPayload(body, final, nodeByID, generation, blockSignature(final, cvers))
@@ -280,7 +280,7 @@ func (c *Compactor) foldBlock(ctx context.Context, ts *db.ExplorationStore, g *c
 	}
 }
 
-// generationFor computes a digest's re-compression generation (§1): 1 for a fresh fold; for a major
+// generationFor computes a digest's re-compression generation (Â§1): 1 for a fresh fold; for a major
 // merge, max(generation) over the active digests that overlap this block's
 // members, +1.
 func (c *Compactor) generationFor(b block, active []*db.Node) int {
@@ -327,12 +327,12 @@ func (c *Compactor) finish(expID int64) {
 	c.lastRun[expID] = time.Now()
 }
 
-// --- helpers: db ↔ coldgraph ---
+// --- helpers: db â†” coldgraph ---
 
 // loadColdGraph reads the exploration's nodes + edges and builds the cold-graph
-// view plus an id→node index (for summaries/payload during compression).
+// view plus an idâ†’node index (for summaries/payload during compression).
 func loadColdGraph(ts *db.ExplorationStore) (*coldGraph, map[int64]*db.Node, error) {
-	// Compaction must see the WHOLE graph, not the default row caps — pass a very
+	// Compaction must see the WHOLE graph, not the default row caps â€” pass a very
 	// high limit so the LIMIT clause is effectively unbounded for real task sizes.
 	const allRows = 1 << 30
 	nodes, err := ts.Nodes(allRows)
@@ -379,7 +379,7 @@ func applyStampsInPlace(stamps map[int64]*int64, ops []stampOp) {
 
 // --- helpers: digest payload ---
 
-// digestPayload builds the digest node payload (cold-digest §1): the body, the
+// digestPayload builds the digest node payload (cold-digest Â§1): the body, the
 // member ids split by kind (restore cache; source of truth is the covers edges),
 // the anchor ids, the generation, and the change-detection signature.
 func digestPayload(body string, b block, nodeByID map[int64]*db.Node, generation int, signature string) map[string]any {
@@ -420,7 +420,7 @@ func digestMemberIDs(n *db.Node) []int64 {
 	return append(append([]int64{}, p.MemberIDs.Facts...), p.MemberIDs.Intents...)
 }
 
-// --- helpers: compression input + LLM (§4) ---
+// --- helpers: compression input + LLM (Â§4) ---
 
 func nodeSummary(n *db.Node) string {
 	if n == nil {
@@ -451,9 +451,9 @@ func nodeConfidence(n *db.Node) string {
 	return ""
 }
 
-// buildCompressionInput renders the connected sub-graph for the §4 prompt:
+// buildCompressionInput renders the connected sub-graph for the Â§4 prompt:
 // member nodes (summary + id + kind + state + confidence), the internal blood
-// edges among members, and — for a §3.1 shared-parent group — the anchor parents
+// edges among members, and â€” for a Â§3.1 shared-parent group â€” the anchor parents
 // as context ("common parent #p"), which are NOT members.
 func buildCompressionInput(g *coldGraph, b block, nodeByID map[int64]*db.Node) string {
 	memberSet := make(map[int64]bool, len(b.Members))
@@ -484,12 +484,12 @@ func buildCompressionInput(g *coldGraph, b block, nodeByID map[int64]*db.Node) s
 	for _, m := range b.Members {
 		for _, to := range g.children[m] {
 			if memberSet[to] {
-				edgeLines = append(edgeLines, fmt.Sprintf("- #%d output/derived→ #%d", m, to))
+				edgeLines = append(edgeLines, fmt.Sprintf("- #%d output/derivedâ†’ #%d", m, to))
 			}
 		}
 	}
 	if len(edgeLines) > 0 {
-		sb.WriteString("\n[Lineage edges among members (parent→child)]:\n")
+		sb.WriteString("\n[Lineage edges among members (parentâ†’child)]:\n")
 		sort.Strings(edgeLines)
 		sb.WriteString(strings.Join(edgeLines, "\n"))
 		sb.WriteByte('\n')
@@ -508,7 +508,7 @@ func buildCompressionInput(g *coldGraph, b block, nodeByID map[int64]*db.Node) s
 	return sb.String()
 }
 
-// compress runs the §4 body LLM call on one block. Uses the same model the agent
+// compress runs the Â§4 body LLM call on one block. Uses the same model the agent
 // runs on; thinking disabled (a pure summarization step).
 func (c *Compactor) compress(ctx context.Context, g *coldGraph, b block, nodeByID map[int64]*db.Node) (string, error) {
 	req := llm.CompletionRequest{
@@ -528,13 +528,13 @@ func (c *Compactor) compress(ctx context.Context, g *coldGraph, b block, nodeByI
 	return body, nil
 }
 
-// compressionSystemPrompt is the §4 body prompt.
+// compressionSystemPrompt is the Â§4 body prompt.
 const compressionSystemPrompt = `You are compressing a group of [mutually related] exploration nodes, producing a comprehensive conclusion (body) for the planner to quickly grasp "what has been explored in this area".
 
 Input is a connected subgraph:
 - Nodes: each is a one-sentence summary of an intent or fact, carrying id, type (intent/fact), state, confidence (if any).
 - Relationships: lineage edges between nodes (A derived from B / A produced B), explaining how they chain together.
-- If nodes have no direct lineage edges between them but belong to the same upstream intent (that upstream intent will be given as "common parent #p"), then synthesize them as "what this intent (#p) explored"—the common parent is just a context anchor, not a member to be compressed.
+- If nodes have no direct lineage edges between them but belong to the same upstream intent (that upstream intent will be given as "common parent #p"), then synthesize them as "what this intent (#p) explored"â€”the common parent is just a context anchor, not a member to be compressed.
 
 Based on this, write one body:
 1. Synthesize, don't list: trace causality along relationships (which fact spawned which intent, which intent produced which conclusion), tell "what this area of exploration concluded", don't copy every summary.
@@ -542,6 +542,7 @@ Based on this, write one body:
 3. Preserve evidence strength: conclusions with confidence mark observed/inferred; inferred negative/doubtful conclusions must point out they are only inferences, verifiable, not written as conclusions.
 4. Include ids: mark source node ids after each conclusion (e.g. "...(#12,#28)") so planner can restore original nodes by id.
 5. Positive statements only, write only what's in the input: don't fabricate, don't introduce judgments not in input.
-6. Length adapts to content: few conclusions keep short, many and different write enough—but overall significantly shorter than sum of all input summaries.
+6. Length adapts to content: few conclusions keep short, many and different write enoughâ€”but overall significantly shorter than sum of all input summaries.
 
 Output only the body text itself.`
+

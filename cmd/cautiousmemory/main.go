@@ -1,4 +1,4 @@
-// Command artex runs the ARTEX backend: the dual SQLite graph stores,
+// Command CAUTIOUSMEMORY runs the CAUTIOUSMEMORY backend: the dual SQLite graph stores,
 // the event-driven exploration engine, and the JSON HTTP API consumed by the
 // shadcn/ui frontend.
 package main
@@ -16,10 +16,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Autumn-27/artex/agent"
-	"github.com/Autumn-27/artex/config"
-	"github.com/Autumn-27/artex/selfupdate"
-	"github.com/Autumn-27/artex/server"
+	"github.com/Autumn-27/cautiousmemory/agent"
+	"github.com/Autumn-27/cautiousmemory/config"
+	"github.com/Autumn-27/cautiousmemory/selfupdate"
+	"github.com/Autumn-27/cautiousmemory/server"
 )
 
 // version is the build version, injected at release time via
@@ -38,13 +38,13 @@ const banner = `
 func printBanner(addr string) {
 	fmt.Print(banner)
 	fmt.Println("  AI Autonomous Penetration Testing System")
-	fmt.Printf("  version %s  ·  %s/%s  ·  %s  ·  listening on %s\n\n",
+	fmt.Printf("  version %s  Â·  %s/%s  Â·  %s  Â·  listening on %s\n\n",
 		version, runtime.GOOS, runtime.GOARCH, runtime.Version(), addr)
 }
 
 // main only maps run's result onto the process exit code. The exit code is part
-// of the update protocol — the supervising start script reads it to decide
-// whether to relaunch us (see selfupdate.ExitRestart) — so the body has to live
+// of the update protocol â€” the supervising start script reads it to decide
+// whether to relaunch us (see selfupdate.ExitRestart) â€” so the body has to live
 // in a function that can *return* rather than os.Exit past its own defers.
 func main() {
 	os.Exit(run())
@@ -70,7 +70,7 @@ func run() int {
 
 	// Self-update bootstrap: swap in a staged binary, or count a post-swap boot
 	// attempt and roll back if the new build keeps dying. Must run before we open
-	// the stores or bind a port — this may end with "exit and let the start script
+	// the stores or bind a port â€” this may end with "exit and let the start script
 	// relaunch me", and there is no point paying for either first.
 	action, upState := selfupdate.Bootstrap()
 	server.SetBootUpdateState(upState)
@@ -79,7 +79,7 @@ func run() int {
 	}
 
 	// surface which config file the binary reads (absolute, so `go run`'s relative
-	// "config.json" — resolved against the CWD — is unambiguous).
+	// "config.json" â€” resolved against the CWD â€” is unambiguous).
 	cfgPath := config.Path()
 	if abs, e := filepath.Abs(cfgPath); e == nil {
 		cfgPath = abs
@@ -87,7 +87,7 @@ func run() int {
 	if _, e := os.Stat(cfgPath); e == nil {
 		log.Printf("[config] config file: %s", cfgPath)
 	} else {
-		log.Printf("[config] config file: %s (does not exist -- will only try environment variable ARTEX_PG_DSN)", cfgPath)
+		log.Printf("[config] config file: %s (does not exist -- will only try environment variable CAUTIOUSMEMORY_PG_DSN)", cfgPath)
 	}
 
 	sigCtx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -121,14 +121,14 @@ func run() int {
 	}
 
 	go func() {
-		log.Printf("ARTEX %s backend listening on %s (data=%s, workers=%d)", version, *addr, *dataDir, mgr.Workers())
+		log.Printf("CAUTIOUSMEMORY %s backend listening on %s (data=%s, workers=%d)", version, *addr, *dataDir, mgr.Workers())
 		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("serve: %v", err)
 		}
 	}()
 
-	// Two ways out: a signal (normal stop → exit 0, the start script stops looping)
-	// or a staged update / rollback (→ exit 75, the script relaunches us and the
+	// Two ways out: a signal (normal stop â†’ exit 0, the start script stops looping)
+	// or a staged update / rollback (â†’ exit 75, the script relaunches us and the
 	// bootstrap above installs the new build).
 	code := 0
 	select {
@@ -159,3 +159,4 @@ func shutdownContext(signalCtx context.Context) (context.Context, context.Cancel
 	}()
 	return ctx, shutdown
 }
+

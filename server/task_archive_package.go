@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	pgdb "github.com/Autumn-27/artex/db"
+	pgdb "github.com/Autumn-27/cautiousmemory/db"
 	"github.com/klauspost/compress/zstd"
 )
 
@@ -404,7 +404,7 @@ func recoverTaskArchiveStages(dataDir string, pg *pgdb.DB) error {
 		raw, err := os.ReadFile(filepath.Join(root, "journal.json"))
 		if os.IsNotExist(err) {
 			// Either staging died between creating the directory tree and writing the
-			// journal — no rename had run, so payload holds nothing — or commit/rollback
+			// journal â€” no rename had run, so payload holds nothing â€” or commit/rollback
 			// failed part-way through removing the root, in which case payload only holds
 			// copies already inside the package. Without a journal there is nothing to
 			// roll back, and reporting an error here keeps the archive worker from ever
@@ -712,3 +712,4 @@ func extractTaskArchivePackage(path, expectedSHA, destination string) error {
 	}
 	return nil
 }
+

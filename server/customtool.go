@@ -17,13 +17,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	"github.com/Autumn-27/norma/permission"
 	actool "github.com/Autumn-27/norma/tool"
 )
 
 // This file implements the custom tool executor (docs/custom_tool_design.md). system=false tools rows
-// are dispatched by kind: command (render command → reuse Bash's underlying run), script (Python only;
+// are dispatched by kind: command (render command â†’ reuse Bash's underlying run), script (Python only;
 // write temp file, stdin=params JSON + env TOOL_*, use configured interpreter), http (native request +
 // configurable proxy). These tools don't need seeding like traffic/orchestration tools (they're already
 // in the tools table); injected via hostTools and filtered by binding.
@@ -133,7 +133,7 @@ func (s *Server) pgDeleteCustomTool(w http.ResponseWriter, r *http.Request) {
 
 // testToolReq is a dry-run request from the editor: run the given (possibly unsaved)
 // exec spec with sample params, without persisting the tool. Same executor path as a
-// real tool call — it runs arbitrary command/script/http on the server, which the
+// real tool call â€” it runs arbitrary command/script/http on the server, which the
 // custom-tool feature already allows, so no new capability is granted.
 type testToolReq struct {
 	Kind   string          `json:"kind"` // command | script | http
@@ -244,7 +244,7 @@ func timeoutOr(ms, def int) time.Duration {
 // ---------- Common Tool Construction ----------
 
 // customTools builds CoreTools for every user-defined (system=false) tool row.
-// shell-kind tools are environment hints only — they surface in the Bash tool
+// shell-kind tools are environment hints only â€” they surface in the Bash tool
 // description via ToolResolve and do NOT create callable tool entries here.
 func (s *Server) customTools() ([]actool.CoreTool, error) {
 	rows, err := s.m.pg.ListCustomTools()
@@ -254,14 +254,14 @@ func (s *Server) customTools() ([]actool.CoreTool, error) {
 	out := make([]actool.CoreTool, 0, len(rows))
 	for _, t := range rows {
 		if t.Kind == "shell" {
-			continue // shell hints are handled by ToolResolve → Bash description
+			continue // shell hints are handled by ToolResolve â†’ Bash description
 		}
 		out = append(out, s.buildCustomTool(t))
 	}
 	return out, nil
 }
 
-// buildCustomTool turns one custom-tool row into a CoreTool. Empty schema → a thin
+// buildCustomTool turns one custom-tool row into a CoreTool. Empty schema â†’ a thin
 // {args:string} wrapper, so command/http templates can use {args}.
 func (s *Server) buildCustomTool(t *db.Tool) actool.CoreTool {
 	schema := ensureSchema(t.Schema)
@@ -294,7 +294,7 @@ func (s *Server) buildCustomTool(t *db.Tool) actool.CoreTool {
 	})
 }
 
-// hasSchemaProps reports whether raw is a JSON-Schema object with ≥1 property.
+// hasSchemaProps reports whether raw is a JSON-Schema object with â‰¥1 property.
 // http tools require an explicit schema (the auto {args} shell can't name the
 // {param} placeholders in URL/headers/body), so an empty schema is rejected.
 func hasSchemaProps(raw json.RawMessage) bool {
@@ -327,7 +327,7 @@ func ensureSchema(raw json.RawMessage) map[string]any {
 	}
 }
 
-// ---------- command: render command → reuse Bash's underlying run ----------
+// ---------- command: render command â†’ reuse Bash's underlying run ----------
 
 func (s *Server) runCommandTool(ctx context.Context, execRaw json.RawMessage, params map[string]any, tc *actool.ToolContext) (actool.Result, error) {
 	var spec commandExec
@@ -544,3 +544,4 @@ func scalarStr(v any) (string, bool) {
 		return "", false
 	}
 }
+

@@ -1,4 +1,4 @@
-package agent
+﻿package agent
 
 import (
 	"context"
@@ -21,15 +21,15 @@ func TestDeepSeekSearchToolUsesConfiguredKeyAndQuery(t *testing.T) {
 			t.Errorf("authorization = %q", got)
 		}
 		body, _ := io.ReadAll(r.Body)
-		if string(body) != `{"count":3,"query":"ARTEX"}` {
+		if string(body) != `{"count":3,"query":"CAUTIOUSMEMORY"}` {
 			t.Errorf("request body = %s", body)
 		}
-		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"results":[{"title":"ARTEX","url":"https://example.test"}]}`)), Header: make(http.Header)}, nil
+		return &http.Response{StatusCode: http.StatusOK, Body: io.NopCloser(strings.NewReader(`{"results":[{"title":"CAUTIOUSMEMORY","url":"https://example.test"}]}`)), Header: make(http.Header)}, nil
 	})}
 	tool := deepSeekTool("deepseek_search", "", "search", "test-key", client, map[string]any{
 		"query": map[string]any{"type": "string"}, "count": map[string]any{"type": "integer"},
 	}, "query")
-	result, err := tool.Call(context.Background(), []byte(`{"query":"ARTEX","count":3}`), nil)
+	result, err := tool.Call(context.Background(), []byte(`{"query":"CAUTIOUSMEMORY","count":3}`), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,3 +49,4 @@ func TestDeepSeekToolsRespectGlobalAndBackendSettings(t *testing.T) {
 		}
 	}
 }
+

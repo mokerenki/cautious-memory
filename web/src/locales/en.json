@@ -25,7 +25,7 @@
     "systemSettings": "System Settings"
   },
   "meta": {
-    "title": "ARTEX — Autonomous Penetration Testing Console",
+    "title": "CAUTIOUSMEMORY — Autonomous Penetration Testing Console",
     "description": "LLM-driven Autonomous Penetration Testing System Console"
   },
   "common": {
@@ -921,7 +921,7 @@
   "auth": {
     "login": {
       "title": "Sign in",
-      "welcome": "Welcome back. Enter your password to continue using ARTEX.",
+      "welcome": "Welcome back. Enter your password to continue using CAUTIOUSMEMORY.",
       "username": "Username",
       "password": "Password",
       "password_placeholder": "Enter your password",
@@ -938,7 +938,7 @@
       "title": "Set a password",
       "status_unavailable_desc": "The backend or database is temporarily unavailable. To avoid overwriting an existing password, setup has been temporarily disabled. Restore service and try again.",
       "connection_failed": "Unable to connect to the backend service.",
-      "description": "On your first visit to ARTEX, set an account password (at least 8 characters).",
+      "description": "On your first visit to CAUTIOUSMEMORY, set an account password (at least 8 characters).",
       "retry": "Retry",
       "new_password": "New password",
       "min_password_placeholder": "At least 8 characters",
@@ -951,12 +951,12 @@
       "submit": "Set password and sign in"
     },
     "terms": {
-      "title": "ARTEX Terms of Use and Disclaimer",
+      "title": "CAUTIOUSMEMORY Terms of Use and Disclaimer",
       "version": "Version v1.0 · Effective date: 2026-09-18 · Read all terms before signing in",
-      "intro": "These Terms of Use and Disclaimer (the “Terms”) are an agreement between you and the authors and contributors of the ARTEX project regarding your use of this software. Please read and understand all provisions carefully before use, especially the disclaimers, limitations of liability, and prohibitions highlighted in bold or shaded areas.",
+      "intro": "These Terms of Use and Disclaimer (the “Terms”) are an agreement between you and the authors and contributors of the CAUTIOUSMEMORY project regarding your use of this software. Please read and understand all provisions carefully before use, especially the disclaimers, limitations of liability, and prohibitions highlighted in bold or shaded areas.",
       "intro_emphasis": " By downloading, installing, accessing, or otherwise using this software, you are deemed to have read, understood, and agreed to be bound by these Terms.",
       "section_1_title": "Section 1 · Definitions and open-source license",
-      "section_1_body": "ARTEX is open-source software released under the GNU Affero General Public License v3.0 (AGPL-3.0). You may use, copy, modify, and distribute the software under that license. Any derivative work, including an online service provided to third parties over a network, must also be released under AGPL-3.0, with its complete corresponding source code made available to users. The full terms of AGPL-3.0 are set out in the accompanying LICENSE file.",
+      "section_1_body": "CAUTIOUSMEMORY is open-source software released under the GNU Affero General Public License v3.0 (AGPL-3.0). You may use, copy, modify, and distribute the software under that license. Any derivative work, including an online service provided to third parties over a network, must also be released under AGPL-3.0, with its complete corresponding source code made available to users. The full terms of AGPL-3.0 are set out in the accompanying LICENSE file.",
       "section_2_title": "Section 2 · Permitted scope of use",
       "section_2_body": "This software is intended solely for personal learning, code research, discussion of security principles, and technical validation in a local isolated environment that you set up yourself. Permitted uses include learning, academic research, and code review, provided they are non-offensive and non-destructive. You may not use this software for any purpose other than those expressly permitted in this section.",
       "section_3_title": "Section 3 · Prohibited conduct",
@@ -971,9 +971,9 @@
       "section_5_body": "This is self-hosted open-source software. The authors operate no centralized service and do not collect or upload your usage data. You control all data generated, processed, or accessed while using the software and are responsible for its legality and security. You bear all consequences resulting from improper data handling.",
       "section_6_title": "Section 6 · Compliance and legal responsibility",
       "section_6_body": "You are solely responsible for complying with all laws and regulations in your country or region concerning cybersecurity, data security, personal information protection, and computer crime (including, in mainland China, the Cybersecurity Law, Data Security Law, Personal Information Protection Law, and related judicial interpretations).",
-      "section_6_emphasis": " You alone bear all legal liability and consequences arising from your violation of those laws or these Terms. The ARTEX authors and contributors are not responsible for them.",
+      "section_6_emphasis": " You alone bear all legal liability and consequences arising from your violation of those laws or these Terms. The CAUTIOUSMEMORY authors and contributors are not responsible for them.",
       "section_7_title": "Section 7 · Disclaimer and limitation of liability",
-      "section_7_body": "This software is provided “AS IS” and “AS AVAILABLE,” without warranties of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, accuracy, or non-infringement. To the maximum extent permitted by applicable law, the ARTEX authors and contributors are not liable for any direct, indirect, incidental, special, or consequential loss arising from your use or inability to use the software, regardless of whether it was used properly. This includes, without limitation, data loss, system damage, business interruption, lost profits, or legal disputes.",
+      "section_7_body": "This software is provided “AS IS” and “AS AVAILABLE,” without warranties of any kind, express or implied, including warranties of merchantability, fitness for a particular purpose, accuracy, or non-infringement. To the maximum extent permitted by applicable law, the CAUTIOUSMEMORY authors and contributors are not liable for any direct, indirect, incidental, special, or consequential loss arising from your use or inability to use the software, regardless of whether it was used properly. This includes, without limitation, data loss, system damage, business interruption, lost profits, or legal disputes.",
       "section_8_title": "Section 8 · Amendments and interpretation",
       "section_8_body": "The authors may update these Terms from time to time as required by law or project development. Updated versions will be released with the project and take effect on publication. Your continued use of the software constitutes acceptance of the revised Terms. To the extent permitted by law, the project authors have final authority to interpret these Terms. If any provision is held invalid, the remaining provisions remain in effect.",
       "read_all": "You have reviewed all terms.",
@@ -1239,7 +1239,7 @@
     "password_updated": "Password changed.",
     "password_change_failed": "Failed to change password: {{error}}",
     "password_dialog_title": "Change password",
-    "password_dialog_description": "The username is fixed as ARTEX. Verify your identity with your current password first. Existing login tokens remain valid until they expire.",
+    "password_dialog_description": "The username is fixed as CAUTIOUSMEMORY. Verify your identity with your current password first. Existing login tokens remain valid until they expire.",
     "current_password": "Current password",
     "new_password": "New password",
     "confirm_new_password": "Confirm new password",

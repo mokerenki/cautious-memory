@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 const maxTaskCategoryRequestBytes = 16 << 10
@@ -121,8 +121,8 @@ func (s *Server) pgDeleteTaskCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 // parseCategoryIDField reads the category_id field shared by the single-task and
-// batch endpoints. The field is required but may be null — that clears the
-// category — so it arrives as RawMessage instead of *int64, which cannot tell
+// batch endpoints. The field is required but may be null â€” that clears the
+// category â€” so it arrives as RawMessage instead of *int64, which cannot tell
 // an explicit null from an omitted key.
 func parseCategoryIDField(w http.ResponseWriter, raw json.RawMessage) (*int64, bool) {
 	if len(raw) == 0 {
@@ -239,3 +239,4 @@ func (s *Server) updateTasksCategoryBatch(w http.ResponseWriter, r *http.Request
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"items": items, "category": category})
 }
+

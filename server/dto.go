@@ -6,12 +6,12 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
-	"github.com/Autumn-27/artex/traffic"
+	"github.com/Autumn-27/cautiousmemory/db"
+	"github.com/Autumn-27/cautiousmemory/traffic"
 )
 
 // DTO/serialization layer: each handler emits EXACTLY the frontend's spec shapes
-// (artex/web/src/lib/types.ts). These reshape db package structs so the
+// (CAUTIOUSMEMORY/web/src/lib/types.ts). These reshape db package structs so the
 // internal DB model never leaks over the API. The db structs and the frontend are
 // the canonical contracts; this file maps one onto the other.
 
@@ -206,7 +206,7 @@ func trafficDTOs(ex []traffic.ExchangeMeta) []TrafficExchangeDTO {
 	return out
 }
 
-// ---- TaskNode (frontend "TaskNode") — frontier, intents, exploration graph nodes ----
+// ---- TaskNode (frontend "TaskNode") â€” frontier, intents, exploration graph nodes ----
 
 type TaskNodeDTO struct {
 	ID           string `json:"id"`
@@ -239,7 +239,7 @@ func taskNodeDTO(n *db.Node) TaskNodeDTO {
 	return d
 }
 
-// GoalDTO is a goal node with its payload unpacked into text/vulnclass — the shape
+// GoalDTO is a goal node with its payload unpacked into text/vulnclass â€” the shape
 // the Overview "Goal Management" UI works with (vs TaskNodeDTO which carries raw payload JSON).
 type GoalDTO struct {
 	ID        string `json:"id"`
@@ -291,7 +291,7 @@ func taskNodeDTOs(in []*db.Node) []TaskNodeDTO {
 	return out
 }
 
-// ---- Edge (frontend "Edge") — exploration edges and asset edges ----
+// ---- Edge (frontend "Edge") â€” exploration edges and asset edges ----
 
 type EdgeDTO struct {
 	Src string `json:"src"`
@@ -345,7 +345,7 @@ type FindingDTO struct {
 	TrafficBindings       []db.FindingTrafficBinding `json:"traffic_bindings,omitempty"`
 
 	ID                   string `json:"id"`
-	FindingID            string `json:"finding_id,omitempty"` // standalone findings-table id — the handle for status updates
+	FindingID            string `json:"finding_id,omitempty"` // standalone findings-table id â€” the handle for status updates
 	VulnClass            string `json:"vulnclass"`
 	Name                 string `json:"name,omitempty"` // finding name; fallback to vulnclass when empty
 	Severity             string `json:"severity"`       // critical | high | medium | low
@@ -435,7 +435,7 @@ func findingDTO(n *db.Node) FindingDTO {
 
 // findingDTOsForTask converts a task's finding nodes to DTOs, stamping each with
 // the owning task's id/description so the global Findings page can group across tasks.
-// meta maps node id → the standalone findings row (id + status + asset ids), so the
+// meta maps node id â†’ the standalone findings row (id + status + asset ids), so the
 // per-task view shows the same triage state and anchored assets as the global page;
 // nodes with no row keep the 'pending' default and no finding_id (not editable).
 // assets pre-resolves the anchored asset rows for label rendering.
@@ -573,7 +573,7 @@ func activityDTOs(in []db.Activity) []ActivityDTO {
 	return out
 }
 
-// ---- Agent (frontend "Agent") — string id ----
+// ---- Agent (frontend "Agent") â€” string id ----
 
 type AgentDTO struct {
 	ID               string `json:"id"`
@@ -592,7 +592,7 @@ type AgentDTO struct {
 TriggerRunMode     string `json:"trigger_run_mode"`
 TriggerMergeMode   string `json:"trigger_merge_mode"`
 TriggerMaxParallel int    `json:"trigger_max_parallel"`
-	// binding counts (populated only by the list endpoint) — shown on agent cards.
+	// binding counts (populated only by the list endpoint) â€” shown on agent cards.
 	McpCount   int `json:"mcp_count"`
 	SkillCount int `json:"skill_count"`
 	ToolCount  int `json:"tool_count"`
@@ -626,7 +626,7 @@ func agentDTOs(in []*db.Agent) []AgentDTO {
 	return out
 }
 
-// ---- LLMProfile (frontend "LLMProfile") — string id ----
+// ---- LLMProfile (frontend "LLMProfile") â€” string id ----
 
 type LLMProfileDTO struct {
 	ID              string  `json:"id"`
@@ -647,7 +647,7 @@ type LLMProfileDTO struct {
 // bound by agent/task.
 Priority    int  `json:"priority"`
 PoolExclude bool `json:"pool_exclude"`
-// Transport mode: true = streaming (SSE) | false = non-streaming. No omitempty —
+// Transport mode: true = streaming (SSE) | false = non-streaming. No omitempty â€”
 // false must appear in response so frontend can read "non-streaming"; otherwise
 // switch falls back to default streaming.
 Streaming bool `json:"streaming"`
@@ -708,3 +708,4 @@ func idStrings(in []int64) []string {
 	}
 	return out
 }
+

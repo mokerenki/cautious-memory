@@ -1,4 +1,4 @@
-package selfupdate
+﻿package selfupdate
 
 import (
 	"archive/zip"
@@ -17,7 +17,7 @@ func TestStageDownloadAndVerify(t *testing.T) {
 	requireUnix(t)
 	var archive bytes.Buffer
 	zw := zip.NewWriter(&archive)
-	f, err := zw.Create("artex")
+	f, err := zw.Create("CAUTIOUSMEMORY")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,3 +74,4 @@ func TestStageDownloadAndVerify(t *testing.T) {
 		})
 	}
 }
+

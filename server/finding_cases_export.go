@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 type findingCaseExportPlan struct {
@@ -82,7 +82,7 @@ func (s *Server) consolidateFindingCaseExport(fs []*db.DBFinding, plan *findingC
 			if sev == "" {
 				sev = "unassessed"
 			}
-			composite := &db.DBFinding{ID: f.ID, ExportCaseID: c.ID, TaskID: c.TaskID, TaskDescription: f.TaskDescription, Name: title, VulnClass: "归并漏洞", Severity: sev, Status: f.Status, CreatedAt: c.CreatedAt, Report: c.Report, EvidenceVersion: c.Version, ReportEvidenceVersion: c.ReportVersion}
+			composite := &db.DBFinding{ID: f.ID, ExportCaseID: c.ID, TaskID: c.TaskID, TaskDescription: f.TaskDescription, Name: title, VulnClass: "å½’å¹¶æ¼æ´ž", Severity: sev, Status: f.Status, CreatedAt: c.CreatedAt, Report: c.Report, EvidenceVersion: c.Version, ReportEvidenceVersion: c.ReportVersion}
 			assets := map[int64]bool{}
 			var refs []string
 			var evidence strings.Builder
@@ -122,3 +122,4 @@ func (s *Server) consolidateFindingCaseExport(fs []*db.DBFinding, plan *findingC
 	}
 	return out, nil
 }
+

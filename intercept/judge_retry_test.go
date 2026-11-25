@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 func retryTestInterceptor(t *testing.T, settings map[string]string) *Interceptor {
@@ -290,3 +290,4 @@ func TestJudgeRejectsInvalidRetryBeforeWritingSettings(t *testing.T) {
 		}
 	}
 }
+

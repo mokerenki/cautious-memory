@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
@@ -28,3 +28,4 @@ func TestMain(m *testing.M) {
 	defer conn.Exec(`SELECT pg_advisory_unlock(7337741002)`) //nolint:errcheck
 	os.Exit(m.Run())
 }
+

@@ -3,12 +3,12 @@ package agent
 import (
 	"context"
 
-	"github.com/Autumn-27/artex/db"
+	"github.com/Autumn-27/cautiousmemory/db"
 )
 
 // RunInfo identifies WHICH run a tool call belongs to. Tool assembly only receives
-// (ctx, agentKey) — the task/exploration ids live in the caller's arguments, not the
-// ctx — so anything wired at assembly time (currently the Skill ledger in
+// (ctx, agentKey) â€” the task/exploration ids live in the caller's arguments, not the
+// ctx â€” so anything wired at assembly time (currently the Skill ledger in
 // server/assembly.go) has no way to attribute a call to a task. Each run attaches
 // its own RunInfo before calling AugmentTools; the wiring closure reads it once and
 // captures it, so per-run attribution stays correct without threading parameters
@@ -45,3 +45,4 @@ func RunInfoFrom(ctx context.Context) RunInfo {
 	}
 	return RunInfo{}
 }
+
